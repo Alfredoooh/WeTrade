@@ -8,7 +8,7 @@ android {
 
     signingConfigs {
         release {
-            storeFile file("nuxx_release.keystore")
+            storeFile file("webtrade_release.keystore")
             storePassword "@jonas00"
             keyAlias "wetrade_key"
             keyPassword "@jonas00"
