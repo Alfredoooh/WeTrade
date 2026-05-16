@@ -12,11 +12,11 @@ workflows:
             -keyalg RSA \
             -keysize 4096 \
             -validity 9125 \
-            -keystore app/nuxx_release.keystore \
+            -keystore app/webtrade_release.keystore \
             -storepass "@jonas00" \
             -keypass "@jonas00" \
             -dname "CN=Developer, OU=Dev, O=Developer, L=Lisboa, ST=Lisboa, C=PT"
-          echo "Ã¢ÂœÂ“ Keystore gerado: app/nuxx_release.keystore"
+          echo "✅ Keystore gerado: app/webtrade_release.keystore"
 
       - name: Install Pillow
         script: pip3 install Pillow --quiet
@@ -85,6 +85,11 @@ workflows:
 
           print("Icones processados com sucesso!")
           EOF
+
+      - name: Download gradle-wrapper.jar
+        script: |
+          curl -fsSL "https://github.com/gradle/gradle/raw/v8.7.0/gradle/wrapper/gradle-wrapper.jar" \
+            -o "${CM_BUILD_DIR}/gradle/wrapper/gradle-wrapper.jar"
 
       - name: Set executable permission
         script: chmod +x gradlew
@@ -120,11 +125,11 @@ workflows:
             -keyalg RSA \
             -keysize 4096 \
             -validity 9125 \
-            -keystore app/nuxx_release.keystore \
+            -keystore app/webtrade_release.keystore \
             -storepass "@jonas00" \
             -keypass "@jonas00" \
             -dname "CN=Developer, OU=Dev, O=Developer, L=Lisboa, ST=Lisboa, C=PT"
-          echo "Ã¢ÂœÂ“ Keystore gerado: app/nuxx_release.keystore"
+          echo "✅ Keystore gerado: app/webtrade_release.keystore"
 
       - name: Install Pillow
         script: pip3 install Pillow --quiet
@@ -193,6 +198,11 @@ workflows:
 
           print("Icones processados com sucesso!")
           EOF
+
+      - name: Download gradle-wrapper.jar
+        script: |
+          curl -fsSL "https://github.com/gradle/gradle/raw/v8.7.0/gradle/wrapper/gradle-wrapper.jar" \
+            -o "${CM_BUILD_DIR}/gradle/wrapper/gradle-wrapper.jar"
 
       - name: Set executable permission
         script: chmod +x gradlew
