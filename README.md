@@ -3,7 +3,7 @@
 | Campo | Valor |
 |-------|-------|
 | Package | `com.wetrade.app` |
-| Versão | 1.0 (1) |
+| VersÃ£o | 1.0 (1) |
 | Min SDK | API 21 |
 | Target SDK | API 35 |
 

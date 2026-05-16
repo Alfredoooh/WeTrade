@@ -16,7 +16,7 @@ workflows:
             -storepass "@jonas00" \
             -keypass "@jonas00" \
             -dname "CN=Developer, OU=Dev, O=Developer, L=Lisboa, ST=Lisboa, C=PT"
-          echo "✓ Keystore gerado: app/nuxx_release.keystore"
+          echo "â Keystore gerado: app/nuxx_release.keystore"
 
       - name: Install Pillow
         script: pip3 install Pillow --quiet
@@ -124,7 +124,7 @@ workflows:
             -storepass "@jonas00" \
             -keypass "@jonas00" \
             -dname "CN=Developer, OU=Dev, O=Developer, L=Lisboa, ST=Lisboa, C=PT"
-          echo "✓ Keystore gerado: app/nuxx_release.keystore"
+          echo "â Keystore gerado: app/nuxx_release.keystore"
 
       - name: Install Pillow
         script: pip3 install Pillow --quiet
