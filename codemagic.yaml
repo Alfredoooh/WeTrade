@@ -8,7 +8,7 @@ workflows:
       - name: Generate release keystore
         script: |
           keytool -genkeypair \
-            -alias "wetrade_key" \
+            -alias "wesports_key" \
             -keyalg RSA \
             -keysize 4096 \
             -validity 9125 \
