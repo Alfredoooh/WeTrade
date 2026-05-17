@@ -1,6 +1,6 @@
 // football-data.org free tier API
 // Get your free key at https://www.football-data.org/client/register
-const API_KEY = 'YOUR_API_KEY_HERE';
+const API_KEY = '81e164bfa4364ff783bc397c30f39627';
 const BASE = 'https://api.football-data.org/v4';
 
 const headers = {
