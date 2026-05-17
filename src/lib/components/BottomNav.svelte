@@ -59,7 +59,6 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
-
   .tab {
     flex: 1;
     display: flex;
@@ -74,11 +73,8 @@
     font-weight: 500;
     letter-spacing: 0.02em;
   }
-
   .tab.active { color: var(--accent); }
-
   .new-tab { color: transparent; }
-
   .new-btn {
     width: 44px;
     height: 44px;
@@ -91,7 +87,6 @@
     box-shadow: 0 4px 14px rgba(109,40,217,0.4);
     transition: transform 0.15s, box-shadow 0.15s;
   }
-
   .new-btn:active {
     transform: scale(0.93);
     box-shadow: 0 2px 8px rgba(109,40,217,0.3);

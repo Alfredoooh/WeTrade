@@ -68,9 +68,7 @@
 
 <style>
   .page { padding: 16px; }
-
   .search-wrap { margin-bottom: 12px; }
-
   .search-box {
     display: flex;
     align-items: center;
@@ -80,7 +78,6 @@
     padding: 11px 14px;
     color: var(--fg-3);
   }
-
   input {
     flex: 1;
     border: none;
@@ -90,9 +87,7 @@
     color: var(--fg);
     outline: none;
   }
-
   input::placeholder { color: var(--fg-3); }
-
   .tags-scroll {
     display: flex;
     gap: 8px;
@@ -100,7 +95,6 @@
     margin-bottom: 24px;
     padding-bottom: 4px;
   }
-
   .tag-chip {
     flex-shrink: 0;
     background: var(--accent-soft);
@@ -109,11 +103,8 @@
     padding: 7px 14px;
     font-size: 0.8125rem;
     font-weight: 600;
-    transition: background 0.15s;
   }
-
   .section { margin-bottom: 28px; }
-
   h2 {
     font-size: 0.75rem;
     font-weight: 700;
@@ -122,7 +113,6 @@
     color: var(--fg-3);
     margin-bottom: 12px;
   }
-
   .trend-row {
     display: flex;
     align-items: center;
@@ -131,10 +121,8 @@
     border-bottom: 1px solid var(--border);
     color: var(--fg-3);
   }
-
   .trend-tag { font-weight: 600; font-size: 0.9375rem; color: var(--fg); }
   .trend-sub { font-size: 0.75rem; margin-top: 2px; }
-
   .user-row {
     display: flex;
     align-items: center;
@@ -142,12 +130,10 @@
     padding: 10px 0;
     border-bottom: 1px solid var(--border);
   }
-
   .u-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--bg-3); }
   .u-meta { flex: 1; }
   .u-name { font-weight: 600; font-size: 0.9rem; }
   .u-sub { font-size: 0.75rem; color: var(--fg-3); }
-
   .follow-btn {
     background: var(--accent);
     color: white;
@@ -155,6 +141,5 @@
     padding: 7px 18px;
     font-size: 0.8125rem;
     font-weight: 600;
-    transition: opacity 0.15s;
   }
 </style>

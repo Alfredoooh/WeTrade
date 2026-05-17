@@ -2,12 +2,12 @@
   import '../app.css';
   import BottomNav from '$lib/components/BottomNav.svelte';
   import { page } from '$app/stores';
-  
+
   $: isNew = $page.url.pathname === '/new';
 </script>
 
 <div class="app">
-  <main class="main" class:no-pad={isNew}>
+  <main class:no-pad={isNew}>
     <slot />
   </main>
   <BottomNav />
@@ -21,8 +21,7 @@
     position: relative;
     background: var(--bg);
   }
-  
-  .main {
+  main {
     padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom));
   }
 </style>

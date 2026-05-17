@@ -12,9 +12,9 @@
     </div>
     <button class="more">⋯</button>
   </header>
-  
+
   <p class="content">{post.content}</p>
-  
+
   {#if post.image}
     <img class="post-img" src={post.image} alt="post" />
   {/if}
@@ -55,14 +55,12 @@
     border-bottom: 1px solid var(--border);
     padding: 16px;
   }
-
   header {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-bottom: 12px;
   }
-
   .avatar {
     width: 40px;
     height: 40px;
@@ -71,9 +69,7 @@
     flex-shrink: 0;
     background: var(--bg-3);
   }
-
   .meta { flex: 1; min-width: 0; }
-
   .name {
     display: block;
     font-weight: 600;
@@ -81,27 +77,23 @@
     color: var(--fg);
     line-height: 1.2;
   }
-
   .sub {
     font-size: 0.75rem;
     color: var(--fg-3);
     font-family: var(--font-mono);
   }
-
   .more {
     color: var(--fg-3);
     font-size: 1.2rem;
     padding: 4px 8px;
     border-radius: 8px;
   }
-
   .content {
     font-size: 0.9375rem;
     line-height: 1.55;
     color: var(--fg);
     margin-bottom: 12px;
   }
-
   .post-img {
     width: 100%;
     border-radius: var(--radius-sm);
@@ -109,13 +101,11 @@
     object-fit: cover;
     max-height: 280px;
   }
-
   footer {
     display: flex;
     align-items: center;
     gap: 4px;
   }
-
   .action {
     display: flex;
     align-items: center;
@@ -127,7 +117,6 @@
     font-weight: 500;
     transition: background 0.15s, color 0.15s;
   }
-
   .action:active { background: var(--bg-3); }
   .action.active { color: var(--accent); }
   .save { margin-left: auto; }

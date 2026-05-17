@@ -2,7 +2,7 @@
   import TopBar from '$lib/components/TopBar.svelte';
   import PostCard from '$lib/components/PostCard.svelte';
   import { posts } from '$lib/stores/posts.js';
-  
+
   const stories = [
     { name: 'Ana', seed: 'ana', color: '7c3aed' },
     { name: 'Bruno', seed: 'bruno', color: '2563eb' },
@@ -17,7 +17,7 @@
 
 <section class="stories">
   <div class="stories-scroll">
-    <div class="story-item my-story">
+    <div class="story-item">
       <div class="story-ring add-ring">
         <img src="https://api.dicebear.com/8.x/notionists/svg?seed=alfred&backgroundColor=6d28d9" alt="eu" />
         <span class="add-dot">+</span>
@@ -35,7 +35,7 @@
   </div>
 </section>
 
-<div class="divider" />
+<div class="divider"></div>
 
 {#each $posts as post (post.id)}
   <PostCard {post} />
@@ -47,14 +47,12 @@
     background: var(--card);
     border-bottom: 1px solid var(--border);
   }
-
   .stories-scroll {
     display: flex;
     gap: 16px;
     padding: 0 16px;
     overflow-x: auto;
   }
-
   .story-item {
     display: flex;
     flex-direction: column;
@@ -63,7 +61,6 @@
     flex-shrink: 0;
     cursor: pointer;
   }
-
   .story-item span {
     font-size: 0.7rem;
     color: var(--fg-2);
@@ -74,7 +71,6 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-
   .story-ring {
     width: 58px;
     height: 58px;
@@ -83,7 +79,6 @@
     background: linear-gradient(135deg, var(--accent), #ec4899);
     position: relative;
   }
-
   .story-ring img {
     width: 100%;
     height: 100%;
@@ -92,11 +87,7 @@
     object-fit: cover;
     background: var(--bg-3);
   }
-
-  .add-ring {
-    background: var(--bg-2);
-  }
-
+  .add-ring { background: var(--bg-2); }
   .add-dot {
     position: absolute;
     bottom: 0;
@@ -114,6 +105,5 @@
     justify-content: center;
     line-height: 1;
   }
-
   .divider { height: 8px; background: var(--bg-2); }
 </style>

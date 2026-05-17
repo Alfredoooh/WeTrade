@@ -11,7 +11,7 @@
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
         <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
       </svg>
-      <span class="badge">3</span>
+      <span class="badge"></span>
     </button>
   {/if}
 </header>
@@ -31,14 +31,12 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
-
   .wordmark {
     font-size: 1.125rem;
     font-weight: 700;
     color: var(--fg);
     letter-spacing: -0.02em;
   }
-
   .notif-btn {
     position: relative;
     width: 38px;
@@ -50,7 +48,6 @@
     justify-content: center;
     color: var(--fg-2);
   }
-
   .badge {
     position: absolute;
     top: 6px;
@@ -60,6 +57,5 @@
     background: var(--accent);
     border-radius: 50%;
     border: 2px solid var(--card);
-    font-size: 0;
   }
 </style>

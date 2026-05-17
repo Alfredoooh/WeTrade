@@ -2,7 +2,7 @@
   import TopBar from '$lib/components/TopBar.svelte';
   import PostCard from '$lib/components/PostCard.svelte';
   import { posts } from '$lib/stores/posts.js';
-  
+
   $: saved = $posts.filter(p => p.saved);
 </script>
 
@@ -33,12 +33,6 @@
     text-align: center;
     gap: 10px;
   }
-
-  .empty p {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--fg-2);
-  }
-
+  .empty p { font-size: 1rem; font-weight: 600; color: var(--fg-2); }
   .empty span { font-size: 0.875rem; }
 </style>

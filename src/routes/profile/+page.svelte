@@ -20,12 +20,12 @@
       <span class="stat-n">{myPosts.length}</span>
       <span class="stat-l">Posts</span>
     </div>
-    <div class="divider-v" />
+    <div class="divider-v"></div>
     <div class="stat">
       <span class="stat-n">{$currentUser.followers}</span>
       <span class="stat-l">Seguidores</span>
     </div>
-    <div class="divider-v" />
+    <div class="divider-v"></div>
     <div class="stat">
       <span class="stat-n">{$currentUser.following}</span>
       <span class="stat-l">A seguir</span>
@@ -59,14 +59,12 @@
 
 <style>
   .page { padding-bottom: 16px; }
-
   .profile-header {
     display: flex;
     gap: 16px;
     padding: 24px 16px 16px;
     align-items: flex-start;
   }
-
   .avatar {
     width: 72px;
     height: 72px;
@@ -74,15 +72,10 @@
     background: var(--bg-3);
     flex-shrink: 0;
   }
-
   .info { flex: 1; }
-
   h1 { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.01em; }
-
   .username { font-size: 0.8125rem; color: var(--fg-3); font-family: var(--font-mono); margin: 2px 0 8px; }
-
   .bio { font-size: 0.875rem; color: var(--fg-2); line-height: 1.45; }
-
   .stats-row {
     display: flex;
     align-items: center;
@@ -94,15 +87,10 @@
     border-radius: var(--radius-sm);
     background: var(--bg-2);
   }
-
   .stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-
   .stat-n { font-size: 1.25rem; font-weight: 700; }
-
   .stat-l { font-size: 0.7rem; color: var(--fg-3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
-
   .divider-v { width: 1px; height: 32px; background: var(--border); }
-
   .edit-btn {
     display: block;
     width: calc(100% - 32px);
@@ -116,7 +104,6 @@
     background: var(--card);
     text-align: center;
   }
-
   .posts-label {
     display: flex;
     align-items: center;
@@ -129,7 +116,6 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
-
   .post-stub {
     padding: 14px 16px;
     border-bottom: 1px solid var(--border);
@@ -138,7 +124,6 @@
     align-items: flex-start;
     gap: 12px;
   }
-
   .post-stub p {
     font-size: 0.9rem;
     line-height: 1.5;
@@ -149,9 +134,7 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-
   .time { font-size: 0.75rem; color: var(--fg-3); font-family: var(--font-mono); flex-shrink: 0; }
-
   .empty {
     display: flex;
     flex-direction: column;
@@ -161,7 +144,6 @@
     text-align: center;
     gap: 8px;
   }
-
   .empty p { font-size: 1rem; font-weight: 600; color: var(--fg-2); }
   .empty span { font-size: 0.875rem; }
 </style>
