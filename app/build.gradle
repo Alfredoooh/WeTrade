@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 
 android {
-    namespace 'com.wetrade.app'
+    namespace 'com.wesports.app'
     compileSdk 35
 
     signingConfigs {
@@ -16,7 +16,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.wetrade.app"
+        applicationId "com.wesports.app"
         minSdk 21
         targetSdk 35
         versionCode 1
