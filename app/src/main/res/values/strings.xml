@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">wetrade</string>
-    <string name="notification_channel_name">wetrade</string>
-    <string name="notification_channel_desc">MantÃÂ©m o wetrade activo em segundo plano</string>
+    <string name="app_name">wesports</string>
+    <string name="notification_channel_name">wesports</string>
+    <string name="notification_channel_desc">MantÃÂ©m o wesports activo em segundo plano</string>
 </resources>

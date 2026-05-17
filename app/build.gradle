@@ -10,7 +10,7 @@ android {
         release {
             storeFile file("webtrade_release.keystore")
             storePassword "@jonas00"
-            keyAlias "wetrade_key"
+            keyAlias "wesports_key"
             keyPassword "@jonas00"
         }
     }
