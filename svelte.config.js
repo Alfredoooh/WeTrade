@@ -1,8 +1,8 @@
-import adapter from '@sveltejs/adapter-node';
+import adapter from '@sveltejs/adapter-static';
 
 const config = {
   kit: {
-    adapter: adapter({ out: 'build' })
+    adapter: adapter({ out: 'build', fallback: '200.html' })
   }
 };
 
