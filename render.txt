@@ -1,0 +1,20 @@
+=== RENDER WEB SERVICE SETTINGS ===
+
+Name: social-app
+Region: Frankfurt (EU) — ou o mais próximo
+Branch: main
+Root Directory: (deixar vazio)
+Runtime: Node
+
+Build Command:
+npm install && npm run build
+
+Start Command:
+node build/index.js
+
+Environment Variables:
+NODE_VERSION = 20
+PORT = 3000
+
+Auto-Deploy: Yes
+Health Check Path: /
