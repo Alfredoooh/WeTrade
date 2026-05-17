@@ -1,45 +1,27 @@
 <script>
   import { page } from '$app/stores';
+  
+  const tabs = [
+    { href: '/', icon: '/icons/home.svg', label: 'Início' },
+    { href: '/partidas', icon: '/icons/matches.svg', label: 'Partidas' },
+    { href: '/favoritos', icon: '/icons/favorites.svg', label: 'Favoritos' },
+    { href: '/tv', icon: '/icons/tv.svg', label: 'TV' },
+  ];
+  
+  $: current = $page.url.pathname;
 </script>
 
 <nav class="bottom-nav">
-  <a href="/" class="tab" class:active={$page.url.pathname === '/'}>
-    <svg width="22" height="22" viewBox="0 0 24 24" fill={$page.url.pathname === '/' ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2">
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-      <polyline points="9 22 9 12 15 12 15 22"/>
-    </svg>
-    <span>Feed</span>
-  </a>
-
-  <a href="/explore" class="tab" class:active={$page.url.pathname === '/explore'}>
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-    </svg>
-    <span>Explorar</span>
-  </a>
-
-  <a href="/new" class="tab new-tab" class:active={$page.url.pathname === '/new'}>
-    <div class="new-btn">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-    </div>
-  </a>
-
-  <a href="/saved" class="tab" class:active={$page.url.pathname === '/saved'}>
-    <svg width="22" height="22" viewBox="0 0 24 24" fill={$page.url.pathname === '/saved' ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2">
-      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-    </svg>
-    <span>Guardados</span>
-  </a>
-
-  <a href="/profile" class="tab" class:active={$page.url.pathname === '/profile'}>
-    <svg width="22" height="22" viewBox="0 0 24 24" fill={$page.url.pathname === '/profile' ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-      <circle cx="12" cy="7" r="4"/>
-    </svg>
-    <span>Perfil</span>
-  </a>
+  {#each tabs as tab}
+    {@const active = current === tab.href || (tab.href !== '/' && current.startsWith(tab.href))}
+    <a href={tab.href} class="tab pressable" class:active>
+      <div class="icon-wrap">
+        <img src={tab.icon} alt={tab.label} class="tab-icon" />
+        {#if active}<div class="indicator"></div>{/if}
+      </div>
+      <span class="label">{tab.label}</span>
+    </a>
+  {/each}
 </nav>
 
 <style>
@@ -48,17 +30,17 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: var(--tab-h);
-    background: var(--card);
+    height: calc(var(--tab-h) + var(--safe-bottom));
+    padding-bottom: var(--safe-bottom);
+    background: var(--bg);
     border-top: 1px solid var(--border);
     display: flex;
-    align-items: center;
-    padding: 0 4px;
-    padding-bottom: env(safe-area-inset-bottom);
-    z-index: 100;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    align-items: stretch;
+    z-index: 80;
+    max-width: 480px;
+    margin: 0 auto;
   }
+
   .tab {
     flex: 1;
     display: flex;
@@ -67,28 +49,49 @@
     justify-content: center;
     gap: 3px;
     color: var(--fg-3);
-    padding: 6px 0;
-    transition: color 0.15s;
-    font-size: 0.65rem;
-    font-weight: 500;
-    letter-spacing: 0.02em;
+    position: relative;
+    padding-top: 8px;
   }
-  .tab.active { color: var(--accent); }
-  .new-tab { color: transparent; }
-  .new-btn {
-    width: 44px;
-    height: 44px;
-    background: var(--accent);
-    border-radius: 14px;
+
+  .tab.active { color: var(--primary); }
+
+  .icon-wrap {
+    position: relative;
+    width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    box-shadow: 0 4px 14px rgba(109,40,217,0.4);
-    transition: transform 0.15s, box-shadow 0.15s;
   }
-  .new-btn:active {
-    transform: scale(0.93);
-    box-shadow: 0 2px 8px rgba(109,40,217,0.3);
+
+  .tab-icon {
+    width: 22px;
+    height: 22px;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+    filter: none;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .tab-icon { filter: invert(1); }
+  }
+
+  .tab.active .tab-icon { opacity: 1; }
+
+  .indicator {
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--primary);
+  }
+
+  .label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
   }
 </style>
