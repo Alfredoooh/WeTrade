@@ -1,8 +1,8 @@
 import { AppRegistry } from 'react-native';
 import App from './src/App';
 
-AppRegistry.registerComponent('PulseApp', () => App);
-AppRegistry.runApplication('PulseApp', {
+AppRegistry.registerComponent('GoalZone', () => App);
+AppRegistry.runApplication('GoalZone', {
   initialProps: {},
   rootTag: document.getElementById('root'),
 });

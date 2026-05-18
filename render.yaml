@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: rnweb-static
+    name: goalzone
     env: static
     buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
+    staticPublishPath: dist
     routes:
       - type: rewrite
         source: /*

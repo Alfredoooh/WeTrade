@@ -1,5 +1,5 @@
 {
-  "name": "rnweb-static",
+  "name": "goalzone",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -9,7 +9,8 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-native-web": "^0.19.10"
+    "react-native-web": "^0.19.10",
+    "react-icons": "^5.2.1"
   },
   "devDependencies": {
     "@babel/core": "^7.23.0",
