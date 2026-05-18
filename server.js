@@ -3,8 +3,8 @@ const fetch = require('node-fetch');
 const cors = require('cors');
 const app = express();
 
-const FOOTBALL_KEY = '81e164bfa4364ff783bc397c30f39627';
-const FOOTBALL_BASE = 'https://api.football-data.org/v4';
+const FOOTBALL_KEY = '9aa85892f684f5b1f85a721e6d625df4be9065447047e065f42c211658c7cd7d';
+const FOOTBALL_BASE = 'https://v3.football.api-sports.io';
 const NEWS_KEY = 'pub_7d7d1ac2f86b4bc6b4662fd5d6dad47c';
 const NEWS_BASE = 'https://newsdata.io/api/1';
 
@@ -13,10 +13,16 @@ app.use(express.json());
 
 app.get('/ping', (req, res) => res.send('pong'));
 
+// Headers para API-Football
+const footballHeaders = {
+  'x-apisports-key': FOOTBALL_KEY
+};
+
+// Jogos ao vivo
 app.get('/api/matches/live', async (req, res) => {
   try {
-    const r = await fetch(`${FOOTBALL_BASE}/matches?status=LIVE,IN_PLAY,PAUSED`, {
-      headers: { 'X-Auth-Token': FOOTBALL_KEY }
+    const r = await fetch(`${FOOTBALL_BASE}/fixtures?live=all`, {
+      headers: footballHeaders
     });
     const data = await r.json();
     res.json(data);
@@ -25,11 +31,12 @@ app.get('/api/matches/live', async (req, res) => {
   }
 });
 
+// Jogos de hoje
 app.get('/api/matches/today', async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
-    const r = await fetch(`${FOOTBALL_BASE}/matches?dateFrom=${today}&dateTo=${today}`, {
-      headers: { 'X-Auth-Token': FOOTBALL_KEY }
+    const r = await fetch(`${FOOTBALL_BASE}/fixtures?date=${today}`, {
+      headers: footballHeaders
     });
     const data = await r.json();
     res.json(data);
@@ -38,11 +45,12 @@ app.get('/api/matches/today', async (req, res) => {
   }
 });
 
+// Jogos por data
 app.get('/api/matches/date/:date', async (req, res) => {
   try {
     const { date } = req.params;
-    const r = await fetch(`${FOOTBALL_BASE}/matches?dateFrom=${date}&dateTo=${date}`, {
-      headers: { 'X-Auth-Token': FOOTBALL_KEY }
+    const r = await fetch(`${FOOTBALL_BASE}/fixtures?date=${date}`, {
+      headers: footballHeaders
     });
     const data = await r.json();
     res.json(data);
@@ -51,18 +59,7 @@ app.get('/api/matches/date/:date', async (req, res) => {
   }
 });
 
-app.get('/api/teams', async (req, res) => {
-  try {
-    const r = await fetch(`${FOOTBALL_BASE}/teams?limit=4`, {
-      headers: { 'X-Auth-Token': FOOTBALL_KEY }
-    });
-    const data = await r.json();
-    res.json(data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
+// Notícias
 app.get('/api/news', async (req, res) => {
   try {
     const r = await fetch(`${NEWS_BASE}/news?apikey=${NEWS_KEY}&q=football&language=en&category=sports&size=5`);
