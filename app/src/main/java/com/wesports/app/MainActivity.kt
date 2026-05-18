@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity() {
 
         webView = binding.webView
         setupWebView()
-        webView.loadUrl("https://search.brave.com/")
+        webView.loadUrl("https://wetrade-objw.onrender.com/")
     }
 
     private fun setupWebView() {
