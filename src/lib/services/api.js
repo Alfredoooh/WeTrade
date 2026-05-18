@@ -1,12 +1,13 @@
-const BASE = 'https://api.allorigins.win/get?url=';
 const API_KEY = '81e164bfa4364ff783bc397c30f39627';
+const BASE = 'https://api.football-data.org/v4';
 
 async function get(path) {
   try {
-    const target = encodeURIComponent(`https://api.football-data.org/v4${path}`);
-    const res = await fetch(`${BASE}${target}`);
-    const wrapper = await res.json();
-    return JSON.parse(wrapper.contents);
+    const res = await fetch(`${BASE}${path}`, {
+      headers: { 'X-Auth-Token': API_KEY }
+    });
+    if (!res.ok) return null;
+    return await res.json();
   } catch (e) {
     console.error('API error:', e);
     return null;

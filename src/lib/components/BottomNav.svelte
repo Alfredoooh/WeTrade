@@ -1,26 +1,32 @@
 <script>
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   
   const tabs = [
-    { href: '/', icon: '/icons/home.svg', label: 'Início' },
+    { href: '/', icon: '/icons/home.svg', label: 'Inicio' },
     { href: '/partidas', icon: '/icons/matches.svg', label: 'Partidas' },
     { href: '/favoritos', icon: '/icons/favorites.svg', label: 'Favoritos' },
     { href: '/tv', icon: '/icons/tv.svg', label: 'TV' },
   ];
   
   $: current = $page.url.pathname;
+  
+  function navigate(href) {
+    if (current === href) return;
+    goto(href);
+  }
 </script>
 
 <nav class="bottom-nav">
   {#each tabs as tab}
     {@const active = current === tab.href || (tab.href !== '/' && current.startsWith(tab.href))}
-    <a href={tab.href} class="tab pressable" class:active>
+    <button class="tab pressable" class:active on:click={() => navigate(tab.href)}>
       <div class="icon-wrap">
         <img src={tab.icon} alt={tab.label} class="tab-icon" />
         {#if active}<div class="indicator"></div>{/if}
       </div>
       <span class="label">{tab.label}</span>
-    </a>
+    </button>
   {/each}
 </nav>
 
@@ -51,6 +57,7 @@
     color: var(--fg-3);
     position: relative;
     padding-top: 8px;
+    border-radius: 0;
   }
 
   .tab.active { color: var(--primary); }
@@ -69,7 +76,6 @@
     height: 22px;
     opacity: 0.5;
     transition: opacity 0.15s;
-    filter: none;
   }
 
   @media (prefers-color-scheme: dark) {
