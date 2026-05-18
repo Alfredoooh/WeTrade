@@ -11,7 +11,8 @@
   
   $: current = $page.url.pathname;
   
-  function navigate(href) {
+  function navigate(e, href) {
+    e.preventDefault();
     if (current === href) return;
     goto(href);
   }
@@ -20,13 +21,13 @@
 <nav class="bottom-nav">
   {#each tabs as tab}
     {@const active = current === tab.href || (tab.href !== '/' && current.startsWith(tab.href))}
-    <button class="tab pressable" class:active on:click={() => navigate(tab.href)}>
+    <a href={tab.href} class="tab" class:active on:click={e => navigate(e, tab.href)}>
       <div class="icon-wrap">
         <img src={tab.icon} alt={tab.label} class="tab-icon" />
         {#if active}<div class="indicator"></div>{/if}
       </div>
       <span class="label">{tab.label}</span>
-    </button>
+    </a>
   {/each}
 </nav>
 
@@ -57,7 +58,7 @@
     color: var(--fg-3);
     position: relative;
     padding-top: 8px;
-    border-radius: 0;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .tab.active { color: var(--primary); }

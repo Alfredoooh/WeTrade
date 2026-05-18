@@ -6,14 +6,13 @@
   export let showBack = false;
   export let showSearch = true;
   export let showNotif = true;
-  export let transparent = false;
   
   function goBack() {
     history.back();
   }
 </script>
 
-<header class="appbar" class:transparent>
+<header class="appbar">
   <div class="left">
     {#if showBack}
       <button class="icon-btn pressable" on:click={goBack}>
@@ -29,10 +28,7 @@
   {#if title}
     <h1 class="title">{title}</h1>
   {:else}
-    <div class="logo">
-      <span class="logo-icon">⚽</span>
-      <span class="logo-text">GoalZone</span>
-    </div>
+    <span class="logo">WeSports</span>
   {/if}
 
   <div class="right">
@@ -43,7 +39,7 @@
     {/if}
     {#if showNotif}
       <button class="icon-btn pressable notif-wrap" on:click={() => goto('/notificacoes')}>
-        <img src="/icons/notifications.svg" alt="notificações" />
+        <img src="/icons/notifications.svg" alt="notificacoes" />
         <span class="notif-dot"></span>
       </button>
     {/if}
@@ -64,13 +60,6 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .appbar.transparent {
-    background: transparent;
-    border-bottom: none;
-    position: absolute;
-    width: 100%;
-  }
-
   .left, .right {
     display: flex;
     align-items: center;
@@ -89,26 +78,14 @@
     justify-content: center;
   }
 
-  .icon-btn img {
-    width: 22px;
-    height: 22px;
-    filter: var(--icon-filter, none);
-  }
+  .icon-btn img { width: 22px; height: 22px; }
 
   @media (prefers-color-scheme: dark) {
     .icon-btn img { filter: invert(1); }
   }
 
   .logo {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .logo-icon { font-size: 1.2rem; }
-
-  .logo-text {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 800;
     color: var(--primary);
     letter-spacing: -0.03em;
