@@ -3,7 +3,7 @@ const fetch = require('node-fetch');
 const cors = require('cors');
 const app = express();
 
-const FOOTBALL_KEY = '9aa85892f684f5b1f85a721e6d625df4be9065447047e065f42c211658c7cd7d';
+const FOOTBALL_KEY = '79816a0c124c78b025aea3b79a8bb5dd';
 const FOOTBALL_BASE = 'https://v3.football.api-sports.io';
 const NEWS_KEY = 'pub_7d7d1ac2f86b4bc6b4662fd5d6dad47c';
 const NEWS_BASE = 'https://newsdata.io/api/1';
