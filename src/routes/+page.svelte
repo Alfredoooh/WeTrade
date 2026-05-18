@@ -1,21 +1,22 @@
 <script>
   import { onMount } from 'svelte';
   import AppBar from '$lib/components/AppBar.svelte';
-  import MatchCard from '$lib/components/MatchCard.svelte';
   import Loader from '$lib/components/Loader.svelte';
-  import { getLiveMatches, getTodayMatches, COMPETITIONS } from '$lib/services/api.js';
+  import { getLiveMatches, getTodayMatches } from '$lib/services/api.js';
+  import { getFootballNews } from '$lib/services/news.js';
   import { favorites } from '$lib/stores/app.js';
   import { goto } from '$app/navigation';
 
   let liveMatches = [];
   let todayMatches = [];
+  let news = [];
   let loading = true;
 
   const today = new Date();
-  let selectedDay = today.getDay() === 0 ? 6 : today.getDay() - 1;
+  let selectedDay = 0;
 
   function buildWeek() {
-    const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+    const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'];
     const result = [];
     const base = new Date(today);
     const dow = today.getDay();
@@ -34,29 +35,28 @@
   const todayIdx = week.findIndex(d => d.isToday);
   $: if (todayIdx >= 0) selectedDay = todayIdx;
 
-  const highlights = [
-    { id: 'h1', team: 'Liverpool', desc: "Salah's stunning goal vs. Manchester United", color: '#C8102E' },
-    { id: 'h2', team: 'R. Madrid', desc: 'Courtois proves he is a world champion', color: '#00529F' },
-    { id: 'h3', team: 'Barcelona', desc: 'Lamine Yamal hat-trick vs Atletico', color: '#A50044' },
-  ];
-
   onMount(async () => {
-    const [live, today2] = await Promise.all([getLiveMatches(), getTodayMatches()]);
+    const [live, tod, n] = await Promise.all([
+      getLiveMatches(),
+      getTodayMatches(),
+      getFootballNews()
+    ]);
     liveMatches = live?.matches || [];
-    todayMatches = today2?.matches || [];
+    todayMatches = tod?.matches || [];
+    news = n;
     loading = false;
   });
 
   $: favTeams = $favorites?.teams || [];
+  $: displayMatches = liveMatches.length > 0 ? liveMatches : todayMatches;
 </script>
 
 <AppBar />
 
 <div class="page">
 
-  <!-- Date strip -->
   <div class="date-strip">
-    <button class="cal-btn pressable" aria-label="Calendário">
+    <button class="cal-btn pressable" on:click={() => goto('/calendario')}>
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
       </svg>
@@ -72,33 +72,10 @@
     </div>
   </div>
 
-  <!-- Match Highlights -->
-  <section class="section">
-    <div class="section-header">
-      <h2>Match Highlights</h2>
-      <button class="see-all pressable">View All</button>
-    </div>
-    <div class="highlights-scroll">
-      {#each highlights as h}
-        <button class="highlight-card pressable" style="--hc: {h.color}">
-          <div class="hc-overlay"></div>
-          <div class="hc-badge">
-            <div class="hc-logo" style="background:{h.color}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="10"/></svg>
-            </div>
-            <span class="hc-team">{h.team}</span>
-          </div>
-          <p class="hc-desc">{h.desc}</p>
-        </button>
-      {/each}
-    </div>
-  </section>
-
-  <!-- Favourites -->
   {#if favTeams.length > 0}
     <section class="section fav-section">
       <div class="section-header">
-        <h2>Favourites</h2>
+        <h2>Favoritos</h2>
       </div>
       <div class="fav-row">
         {#each favTeams.slice(0, 4) as team}
@@ -117,17 +94,18 @@
     </section>
   {/if}
 
-  <!-- Live Matches -->
   <section class="section">
     <div class="section-header">
-      <h2>Live Matches</h2>
-      <button class="see-all pressable" on:click={() => goto('/partidas')}>View All</button>
+      <h2>{liveMatches.length > 0 ? 'Ao Vivo' : 'Jogos de Hoje'}</h2>
+      <button class="see-all pressable" on:click={() => goto('/partidas')}>Ver tudo</button>
     </div>
     {#if loading}
       <Loader />
-    {:else if liveMatches.length === 0}
+    {:else if displayMatches.length === 0}
+      <p class="empty-msg">Sem jogos de momento</p>
+    {:else}
       <div class="live-scroll">
-        {#each todayMatches.slice(0, 4) as match}
+        {#each displayMatches.slice(0, 6) as match}
           <button class="live-card pressable" on:click={() => goto(`/jogos/${match.id}`)}>
             <div class="lc-top">
               {#if match.status === 'IN_PLAY' || match.status === 'PAUSED'}
@@ -140,6 +118,8 @@
             <div class="lc-teams">
               {#if match.homeTeam?.crest}
                 <img src={match.homeTeam.crest} alt="" class="lc-crest" on:error={e => e.target.style.display='none'} />
+              {:else}
+                <div class="lc-crest-fallback"></div>
               {/if}
               <div class="lc-score">
                 <span>{match.score?.fullTime?.home ?? '-'}</span>
@@ -148,31 +128,8 @@
               </div>
               {#if match.awayTeam?.crest}
                 <img src={match.awayTeam.crest} alt="" class="lc-crest" on:error={e => e.target.style.display='none'} />
-              {/if}
-            </div>
-            <p class="lc-label">{match.homeTeam?.shortName ?? ''} vs {match.awayTeam?.shortName ?? ''}</p>
-          </button>
-        {/each}
-      </div>
-    {:else}
-      <div class="live-scroll">
-        {#each liveMatches.slice(0, 4) as match}
-          <button class="live-card pressable" on:click={() => goto(`/jogos/${match.id}`)}>
-            <div class="lc-top">
-              <span class="lc-live-tag">Live</span>
-              <span class="lc-min">{match.minute ?? ''}'</span>
-            </div>
-            <div class="lc-teams">
-              {#if match.homeTeam?.crest}
-                <img src={match.homeTeam.crest} alt="" class="lc-crest" on:error={e => e.target.style.display='none'} />
-              {/if}
-              <div class="lc-score">
-                <span>{match.score?.fullTime?.home ?? '-'}</span>
-                <span class="lc-sep">:</span>
-                <span>{match.score?.fullTime?.away ?? '-'}</span>
-              </div>
-              {#if match.awayTeam?.crest}
-                <img src={match.awayTeam.crest} alt="" class="lc-crest" on:error={e => e.target.style.display='none'} />
+              {:else}
+                <div class="lc-crest-fallback"></div>
               {/if}
             </div>
             <p class="lc-label">{match.homeTeam?.shortName ?? ''} vs {match.awayTeam?.shortName ?? ''}</p>
@@ -182,12 +139,35 @@
     {/if}
   </section>
 
+  <section class="section">
+    <div class="section-header">
+      <h2>Noticias</h2>
+      <button class="see-all pressable" on:click={() => goto('/noticias')}>Ver tudo</button>
+    </div>
+    {#if news.length === 0}
+      <p class="empty-msg">A carregar noticias...</p>
+    {:else}
+      {#each news.slice(0, 5) as item}
+        <a href={item.link} target="_blank" rel="noreferrer" class="news-item pressable">
+          {#if item.image_url}
+            <img src={item.image_url} alt="" class="news-thumb" on:error={e => e.target.style.display='none'} />
+          {:else}
+            <div class="news-thumb-fallback"></div>
+          {/if}
+          <div class="news-info">
+            <p class="news-title">{item.title}</p>
+            <p class="news-meta">{item.source_id} · {item.pubDate ? new Date(item.pubDate).toLocaleDateString('pt-PT') : ''}</p>
+          </div>
+        </a>
+      {/each}
+    {/if}
+  </section>
+
 </div>
 
 <style>
   .page { padding-bottom: 8px; }
 
-  /* Date strip */
   .date-strip {
     display: flex;
     align-items: center;
@@ -196,18 +176,9 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .cal-btn {
-    color: var(--fg-2);
-    flex-shrink: 0;
-    padding: 4px;
-  }
+  .cal-btn { color: var(--fg-2); flex-shrink: 0; padding: 4px; }
 
-  .days-scroll {
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-    flex: 1;
-  }
+  .days-scroll { display: flex; gap: 4px; overflow-x: auto; flex: 1; }
 
   .day-btn {
     display: flex;
@@ -221,9 +192,7 @@
     transition: background 0.15s;
   }
 
-  .day-btn.active {
-    background: var(--fg);
-  }
+  .day-btn.active { background: var(--fg); }
 
   .day-label {
     font-size: 0.65rem;
@@ -235,11 +204,7 @@
 
   .day-btn.active .day-label { color: var(--bg); }
 
-  .day-num {
-    font-size: 0.9rem;
-    font-weight: 800;
-    color: var(--fg);
-  }
+  .day-num { font-size: 0.9rem; font-weight: 800; color: var(--fg); }
 
   .day-btn.active .day-num { color: var(--bg); }
 
@@ -252,7 +217,6 @@
     bottom: 4px;
   }
 
-  /* Sections */
   .section { margin-bottom: 4px; }
 
   .section-header {
@@ -266,76 +230,9 @@
 
   .see-all { font-size: 0.8125rem; font-weight: 600; color: var(--primary); }
 
-  /* Highlights */
-  .highlights-scroll {
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    padding: 0 16px 16px;
-  }
-
-  .highlight-card {
-    position: relative;
-    width: 180px;
-    height: 140px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, var(--hc), #111);
-    flex-shrink: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 12px;
-    text-align: left;
-  }
-
-  .hc-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%);
-  }
-
-  .hc-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    position: relative;
-    z-index: 1;
-    margin-bottom: 4px;
-  }
-
-  .hc-logo {
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .hc-team {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: white;
-  }
-
-  .hc-desc {
-    font-size: 0.7rem;
-    font-weight: 500;
-    color: rgba(255,255,255,0.85);
-    line-height: 1.3;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Favourites */
   .fav-section { border-bottom: 1px solid var(--border); }
 
-  .fav-row {
-    display: flex;
-    gap: 10px;
-    padding: 4px 16px 16px;
-  }
+  .fav-row { display: flex; gap: 10px; padding: 4px 16px 16px; }
 
   .fav-pill {
     width: 52px;
@@ -350,22 +247,11 @@
 
   .fav-crest { width: 32px; height: 32px; object-fit: contain; }
 
-  .fav-crest-fallback {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--bg-3);
-  }
+  .fav-crest-fallback { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-3); }
 
   .fav-add { color: var(--fg-3); }
 
-  /* Live cards */
-  .live-scroll {
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    padding: 0 16px 16px;
-  }
+  .live-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 0 16px 16px; }
 
   .live-card {
     flex-shrink: 0;
@@ -379,13 +265,9 @@
     text-align: left;
   }
 
-  .live-card:nth-child(even) { background: #c0392b; }
+  .live-card:nth-child(even) { background: #0a3fa8; }
 
-  .lc-top {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
+  .lc-top { display: flex; align-items: center; gap: 6px; }
 
   .lc-live-tag {
     font-size: 0.6rem;
@@ -408,11 +290,7 @@
     display: inline-block;
   }
 
-  .lc-min, .lc-time {
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: rgba(255,255,255,0.7);
-  }
+  .lc-min, .lc-time { font-size: 0.7rem; font-weight: 700; color: rgba(255,255,255,0.7); }
 
   .lc-teams {
     display: flex;
@@ -422,6 +300,8 @@
   }
 
   .lc-crest { width: 36px; height: 36px; object-fit: contain; }
+
+  .lc-crest-fallback { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.15); }
 
   .lc-score {
     display: flex;
@@ -442,4 +322,33 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  .news-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .news-thumb { width: 72px; height: 72px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+
+  .news-thumb-fallback { width: 72px; height: 72px; border-radius: 10px; background: var(--bg-3); flex-shrink: 0; }
+
+  .news-info { flex: 1; min-width: 0; }
+
+  .news-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--fg);
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .news-meta { font-size: 0.72rem; color: var(--fg-3); margin-top: 4px; }
+
+  .empty-msg { font-size: 0.875rem; color: var(--fg-3); padding: 16px; text-align: center; }
 </style>

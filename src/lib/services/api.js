@@ -1,37 +1,31 @@
-// football-data.org free tier API
-// Get your free key at https://www.football-data.org/client/register
+const BASE = 'https://api.allorigins.win/get?url=';
 const API_KEY = '81e164bfa4364ff783bc397c30f39627';
-const BASE = 'https://api.football-data.org/v4';
-
-const headers = {
-  'X-Auth-Token': API_KEY
-};
 
 async function get(path) {
   try {
-    const res = await fetch(`${BASE}${path}`, { headers });
-    if (!res.ok) throw new Error(`API error ${res.status}`);
-    return await res.json();
+    const target = encodeURIComponent(`https://api.football-data.org/v4${path}`);
+    const res = await fetch(`${BASE}${target}`);
+    const wrapper = await res.json();
+    return JSON.parse(wrapper.contents);
   } catch (e) {
     console.error('API error:', e);
     return null;
   }
 }
 
-// Competitions available on free tier
 export const COMPETITIONS = {
-  CL: { id: 'CL', name: 'Champions League', flag: '🏆' },
-  PL: { id: 'PL', name: 'Premier League', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  PD: { id: 'PD', name: 'La Liga', flag: '🇪🇸' },
-  BL1: { id: 'BL1', name: 'Bundesliga', flag: '🇩🇪' },
-  SA: { id: 'SA', name: 'Serie A', flag: '🇮🇹' },
-  FL1: { id: 'FL1', name: 'Ligue 1', flag: '🇫🇷' },
-  PPL: { id: 'PPL', name: 'Liga Portugal', flag: '🇵🇹' },
-  DED: { id: 'DED', name: 'Eredivisie', flag: '🇳🇱' },
-  BSA: { id: 'BSA', name: 'Brasileirão', flag: '🇧🇷' },
-  ELC: { id: 'ELC', name: 'Championship', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  EC: { id: 'EC', name: 'Europeu', flag: '🌍' },
-  WC: { id: 'WC', name: 'Mundial FIFA', flag: '🌍' },
+  CL: { id: 'CL', name: 'Champions League' },
+  PL: { id: 'PL', name: 'Premier League' },
+  PD: { id: 'PD', name: 'La Liga' },
+  BL1: { id: 'BL1', name: 'Bundesliga' },
+  SA: { id: 'SA', name: 'Serie A' },
+  FL1: { id: 'FL1', name: 'Ligue 1' },
+  PPL: { id: 'PPL', name: 'Liga Portugal' },
+  DED: { id: 'DED', name: 'Eredivisie' },
+  BSA: { id: 'BSA', name: 'Brasileirao' },
+  ELC: { id: 'ELC', name: 'Championship' },
+  EC: { id: 'EC', name: 'Europeu' },
+  WC: { id: 'WC', name: 'Mundial FIFA' },
 };
 
 export async function getMatches(competitionId, dateFrom, dateTo) {
@@ -43,10 +37,6 @@ export async function getMatches(competitionId, dateFrom, dateTo) {
 
 export async function getStandings(competitionId) {
   return get(`/competitions/${competitionId}/standings`);
-}
-
-export async function getCompetition(competitionId) {
-  return get(`/competitions/${competitionId}`);
 }
 
 export async function getTeam(teamId) {
@@ -74,29 +64,14 @@ export async function getTopScorers(competitionId) {
   return get(`/competitions/${competitionId}/scorers?limit=20`);
 }
 
-export async function searchTeams(query) {
-  // football-data.org doesn't have search — filter from known competitions
-  return null;
-}
-
-// Format date helper
 export function formatDate(dateStr) {
   if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return new Date(dateStr).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 export function formatTime(dateStr) {
   if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-}
-
-export function formatMinute(match) {
-  if (match.status === 'LIVE' && match.minute) return `${match.minute}'`;
-  if (match.status === 'HALFTIME') return 'Int.';
-  if (match.status === 'FINISHED') return 'FT';
-  return formatTime(match.utcDate);
+  return new Date(dateStr).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
 }
 
 export function getScore(match) {
