@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">wesports</string>
-    <string name="notification_channel_name">wesports</string>
-    <string name="notification_channel_desc">MantÃÂ©m o wesports activo em segundo plano</string>
+    <string name="app_name">WeSports VPN</string>
+    <string name="notification_channel_name">WeSports VPN</string>
+    <string name="notification_channel_desc">Mantém o WeSports VPN activo em segundo plano</string>
 </resources>
