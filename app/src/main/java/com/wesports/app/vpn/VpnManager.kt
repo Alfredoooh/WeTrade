@@ -3,13 +3,28 @@ package com.wesports.app.vpn
 import android.content.Context
 import android.content.Intent
 import com.wesports.app.model.Server
+import com.wesports.app.model.Tweak
 
 object VpnManager {
+
+    fun connectWithTweak(context: Context, server: Server, tweak: Tweak) {
+        val intent = Intent(context, AppVpnService::class.java).apply {
+            action = AppVpnService.ACTION_CONNECT
+            putExtra(AppVpnService.EXTRA_SERVER_IP, server.ip)
+            putExtra(AppVpnService.EXTRA_SERVER_PORT, 443)
+            putExtra(AppVpnService.EXTRA_MODE, tweak.mode)
+            putExtra(AppVpnService.EXTRA_SNI, tweak.sni)
+        }
+        context.startService(intent)
+    }
 
     fun connect(context: Context, server: Server) {
         val intent = Intent(context, AppVpnService::class.java).apply {
             action = AppVpnService.ACTION_CONNECT
             putExtra(AppVpnService.EXTRA_SERVER_IP, server.ip)
+            putExtra(AppVpnService.EXTRA_SERVER_PORT, 443)
+            putExtra(AppVpnService.EXTRA_MODE, "SSL")
+            putExtra(AppVpnService.EXTRA_SNI, "free.facebook.com")
         }
         context.startService(intent)
     }

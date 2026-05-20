@@ -6,6 +6,7 @@ data class Tweak(
     val message: String,
     val mode: String,
     val type: String,
+    val sni: String = "",
     val expirationDate: Boolean,
     val hwid: Boolean,
     val passwordLock: Boolean,

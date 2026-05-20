@@ -1,142 +1,178 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="24dp"
-    android:background="#FFFFFF">
+    android:layout_height="wrap_content">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Add Tweak"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="#111111"
-        android:layout_marginBottom="20dp" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Tweak Name"
-        android:textSize="13sp"
-        android:textColor="#111111" />
-
-    <EditText
-        android:id="@+id/etName"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@null"
-        android:inputType="text"
-        android:layout_marginBottom="16dp" />
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:background="#FFFFFF">
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#DDDDDD"
-        android:layout_marginBottom="16dp" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add Tweak"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#111111"
+            android:layout_marginBottom="20dp" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Tweak Message"
-        android:textSize="13sp"
-        android:textColor="#111111" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tweak Name"
+            android:textSize="13sp"
+            android:textColor="#111111" />
 
-    <EditText
-        android:id="@+id/etMessage"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@null"
-        android:hint="Optional"
-        android:inputType="text"
-        android:layout_marginBottom="16dp" />
+        <EditText
+            android:id="@+id/etName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@null"
+            android:inputType="text"
+            android:layout_marginBottom="4dp" />
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#DDDDDD"
-        android:layout_marginBottom="16dp" />
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#DDDDDD"
+            android:layout_marginBottom="16dp" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Tweak Mode"
-        android:textSize="13sp"
-        android:textColor="#111111" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tweak Message"
+            android:textSize="13sp"
+            android:textColor="#111111" />
 
-    <Spinner
-        android:id="@+id/spinnerMode"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginBottom="16dp" />
+        <EditText
+            android:id="@+id/etMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@null"
+            android:hint="Optional"
+            android:inputType="text"
+            android:layout_marginBottom="4dp" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Tweak Type"
-        android:textSize="13sp"
-        android:textColor="#111111" />
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#DDDDDD"
+            android:layout_marginBottom="16dp" />
 
-    <Spinner
-        android:id="@+id/spinnerType"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginBottom="16dp" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tweak Mode"
+            android:textSize="13sp"
+            android:textColor="#111111" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Extras"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        android:textColor="#111111"
-        android:layout_marginBottom="8dp" />
+        <Spinner
+            android:id="@+id/spinnerMode"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="16dp" />
 
-    <CheckBox
-        android:id="@+id/cbExpiration"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Set Expiration Date"
-        android:textColor="#111111" />
+        <LinearLayout
+            android:id="@+id/layoutSni"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
 
-    <CheckBox
-        android:id="@+id/cbHwid"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="HWID Lock"
-        android:textColor="#111111" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SNI"
+                android:textSize="13sp"
+                android:textColor="#111111" />
 
-    <CheckBox
-        android:id="@+id/cbPassword"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Password Lock"
-        android:textColor="#111111" />
+            <EditText
+                android:id="@+id/etSni"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@null"
+                android:hint="ex: free.facebook.com"
+                android:inputType="textUri"
+                android:layout_marginBottom="4dp" />
 
-    <CheckBox
-        android:id="@+id/cbMobileData"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Mobile Data Only"
-        android:textColor="#111111" />
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#DDDDDD"
+                android:layout_marginBottom="16dp" />
 
-    <CheckBox
-        android:id="@+id/cbBlockRooted"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Block Rooted Devices"
-        android:textColor="#111111"
-        android:layout_marginBottom="24dp" />
+        </LinearLayout>
 
-    <Button
-        android:id="@+id/btnSave"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:text="SAVE"
-        android:textColor="#FFFFFF"
-        android:textSize="15sp"
-        android:backgroundTint="#111111"
-        android:stateListAnimator="@null" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tweak Type"
+            android:textSize="13sp"
+            android:textColor="#111111" />
 
-</LinearLayout>
+        <Spinner
+            android:id="@+id/spinnerType"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Extras"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="#111111"
+            android:layout_marginBottom="8dp" />
+
+        <CheckBox
+            android:id="@+id/cbExpiration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Set Expiration Date"
+            android:textColor="#111111" />
+
+        <CheckBox
+            android:id="@+id/cbHwid"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="HWID Lock"
+            android:textColor="#111111" />
+
+        <CheckBox
+            android:id="@+id/cbPassword"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Password Lock"
+            android:textColor="#111111" />
+
+        <CheckBox
+            android:id="@+id/cbMobileData"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mobile Data Only"
+            android:textColor="#111111" />
+
+        <CheckBox
+            android:id="@+id/cbBlockRooted"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Block Rooted Devices"
+            android:textColor="#111111"
+            android:layout_marginBottom="24dp" />
+
+        <Button
+            android:id="@+id/btnSave"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="SAVE"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:backgroundTint="#111111"
+            android:stateListAnimator="@null" />
+
+    </LinearLayout>
+</ScrollView>
