@@ -5,5 +5,7 @@ data class Server(
     val country: String,
     val ping: String,
     val speed: String,
-    val ovpn: String
+    val ovpn: String,
+    val port: Int = 443,
+    val type: String = "SSL"
 )
