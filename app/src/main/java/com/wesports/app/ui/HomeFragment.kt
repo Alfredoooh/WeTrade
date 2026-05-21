@@ -1,134 +1,98 @@
 package com.wesports.app.ui
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.wesports.app.MainActivity
-import com.wesports.app.R
-import com.wesports.app.databinding.FragmentServersBinding
-import com.wesports.app.model.Server
+import com.wesports.app.databinding.FragmentHomeBinding
+import com.wesports.app.model.Tweak
+import com.wesports.app.vpn.AppVpnService
 import com.wesports.app.vpn.VpnManager
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
-class ServersFragment : Fragment() {
+class HomeFragment : Fragment() {
 
-    private var _binding: FragmentServersBinding? = null
+    private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
-    private val servers = mutableListOf<Server>()
-    private lateinit var adapter: ServerAdapter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentServersBinding.inflate(inflater, container, false)
+        _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        updateUI()
 
-        adapter = ServerAdapter(servers) { server ->
-            val activity = activity as? MainActivity ?: return@ServerAdapter
-            activity.selectedServer = server
-            activity.requestVpnPermission {
-                VpnManager.connect(requireContext(), server)
-                Toast.makeText(requireContext(), "A conectar a ${server.ip}...", Toast.LENGTH_SHORT).show()
-                activity.binding.bottomNav.selectedItemId = R.id.nav_home
+        AppVpnService.onStatusChanged = {
+            activity?.runOnUiThread { if (_binding != null) updateUI() }
+        }
+
+        AppVpnService.onLogMessage = { msg ->
+            activity?.runOnUiThread {
+                if (_binding != null) {
+                    binding.tvLogs.append("\n$msg")
+                    binding.scrollLogs.post { binding.scrollLogs.fullScroll(View.FOCUS_DOWN) }
+                }
             }
         }
 
-        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        binding.recyclerView.adapter = adapter
-
-        if (servers.isEmpty()) loadServers()
+        binding.btnConnect.setOnClickListener {
+            if (VpnManager.isConnected()) {
+                VpnManager.disconnect(requireContext())
+            } else {
+                val activity = activity as? MainActivity ?: return@setOnClickListener
+                val server = activity.selectedServer
+                if (server == null) {
+                    binding.tvLogs.append("\nSeleciona um servidor primeiro em Servidores")
+                    return@setOnClickListener
+                }
+                val tweak = loadFirstTweak()
+                activity.requestVpnPermission {
+                    if (tweak != null) {
+                        VpnManager.connectWithTweak(requireContext(), server, tweak)
+                    } else {
+                        VpnManager.connect(requireContext(), server)
+                    }
+                }
+            }
+        }
     }
 
-    private fun loadServers() {
-        if (_binding == null) return
-        binding.progressBar.visibility = View.VISIBLE
+    private fun loadFirstTweak(): Tweak? {
+        return try {
+            val prefs = requireContext().getSharedPreferences("tweaks", Context.MODE_PRIVATE)
+            val json = prefs.getString("list", "[]") ?: "[]"
+            val type = object : TypeToken<List<Tweak>>() {}.type
+            val list: List<Tweak> = Gson().fromJson(json, type)
+            list.firstOrNull()
+        } catch (e: Exception) { null }
+    }
 
-        lifecycleScope.launch {
-            try {
-                val result = withContext(Dispatchers.IO) {
-                    val client = OkHttpClient.Builder()
-                        .connectTimeout(15, TimeUnit.SECONDS)
-                        .readTimeout(15, TimeUnit.SECONDS)
-                        .build()
-                    val request = Request.Builder()
-                        .url("https://registrovpn.onrender.com/servers")
-                        .build()
-                    client.newCall(request).execute().body?.string()
-                }
-                if (_binding == null) return@launch
-                result?.let {
-                    val json = JSONObject(it)
-                    val array = json.getJSONArray("servers")
-                    servers.clear()
-                    for (i in 0 until array.length()) {
-                        val obj = array.getJSONObject(i)
-                        servers.add(Server(
-                            ip = obj.optString("ip", "-"),
-                            country = obj.optString("country", "-"),
-                            ping = obj.optInt("ping", 0).toString() + " ms",
-                            speed = obj.optString("type", "SSL"),
-                            ovpn = "",
-                            port = obj.optInt("port", 443),
-                            type = obj.optString("type", "SSL")
-                        ))
-                    }
-                    adapter.notifyDataSetChanged()
-                }
-            } catch (e: Exception) {
-                if (_binding == null) return@launch
-                Toast.makeText(requireContext(), "Erro ao carregar servidores", Toast.LENGTH_SHORT).show()
-            } finally {
-                if (_binding != null) binding.progressBar.visibility = View.GONE
-            }
+    private fun updateUI() {
+        if (!isAdded || _binding == null) return
+        val server = (activity as? MainActivity)?.selectedServer
+        if (VpnManager.isConnected()) {
+            binding.tvStatus.text = "Conectado"
+            binding.tvStatus.setTextColor(android.graphics.Color.parseColor("#1a7a1a"))
+            binding.btnConnect.text = "Desconectar"
+            binding.btnConnect.setBackgroundColor(android.graphics.Color.parseColor("#CC0000"))
+        } else {
+            binding.tvStatus.text = if (server != null) "Servidor: ${server.ip}" else "Seleciona um servidor"
+            binding.tvStatus.setTextColor(android.graphics.Color.parseColor("#888888"))
+            binding.btnConnect.text = "Conectar"
+            binding.btnConnect.setBackgroundColor(android.graphics.Color.parseColor("#111111"))
         }
     }
 
     override fun onDestroyView() {
+        AppVpnService.onStatusChanged = null
+        AppVpnService.onLogMessage = null
         super.onDestroyView()
         _binding = null
     }
-}
-
-class ServerAdapter(
-    private val servers: List<Server>,
-    private val onConnect: (Server) -> Unit
-) : RecyclerView.Adapter<ServerAdapter.VH>() {
-
-    inner class VH(view: View) : RecyclerView.ViewHolder(view) {
-        val tvIp: TextView = view.findViewById(R.id.tvIp)
-        val tvCountry: TextView = view.findViewById(R.id.tvCountry)
-        val tvPing: TextView = view.findViewById(R.id.tvPing)
-        val tvSpeed: TextView = view.findViewById(R.id.tvSpeed)
-        val btnConnect: Button = view.findViewById(R.id.btnConnect)
-    }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH =
-        VH(LayoutInflater.from(parent.context).inflate(R.layout.item_server, parent, false))
-
-    override fun onBindViewHolder(holder: VH, position: Int) {
-        val s = servers[position]
-        holder.tvIp.text = s.ip
-        holder.tvCountry.text = s.country
-        holder.tvPing.text = s.ping
-        holder.tvSpeed.text = s.type
-        holder.btnConnect.setOnClickListener { onConnect(s) }
-    }
-
-    override fun getItemCount() = servers.size
 }
