@@ -34,6 +34,7 @@
         android:background="#FFFFFF"
         app:itemIconTint="@null"
         app:itemTextColor="#007AFF"
+        app:itemActiveIndicatorColor="@color/bottom_nav_item_background"
         app:labelVisibilityMode="labeled"
         app:menu="@menu/bottom_nav_menu" />
 
