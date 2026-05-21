@@ -3,7 +3,7 @@
 | Campo | Valor |
 |-------|-------|
 | Package | `com.wilin.app` |
-| VersÃÂ£o | 1.0 (1) |
+| Versão | 1.0 (1) |
 | Min SDK | API 21 |
 | Target SDK | API 35 |
 
