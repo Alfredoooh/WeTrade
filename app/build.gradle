@@ -8,9 +8,9 @@ compileSdk 35
 
 signingConfigs {
 release {
-storeFile file("webtrade_release.keystore")
+storeFile file("wilin_release.keystore")
 storePassword "@jonas00"
-keyAlias "wesports_key"
+keyAlias "wilin_key"
 keyPassword "@jonas00"
 }
 }
