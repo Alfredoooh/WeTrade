@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 
 android {
-namespace 'com.wesports.app'
+namespace 'com.wilin.app'
 compileSdk 35
 
 signingConfigs {
@@ -16,7 +16,7 @@ keyPassword "@jonas00"
 }
 
 defaultConfig {
-applicationId "com.wesports.app"
+applicationId "com.wilin.app"
 minSdk 21
 targetSdk 35
 versionCode 1
