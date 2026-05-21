@@ -15,9 +15,6 @@ import kotlinx.coroutines.*
 import java.io.*
 import java.net.InetSocketAddress
 import java.net.Socket
-import java.nio.ByteBuffer
-import java.nio.channels.DatagramChannel
-import java.nio.channels.Selector
 import javax.net.ssl.*
 
 class AppVpnService : VpnService() {
@@ -25,14 +22,14 @@ class AppVpnService : VpnService() {
     private var vpnInterface: ParcelFileDescriptor? = null
     private var serviceJob: Job? = null
     private var tunnelSocket: Socket? = null
-    private var currentIp = ""
-    private var currentPort = 443
-    private var currentMode = "SSL"
-    private var currentSni = "free.facebook.com"
+
+    private var currentIp      = ""
+    private var currentPort    = 443
+    private var currentMode    = "SSL"
+    private var currentSni     = "free.facebook.com"
     private var currentPayload = ""
+
     private var reconnectAttempts = 0
-    private val maxReconnectDelay = 30_000L
-    private val baseReconnectDelay = 3_000L
 
     companion object {
         const val ACTION_CONNECT    = "com.wesports.app.VPN_CONNECT"
@@ -46,14 +43,10 @@ class AppVpnService : VpnService() {
         const val NOTIF_ID          = 1
         const val CHANNEL_ID        = "vpn_channel"
 
-        @Volatile var isConnected = false
+        @Volatile var isConnected    = false
         @Volatile var onStatusChanged: ((Boolean) -> Unit)? = null
-        @Volatile var onLogMessage: ((String) -> Unit)? = null
+        @Volatile var onLogMessage:    ((String)  -> Unit)? = null
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Lifecycle
-    // ─────────────────────────────────────────────────────────────────────────
 
     override fun onCreate() {
         super.onCreate()
@@ -61,85 +54,76 @@ class AppVpnService : VpnService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        return try {
-            when (intent?.action) {
-                ACTION_CONNECT -> {
-                    currentIp      = intent.getStringExtra(EXTRA_SERVER_IP) ?: ""
-                    currentPort    = intent.getIntExtra(EXTRA_SERVER_PORT, 443)
-                    currentMode    = intent.getStringExtra(EXTRA_MODE) ?: "SSL"
-                    currentSni     = intent.getStringExtra(EXTRA_SNI)?.ifEmpty { "free.facebook.com" } ?: "free.facebook.com"
-                    currentPayload = intent.getStringExtra(EXTRA_PAYLOAD) ?: ""
+        return when (intent?.action) {
+            ACTION_CONNECT -> {
+                currentIp      = intent.getStringExtra(EXTRA_SERVER_IP)   ?: ""
+                currentPort    = intent.getIntExtra(EXTRA_SERVER_PORT, 443)
+                currentMode    = intent.getStringExtra(EXTRA_MODE)        ?: "SSL"
+                currentSni     = intent.getStringExtra(EXTRA_SNI)?.ifEmpty { "free.facebook.com" } ?: "free.facebook.com"
+                currentPayload = intent.getStringExtra(EXTRA_PAYLOAD)     ?: ""
 
-                    if (currentIp.isEmpty()) {
-                        log("IP inválido — abortar")
-                        START_NOT_STICKY
-                    } else {
-                        startForeground(NOTIF_ID, buildNotification("A conectar…"))
-                        reconnectAttempts = 0
-                        launchTunnel()
-                        START_STICKY
-                    }
-                }
-                ACTION_DISCONNECT -> {
-                    stopTunnel()
+                if (currentIp.isEmpty()) {
+                    log("IP vazio — abortar")
                     START_NOT_STICKY
+                } else {
+                    startForeground(NOTIF_ID, buildNotification("A conectar a $currentIp…"))
+                    reconnectAttempts = 0
+                    startTunnelLoop()
+                    START_STICKY
                 }
-                else -> START_NOT_STICKY
             }
-        } catch (e: Exception) {
-            log("onStartCommand erro: ${e.message}")
-            START_NOT_STICKY
+            ACTION_DISCONNECT -> {
+                stopEverything()
+                START_NOT_STICKY
+            }
+            else -> START_NOT_STICKY
         }
     }
 
-    override fun onDestroy() { stopTunnel(); super.onDestroy() }
-    override fun onRevoke()  { stopTunnel(); super.onRevoke() }
+    // ─── Loop principal com reconexão exponencial ───────────────────────────
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Tunnel principal
-    // ─────────────────────────────────────────────────────────────────────────
-
-    private fun launchTunnel() {
+    private fun startTunnelLoop() {
         serviceJob?.cancel()
         serviceJob = CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
             while (isActive) {
-                runCatching { connectAndForward() }
-                    .onFailure { log("Túnel caiu: ${it.message}") }
+                try {
+                    runTunnel()
+                } catch (e: Exception) {
+                    log("Túnel caiu: ${e.message}")
+                }
 
                 if (!isActive) break
 
                 isConnected = false
                 onStatusChanged?.invoke(false)
-                updateNotification("Desconectado — a reconectar…")
 
-                val delay = minOf(baseReconnectDelay * (1L shl reconnectAttempts.coerceAtMost(4)), maxReconnectDelay)
+                // Backoff exponencial: 3s, 6s, 12s, 24s, máximo 30s
+                val delay = minOf(3_000L * (1L shl reconnectAttempts.coerceAtMost(3)), 30_000L)
                 reconnectAttempts++
-                log("A reconectar em ${delay / 1000}s (tentativa $reconnectAttempts)…")
+                log("Reconectar em ${delay / 1000}s (tentativa $reconnectAttempts)")
+                updateNotification("A reconectar em ${delay / 1000}s…")
                 delay(delay)
             }
         }
     }
 
-    private suspend fun connectAndForward() {
-        log("A iniciar túnel $currentMode → $currentIp:$currentPort SNI:$currentSni")
+    // ─── Tunnel core ────────────────────────────────────────────────────────
 
-        closeTunInterface()
+    private suspend fun runTunnel() = withContext(Dispatchers.IO) {
+        log("Modo=$currentMode IP=$currentIp:$currentPort SNI=$currentSni")
 
-        val socket = when (currentMode.uppercase()) {
-            "SSL", "SSL PROXY" -> connectSSL()
-            "HTTP"             -> connectHTTP()
-            else               -> connectSSL()
-        }
+        closeTun()
 
-        if (socket == null || socket.isClosed) {
-            log("Falha ao abrir socket")
-            return
+        val socket: Socket = when (currentMode.uppercase()) {
+            "SSL", "SSL PROXY" -> openSSL() ?: run { log("SSL falhou"); return@withContext }
+            "HTTP"             -> openHTTP() ?: run { log("HTTP falhou"); return@withContext }
+            else               -> openSSL()  ?: run { log("Fallback SSL falhou"); return@withContext }
         }
 
         tunnelSocket = socket
 
-        // ── Criar interface VPN ──────────────────────────────────────────────
-        val builder = Builder()
+        // ── Interface VPN ────────────────────────────────────────────────────
+        val pfd = Builder()
             .setSession("WeSports VPN")
             .addAddress("10.8.0.2", 24)
             .addDnsServer("8.8.8.8")
@@ -148,216 +132,166 @@ class AppVpnService : VpnService() {
             .addRoute("0.0.0.0", 0)
             .setMtu(1400)
             .setBlocking(true)
-
-        // Não rotear o próprio servidor pelo túnel (evita loop)
-        try {
-            builder.addDisallowedApplication(packageName)
-        } catch (_: Exception) {}
-
-        val pfd = builder.establish() ?: run {
-            log("Falha ao criar interface VPN — sem permissão?")
-            socket.close()
-            return
-        }
+            .establish()
+            ?: run { log("Falha establish() — sem permissão VPN"); socket.close(); return@withContext }
 
         vpnInterface = pfd
-        isConnected = true
+        isConnected  = true
         reconnectAttempts = 0
         onStatusChanged?.invoke(true)
-        updateNotification("Conectado a $currentIp")
-        log("VPN ativa — tráfego encaminhado via $currentIp:$currentPort")
+        updateNotification("Conectado · $currentIp · SNI:$currentSni")
+        log("VPN ativa · interface criada")
 
-        val tunFd  = pfd.fileDescriptor
-        val tunIn  = FileInputStream(tunFd)
-        val tunOut = FileOutputStream(tunFd)
-        val sockOut: OutputStream
-        val sockIn: InputStream
+        val tunIn  = FileInputStream(pfd.fileDescriptor)
+        val tunOut = FileOutputStream(pfd.fileDescriptor)
+        val sOut   = socket.getOutputStream()
+        val sIn    = socket.getInputStream()
 
-        try {
-            sockOut = socket.getOutputStream()
-            sockIn  = socket.getInputStream()
-        } catch (e: Exception) {
-            log("Erro ao obter streams: ${e.message}")
-            closeTunInterface()
-            socket.close()
-            return
-        }
-
-        // ── Keepalive periódico ──────────────────────────────────────────────
-        val keepaliveJob = CoroutineScope(Dispatchers.IO).launch {
+        // Keepalive a cada 25s
+        val ka = launch {
             while (isActive && !socket.isClosed) {
-                delay(20_000)
-                try {
-                    // Enviar NOP byte para manter conexão viva
-                    sockOut.write(0)
-                    sockOut.flush()
-                } catch (_: Exception) { break }
+                delay(25_000)
+                try { sOut.write(byteArrayOf(0)); sOut.flush() } catch (_: Exception) { break }
             }
         }
 
-        val scope = CoroutineScope(Dispatchers.IO)
-
-        // Tun → Server
-        val toServer = scope.launch {
+        // Tun → Servidor (com framing 2-byte length prefix)
+        val t2s = launch {
             val buf = ByteArray(32767)
             while (isActive && !socket.isClosed) {
                 try {
                     val len = tunIn.read(buf)
                     if (len > 0) {
-                        // Prefixar com tamanho para framing (2 bytes big-endian)
                         val frame = ByteArray(2 + len)
                         frame[0] = ((len shr 8) and 0xFF).toByte()
                         frame[1] = (len and 0xFF).toByte()
                         System.arraycopy(buf, 0, frame, 2, len)
-                        sockOut.write(frame)
-                        sockOut.flush()
+                        sOut.write(frame)
+                        sOut.flush()
                     }
-                } catch (e: Exception) {
-                    log("→ server: ${e.message}")
-                    break
-                }
+                } catch (e: Exception) { log("tun→srv: ${e.message}"); break }
             }
         }
 
-        // Server → Tun
-        val toDevice = scope.launch {
-            val lenBuf = ByteArray(2)
-            val dataBuf = ByteArray(32767)
+        // Servidor → Tun (lê 2-byte length prefix)
+        val s2t = launch {
+            val hdr = ByteArray(2)
+            val buf = ByteArray(32767)
             while (isActive && !socket.isClosed) {
                 try {
-                    // Ler 2 bytes de tamanho
-                    var read = 0
-                    while (read < 2) {
-                        val r = sockIn.read(lenBuf, read, 2 - read)
-                        if (r < 0) { log("Servidor fechou"); return@launch }
-                        read += r
+                    var r = 0
+                    while (r < 2) {
+                        val n = sIn.read(hdr, r, 2 - r)
+                        if (n < 0) { log("Servidor fechou"); return@launch }
+                        r += n
                     }
-                    val len = ((lenBuf[0].toInt() and 0xFF) shl 8) or (lenBuf[1].toInt() and 0xFF)
-                    if (len <= 0 || len > 32767) continue
-
-                    var received = 0
-                    while (received < len) {
-                        val r = sockIn.read(dataBuf, received, len - received)
-                        if (r < 0) { log("Servidor fechou no meio do pacote"); return@launch }
-                        received += r
+                    val len = ((hdr[0].toInt() and 0xFF) shl 8) or (hdr[1].toInt() and 0xFF)
+                    if (len in 1..32767) {
+                        var got = 0
+                        while (got < len) {
+                            val n = sIn.read(buf, got, len - got)
+                            if (n < 0) { log("Servidor fechou mid-packet"); return@launch }
+                            got += n
+                        }
+                        tunOut.write(buf, 0, len)
                     }
-                    tunOut.write(dataBuf, 0, len)
-                } catch (e: Exception) {
-                    log("← device: ${e.message}")
-                    break
-                }
+                } catch (e: Exception) { log("srv→tun: ${e.message}"); break }
             }
         }
 
-        toServer.join()
-        toDevice.join()
-        keepaliveJob.cancel()
+        t2s.join(); s2t.join(); ka.cancel()
 
-        closeTunInterface()
+        closeTun()
         try { socket.close() } catch (_: Exception) {}
         isConnected = false
         onStatusChanged?.invoke(false)
         log("Túnel encerrado")
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // SSL connect
-    // ─────────────────────────────────────────────────────────────────────────
+    // ─── SSL ────────────────────────────────────────────────────────────────
 
-    private fun connectSSL(): Socket? {
+    private fun openSSL(): Socket? {
         return try {
             log("SSL → $currentIp:$currentPort SNI:$currentSni")
 
-            // Trust all — servidor VPN usa cert auto-assinado
             val trustAll = arrayOf<TrustManager>(object : X509TrustManager {
                 override fun checkClientTrusted(c: Array<java.security.cert.X509Certificate>, a: String) {}
                 override fun checkServerTrusted(c: Array<java.security.cert.X509Certificate>, a: String) {}
                 override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
             })
+            val ctx = SSLContext.getInstance("TLS")
+            ctx.init(null, trustAll, java.security.SecureRandom())
 
-            val sslCtx = SSLContext.getInstance("TLS")
-            sslCtx.init(null, trustAll, java.security.SecureRandom())
+            // ⚠️ protect() ANTES do handshake para não criar loop de roteamento
+            val raw = Socket()
+            raw.tcpNoDelay = true
+            raw.soTimeout  = 30_000
+            raw.connect(InetSocketAddress(currentIp, currentPort), 15_000)
+            protect(raw)   // ← crítico: excluir este socket do túnel VPN
 
-            val rawSocket = Socket()
-            rawSocket.tcpNoDelay = true
-            rawSocket.soTimeout = 30_000
-            rawSocket.connect(InetSocketAddress(currentIp, currentPort), 15_000)
-            protect(rawSocket)
-
-            val ssl = sslCtx.socketFactory.createSocket(rawSocket, currentSni, currentPort, true) as SSLSocket
+            val ssl = ctx.socketFactory.createSocket(raw, currentSni, currentPort, true) as SSLSocket
             ssl.soTimeout = 30_000
 
-            // Preferir TLSv1.2 / TLSv1.3
-            val supported = ssl.supportedProtocols.filter { it == "TLSv1.2" || it == "TLSv1.3" }.toTypedArray()
-            if (supported.isNotEmpty()) ssl.enabledProtocols = supported
+            val protos = ssl.supportedProtocols.filter { it == "TLSv1.2" || it == "TLSv1.3" }.toTypedArray()
+            if (protos.isNotEmpty()) ssl.enabledProtocols = protos
 
-            // SNI
-            val params = SSLParameters()
-            params.serverNames = listOf(SNIHostName(currentSni))
-            ssl.sslParameters = params
+            val p = SSLParameters()
+            p.serverNames = listOf(SNIHostName(currentSni))
+            ssl.sslParameters = p
 
             ssl.startHandshake()
-            log("SSL OK — ${ssl.session.protocol} cipher:${ssl.session.cipherSuite}")
+            log("SSL OK — ${ssl.session.protocol} / ${ssl.session.cipherSuite}")
 
-            // Handshake HTTP CONNECT para criar túnel sobre SSL (para servidores SSH-over-SSL)
+            // HTTP CONNECT sobre SSL para estabelecer túnel ao SSH interno
             val out = ssl.getOutputStream()
             val inp = BufferedReader(InputStreamReader(ssl.getInputStream()))
 
             val connectReq = "CONNECT $currentSni:22 HTTP/1.1\r\nHost: $currentSni\r\nUser-Agent: Mozilla/5.0\r\nProxy-Connection: Keep-Alive\r\n\r\n"
             out.write(connectReq.toByteArray())
             out.flush()
-            log("HTTP CONNECT enviado sobre SSL")
+            log("HTTP CONNECT enviado")
 
             val resp = inp.readLine() ?: ""
             log("HTTP CONNECT resp: $resp")
 
             if (resp.contains("200")) {
-                // Consumir headers restantes
-                while (true) {
-                    val line = inp.readLine() ?: break
-                    if (line.isEmpty()) break
-                }
-                log("Túnel SSL+HTTP CONNECT estabelecido")
-                ssl
+                var line = inp.readLine()
+                while (!line.isNullOrEmpty()) { line = inp.readLine() }
+                log("HTTP CONNECT OK — túnel SSL estabelecido")
             } else {
-                // Tentar sem CONNECT — pipe SSL direto
-                log("CONNECT falhou, a usar SSL direto")
-                ssl
+                log("HTTP CONNECT falhou — SSL direto sem proxy")
             }
+            ssl
         } catch (e: Exception) {
             log("Erro SSL: ${e.message}")
             null
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // HTTP CONNECT
-    // ─────────────────────────────────────────────────────────────────────────
+    // ─── HTTP CONNECT ───────────────────────────────────────────────────────
 
-    private fun connectHTTP(): Socket? {
+    private fun openHTTP(): Socket? {
         return try {
-            log("HTTP CONNECT → $currentIp:$currentPort host:$currentSni")
+            log("HTTP → $currentIp:$currentPort host:$currentSni")
+
             val socket = Socket()
             socket.tcpNoDelay = true
-            socket.soTimeout = 30_000
+            socket.soTimeout  = 30_000
             socket.connect(InetSocketAddress(currentIp, currentPort), 15_000)
-            protect(socket)
+            protect(socket)  // ← crítico
 
             val out = socket.getOutputStream()
             val inp = BufferedReader(InputStreamReader(socket.getInputStream()))
 
             val req = if (currentPayload.isNotEmpty()) {
                 currentPayload
-                    .replace("[host]",  currentSni)
-                    .replace("[port]",  currentPort.toString())
-                    .replace("[crlf]",  "\r\n")
-                    .replace("[cr]",    "\r")
-                    .replace("[lf]",    "\n")
+                    .replace("[host]", currentSni)
+                    .replace("[port]", currentPort.toString())
+                    .replace("[crlf]", "\r\n")
+                    .replace("[cr]",   "\r")
+                    .replace("[lf]",   "\n")
             } else {
-                "CONNECT $currentSni:443 HTTP/1.1\r\n" +
-                "Host: $currentSni\r\n" +
-                "Proxy-Connection: Keep-Alive\r\n" +
-                "User-Agent: Mozilla/5.0\r\n\r\n"
+                "CONNECT $currentSni:443 HTTP/1.1\r\nHost: $currentSni\r\nProxy-Connection: Keep-Alive\r\nUser-Agent: Mozilla/5.0\r\n\r\n"
             }
 
             out.write(req.toByteArray())
@@ -368,10 +302,8 @@ class AppVpnService : VpnService() {
             log("HTTP resp: $resp")
 
             return if (resp.contains("200")) {
-                while (true) {
-                    val line = inp.readLine() ?: break
-                    if (line.isEmpty()) break
-                }
+                var line = inp.readLine()
+                while (!line.isNullOrEmpty()) { line = inp.readLine() }
                 log("HTTP CONNECT OK")
                 socket
             } else {
@@ -385,21 +317,19 @@ class AppVpnService : VpnService() {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Helpers
-    // ─────────────────────────────────────────────────────────────────────────
+    // ─── Helpers ────────────────────────────────────────────────────────────
 
-    private fun closeTunInterface() {
+    private fun closeTun() {
         try { vpnInterface?.close() } catch (_: Exception) {}
         vpnInterface = null
     }
 
-    private fun stopTunnel() {
+    private fun stopEverything() {
         serviceJob?.cancel()
         serviceJob = null
         try { tunnelSocket?.close() } catch (_: Exception) {}
         tunnelSocket = null
-        closeTunInterface()
+        closeTun()
         isConnected = false
         onStatusChanged?.invoke(false)
         stopForeground(true)
@@ -412,14 +342,12 @@ class AppVpnService : VpnService() {
         onLogMessage?.invoke(msg)
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Notificação Foreground
-    // ─────────────────────────────────────────────────────────────────────────
+    // ─── Notificação ────────────────────────────────────────────────────────
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val ch = NotificationChannel(CHANNEL_ID, "WeSports VPN", NotificationManager.IMPORTANCE_LOW)
-            ch.description = "Estado da VPN"
+            ch.description = "Estado da ligação VPN"
             getSystemService(NotificationManager::class.java)?.createNotificationChannel(ch)
         }
     }
@@ -451,7 +379,9 @@ class AppVpnService : VpnService() {
     }
 
     private fun updateNotification(text: String) {
-        val nm = getSystemService(NotificationManager::class.java)
-        nm?.notify(NOTIF_ID, buildNotification(text))
+        getSystemService(NotificationManager::class.java)?.notify(NOTIF_ID, buildNotification(text))
     }
+
+    override fun onRevoke()  { stopEverything(); super.onRevoke() }
+    override fun onDestroy() { stopEverything(); super.onDestroy() }
 }

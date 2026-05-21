@@ -1,12 +1,15 @@
 package com.wesports.app.ui
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -22,6 +25,12 @@ class TweaksFragment : Fragment() {
     private val binding get() = _binding!!
     private val tweaks = mutableListOf<Tweak>()
     private lateinit var adapter: TweakAdapter
+
+    private val addTweakLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            loadTweaks()
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTweaksBinding.inflate(inflater, container, false)
@@ -42,33 +51,34 @@ class TweaksFragment : Fragment() {
         loadTweaks()
 
         binding.btnAdd.setOnClickListener {
-            AddTweakBottomSheet { tweak ->
-                tweaks.add(tweak)
-                saveTweaks()
-                adapter.notifyDataSetChanged()
-            }.show(parentFragmentManager, "AddTweak")
+            val intent = Intent(requireContext(), TweakActivity::class.java)
+            addTweakLauncher.launch(intent)
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        loadTweaks()
+    }
+
     private fun loadTweaks() {
+        if (_binding == null) return
         try {
             val prefs = requireContext().getSharedPreferences("tweaks", Context.MODE_PRIVATE)
-            val json = prefs.getString("list", "[]") ?: "[]"
-            val type = object : TypeToken<List<Tweak>>() {}.type
+            val json  = prefs.getString("list", "[]") ?: "[]"
+            val type  = object : TypeToken<List<Tweak>>() {}.type
             val loaded: List<Tweak> = Gson().fromJson(json, type)
             tweaks.clear()
             tweaks.addAll(loaded)
             adapter.notifyDataSetChanged()
-        } catch (e: Exception) {
-            tweaks.clear()
-        }
+        } catch (_: Exception) { tweaks.clear() }
     }
 
     private fun saveTweaks() {
         try {
             val prefs = requireContext().getSharedPreferences("tweaks", Context.MODE_PRIVATE)
             prefs.edit().putString("list", Gson().toJson(tweaks)).apply()
-        } catch (e: Exception) { }
+        } catch (_: Exception) {}
     }
 
     override fun onDestroyView() {
@@ -83,9 +93,9 @@ class TweakAdapter(
 ) : RecyclerView.Adapter<TweakAdapter.VH>() {
 
     inner class VH(view: View) : RecyclerView.ViewHolder(view) {
-        val tvName: TextView = view.findViewById(R.id.tvName)
-        val tvMode: TextView = view.findViewById(R.id.tvMode)
-        val btnDelete: Button = view.findViewById(R.id.btnDelete)
+        val tvName: TextView   = view.findViewById(R.id.tvName)
+        val tvMode: TextView   = view.findViewById(R.id.tvMode)
+        val btnDelete: Button  = view.findViewById(R.id.btnDelete)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH =
@@ -93,8 +103,8 @@ class TweakAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val t = tweaks[position]
-        holder.tvName.text = t.name
-        holder.tvMode.text = "${t.mode} · ${t.type}"
+        holder.tvName.text  = t.name
+        holder.tvMode.text  = "${t.mode} · ${t.type}" + if (t.sni.isNotEmpty()) " · ${t.sni}" else ""
         holder.btnDelete.setOnClickListener { onDelete(t) }
     }
 

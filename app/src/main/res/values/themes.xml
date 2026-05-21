@@ -23,6 +23,8 @@
 
     <style name="Widget.BottomNav.Custom" parent="Widget.Material3.BottomNavigationView">
         <item name="materialThemeOverlay">@style/ThemeOverlay.BottomNav.Custom</item>
+        <item name="itemPaddingTop">4dp</item>
+        <item name="itemPaddingBottom">4dp</item>
     </style>
 
     <style name="ThemeOverlay.BottomNav.Custom" parent="">

@@ -31,6 +31,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.TweakActivity"
+            android:exported="false"
+            android:theme="@style/Theme.wesports"
+            android:windowSoftInputMode="adjustResize" />
+
         <service
             android:name=".vpn.AppVpnService"
             android:exported="false"

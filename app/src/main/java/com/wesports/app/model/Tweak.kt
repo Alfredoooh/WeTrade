@@ -7,9 +7,10 @@ data class Tweak(
     val mode: String,
     val type: String,
     val sni: String = "",
-    val expirationDate: Boolean,
-    val hwid: Boolean,
-    val passwordLock: Boolean,
-    val mobileDataOnly: Boolean,
-    val blockRooted: Boolean
+    val payload: String = "",
+    val expirationDate: Boolean = false,
+    val hwid: Boolean = false,
+    val passwordLock: Boolean = false,
+    val mobileDataOnly: Boolean = false,
+    val blockRooted: Boolean = false
 )
