@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">wilin VPN</string>
-    <string name="notification_channel_name">wilin VPN</string>
-    <string name="notification_channel_desc">Mantém o wilin VPN activo em segundo plano</string>
+    <string name="app_name">wilin</string>
     <string name="settings">Definições</string>
     <string name="about">Sobre</string>
 </resources>
