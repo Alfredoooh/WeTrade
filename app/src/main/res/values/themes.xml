@@ -3,8 +3,8 @@
     <style name="Theme.wilin" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">#007AFF</item>
         <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="colorPrimaryVariant">#0055B3</item>
-        <item name="android:statusBarColor">#007AFF</item>
+        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
         <item name="android:navigationBarColor">#FFFFFF</item>
         <item name="android:windowBackground">@color/splash_background_light</item>
         <item name="bottomNavigationStyle">@style/Widget.BottomNav.Custom</item>
@@ -16,11 +16,6 @@
         <item name="postSplashScreenTheme">@style/Theme.wilin</item>
     </style>
 
-    <style name="BlueAppBar" parent="Widget.MaterialComponents.Toolbar">
-        <item name="android:background">#007AFF</item>
-        <item name="titleTextColor">#FFFFFF</item>
-    </style>
-
     <style name="Widget.BottomNav.Custom" parent="Widget.Material3.BottomNavigationView">
         <item name="materialThemeOverlay">@style/ThemeOverlay.BottomNav.Custom</item>
         <item name="itemPaddingTop">4dp</item>
@@ -30,16 +25,5 @@
     <style name="ThemeOverlay.BottomNav.Custom" parent="">
         <item name="colorSecondaryContainer">#1A007AFF</item>
         <item name="colorOnSecondaryContainer">#007AFF</item>
-    </style>
-
-    <style name="RoundedBottomSheet" parent="Theme.Material3.Light.BottomSheetDialog">
-        <item name="bottomSheetStyle">@style/RoundedBottomSheetStyle</item>
-    </style>
-    <style name="RoundedBottomSheetStyle" parent="Widget.Material3.BottomSheet">
-        <item name="shapeAppearanceOverlay">@style/RoundedTopCorners</item>
-    </style>
-    <style name="RoundedTopCorners">
-        <item name="cornerSizeTopLeft">20dp</item>
-        <item name="cornerSizeTopRight">20dp</item>
     </style>
 </resources>
