@@ -18,6 +18,10 @@ workflows:
             -dname "CN=Developer, OU=Dev, O=Developer, L=Lisboa, ST=Lisboa, C=PT"
           echo "Keystore gerado com sucesso"
 
+      - name: Set Android SDK location
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
+
       - name: Install Pillow
         script: pip3 install Pillow --quiet
 
@@ -129,6 +133,10 @@ workflows:
             -keypass "@jonas00" \
             -dname "CN=Developer, OU=Dev, O=Developer, L=Lisboa, ST=Lisboa, C=PT"
           echo "Keystore gerado com sucesso"
+
+      - name: Set Android SDK location
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
 
       - name: Install Pillow
         script: pip3 install Pillow --quiet
