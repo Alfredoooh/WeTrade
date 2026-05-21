@@ -7,4 +7,5 @@
     <color name="splash_background_light">#FFFFFF</color>
     <color name="splash_background_dark">#181818</color>
     <color name="blue_apple">#007AFF</color>
+    <color name="bottom_nav_text_color">#007AFF</color>
 </resources>
