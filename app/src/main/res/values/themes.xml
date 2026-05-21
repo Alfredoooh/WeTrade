@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.wesports" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">#FF3838</item>
+        <item name="colorPrimary">#007AFF</item>
         <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="colorPrimaryVariant">#0055B3</item>
+        <item name="android:statusBarColor">#007AFF</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
         <item name="android:windowBackground">@color/splash_background_light</item>
     </style>
     <style name="Theme.wesports.Splash" parent="Theme.SplashScreen">
@@ -11,11 +13,18 @@
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
         <item name="postSplashScreenTheme">@style/Theme.wesports</item>
     </style>
-    <style name="Theme.wesports.NoActionBar" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">#FF3838</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
+    <style name="BlueAppBar" parent="Widget.Material3.TopAppBar.Small">
+        <item name="android:background">#007AFF</item>
+        <item name="titleTextColor">#FFFFFF</item>
+    </style>
+    <style name="RoundedBottomSheet" parent="Theme.Material3.Light.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/RoundedBottomSheetStyle</item>
+    </style>
+    <style name="RoundedBottomSheetStyle" parent="Widget.Material3.BottomSheet">
+        <item name="shapeAppearanceOverlay">@style/RoundedTopCorners</item>
+    </style>
+    <style name="RoundedTopCorners">
+        <item name="cornerSizeTopLeft">20dp</item>
+        <item name="cornerSizeTopRight">20dp</item>
     </style>
 </resources>

@@ -16,7 +16,7 @@ workflows:
             -storepass "@jonas00" \
             -keypass "@jonas00" \
             -dname "CN=Developer, OU=Dev, O=Developer, L=Lisboa, ST=Lisboa, C=PT"
-          echo "✅ Keystore gerado: app/webtrade_release.keystore"
+          echo "Keystore gerado com sucesso"
 
       - name: Install Pillow
         script: pip3 install Pillow --quiet
@@ -33,7 +33,7 @@ workflows:
           SPLASH   = os.path.join(CM, "splash_icon.png")
 
           if not os.path.exists(LAUNCHER):
-              raise FileNotFoundError("ic_launcher.png nao encontrado na raiz do repo!")
+              raise FileNotFoundError("ic_launcher.png nao encontrado!")
 
           DENSITIES = {
               "mipmap-ldpi":36,"mipmap-mdpi":48,"mipmap-hdpi":72,
@@ -77,13 +77,12 @@ workflows:
               shutil.copy2(SPLASH, dest)
               print(f"  -> {dest}")
           else:
-              print("AVISO: splash_icon.png nao encontrado, a usar placeholder...")
               placeholder = Image.new("RGBA", (192, 192), (0,0,0,0))
               dest = os.path.join(RES, "drawable", "splash_icon.png")
               os.makedirs(os.path.dirname(dest), exist_ok=True)
               placeholder.save(dest, "PNG")
 
-          print("Icones processados com sucesso!")
+          print("Icones processados!")
           EOF
 
       - name: Download gradle-wrapper.jar
@@ -129,7 +128,7 @@ workflows:
             -storepass "@jonas00" \
             -keypass "@jonas00" \
             -dname "CN=Developer, OU=Dev, O=Developer, L=Lisboa, ST=Lisboa, C=PT"
-          echo "✅ Keystore gerado: app/webtrade_release.keystore"
+          echo "Keystore gerado com sucesso"
 
       - name: Install Pillow
         script: pip3 install Pillow --quiet
@@ -146,7 +145,7 @@ workflows:
           SPLASH   = os.path.join(CM, "splash_icon.png")
 
           if not os.path.exists(LAUNCHER):
-              raise FileNotFoundError("ic_launcher.png nao encontrado na raiz do repo!")
+              raise FileNotFoundError("ic_launcher.png nao encontrado!")
 
           DENSITIES = {
               "mipmap-ldpi":36,"mipmap-mdpi":48,"mipmap-hdpi":72,
@@ -188,15 +187,13 @@ workflows:
               dest = os.path.join(RES, "drawable", "splash_icon.png")
               os.makedirs(os.path.dirname(dest), exist_ok=True)
               shutil.copy2(SPLASH, dest)
-              print(f"  -> {dest}")
           else:
-              print("AVISO: splash_icon.png nao encontrado, a usar placeholder...")
               placeholder = Image.new("RGBA", (192, 192), (0,0,0,0))
               dest = os.path.join(RES, "drawable", "splash_icon.png")
               os.makedirs(os.path.dirname(dest), exist_ok=True)
               placeholder.save(dest, "PNG")
 
-          print("Icones processados com sucesso!")
+          print("Icones processados!")
           EOF
 
       - name: Download gradle-wrapper.jar

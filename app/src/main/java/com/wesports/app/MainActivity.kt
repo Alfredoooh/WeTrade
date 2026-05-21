@@ -4,6 +4,9 @@ import android.app.Activity
 import android.content.Intent
 import android.net.VpnService
 import android.os.Bundle
+import android.view.MenuItem
+import android.widget.PopupMenu
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.Fragment
@@ -17,7 +20,6 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var binding: ActivityMainBinding
     private var pendingVpnAction: (() -> Unit)? = null
-
     var selectedServer: Server? = null
 
     companion object {
@@ -33,6 +35,23 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
+
+        binding.toolbar.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.menu_settings -> {
+                    Toast.makeText(this, "Definições", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                R.id.menu_about -> {
+                    Toast.makeText(this, "WeSports VPN v1.0", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                else -> false
+            }
+        }
 
         supportFragmentManager.beginTransaction()
             .add(R.id.container, homeFragment, "home")
