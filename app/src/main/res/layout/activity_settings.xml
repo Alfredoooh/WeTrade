@@ -73,9 +73,9 @@
                             android:textColor="#000000" />
 
                         <ImageView
+                            android:id="@+id/iconArrowAbout"
                             android:layout_width="20dp"
                             android:layout_height="20dp"
-                            android:src="@drawable/ic_arrow_back"
                             android:rotation="180"
                             android:tint="#CCCCCC" />
 
@@ -85,7 +85,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
                         android:background="#F0F0F0"
-                        android:marginStart="16dp" />
+                        android:layout_marginStart="16dp" />
 
                     <LinearLayout
                         android:id="@+id/itemVersion"
