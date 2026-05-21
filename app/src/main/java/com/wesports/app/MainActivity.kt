@@ -7,20 +7,26 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.Fragment
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.wesports.app.databinding.ActivityMainBinding
+import com.wesports.app.model.Server
 import com.wesports.app.ui.HomeFragment
 import com.wesports.app.ui.ServersFragment
 import com.wesports.app.ui.TweaksFragment
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
+    lateinit var binding: ActivityMainBinding
     private var pendingVpnAction: (() -> Unit)? = null
+
+    var selectedServer: Server? = null
 
     companion object {
         const val VPN_REQUEST_CODE = 100
     }
+
+    private val homeFragment = HomeFragment()
+    private val serversFragment = ServersFragment()
+    private val tweaksFragment = TweaksFragment()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -28,16 +34,31 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        loadFragment(HomeFragment())
+        supportFragmentManager.beginTransaction()
+            .add(R.id.container, homeFragment, "home")
+            .add(R.id.container, serversFragment, "servers")
+            .add(R.id.container, tweaksFragment, "tweaks")
+            .hide(serversFragment)
+            .hide(tweaksFragment)
+            .commit()
 
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_home -> { loadFragment(HomeFragment()); true }
-                R.id.nav_servers -> { loadFragment(ServersFragment()); true }
-                R.id.nav_tweaks -> { loadFragment(TweaksFragment()); true }
-                else -> false
+                R.id.nav_home -> showFragment(homeFragment)
+                R.id.nav_servers -> showFragment(serversFragment)
+                R.id.nav_tweaks -> showFragment(tweaksFragment)
             }
+            true
         }
+    }
+
+    private fun showFragment(fragment: Fragment) {
+        supportFragmentManager.beginTransaction()
+            .hide(homeFragment)
+            .hide(serversFragment)
+            .hide(tweaksFragment)
+            .show(fragment)
+            .commit()
     }
 
     fun requestVpnPermission(onGranted: () -> Unit) {
@@ -56,11 +77,5 @@ class MainActivity : AppCompatActivity() {
             pendingVpnAction?.invoke()
             pendingVpnAction = null
         }
-    }
-
-    private fun loadFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.container, fragment)
-            .commit()
     }
 }

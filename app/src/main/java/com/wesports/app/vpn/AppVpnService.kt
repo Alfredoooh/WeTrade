@@ -31,36 +31,45 @@ class AppVpnService : VpnService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        return when (intent?.action) {
-            ACTION_CONNECT -> {
-                val ip = intent.getStringExtra(EXTRA_SERVER_IP) ?: ""
-                val port = intent.getIntExtra(EXTRA_SERVER_PORT, 443)
-                val mode = intent.getStringExtra(EXTRA_MODE) ?: "SSL"
-                val sni = intent.getStringExtra(EXTRA_SNI) ?: ""
-                val payload = intent.getStringExtra(EXTRA_PAYLOAD) ?: ""
-                startTunnel(ip, port, mode, sni, payload)
-                START_STICKY
+        return try {
+            when (intent?.action) {
+                ACTION_CONNECT -> {
+                    val ip = intent.getStringExtra(EXTRA_SERVER_IP) ?: ""
+                    val port = intent.getIntExtra(EXTRA_SERVER_PORT, 443)
+                    val mode = intent.getStringExtra(EXTRA_MODE) ?: "SSL"
+                    val sni = intent.getStringExtra(EXTRA_SNI) ?: ""
+                    val payload = intent.getStringExtra(EXTRA_PAYLOAD) ?: ""
+                    if (ip.isEmpty()) {
+                        log("IP do servidor inválido")
+                        START_NOT_STICKY
+                    } else {
+                        startTunnel(ip, port, mode, sni, payload)
+                        START_STICKY
+                    }
+                }
+                ACTION_DISCONNECT -> {
+                    stopTunnel()
+                    START_NOT_STICKY
+                }
+                else -> START_NOT_STICKY
             }
-            ACTION_DISCONNECT -> {
-                stopTunnel()
-                START_NOT_STICKY
-            }
-            else -> START_NOT_STICKY
+        } catch (e: Exception) {
+            log("onStartCommand error: ${e.message}")
+            START_NOT_STICKY
         }
     }
 
     private fun startTunnel(ip: String, port: Int, mode: String, sni: String, payload: String) {
+        serviceJob?.cancel()
         serviceJob = CoroutineScope(Dispatchers.IO).launch {
             try {
                 log("A iniciar túnel $mode para $ip:$port")
 
-                val socket = when (mode) {
+                val socket = when (mode.uppercase()) {
                     "SSL", "SSL PROXY" -> connectSSL(ip, port, sni)
                     "HTTP" -> connectHTTP(ip, port, sni, payload)
                     else -> connectSSL(ip, port, sni)
                 }
-
-                tunnelSocket = socket
 
                 if (socket == null || !socket.isConnected) {
                     log("Falha ao conectar ao servidor")
@@ -69,6 +78,7 @@ class AppVpnService : VpnService() {
                     return@launch
                 }
 
+                tunnelSocket = socket
                 log("Socket conectado, a estabelecer interface VPN...")
 
                 val builder = Builder()
@@ -96,8 +106,8 @@ class AppVpnService : VpnService() {
 
                 val tunIn = FileInputStream(vpnInterface!!.fileDescriptor)
                 val tunOut = FileOutputStream(vpnInterface!!.fileDescriptor)
-                val sockOut = socket.getOutputStream()
-                val sockIn = socket.getInputStream()
+                val sockOut = DataOutputStream(socket.getOutputStream())
+                val sockIn = DataInputStream(socket.getInputStream())
 
                 val toServer = launch {
                     val buf = ByteArray(32767)
@@ -105,24 +115,28 @@ class AppVpnService : VpnService() {
                         try {
                             val len = tunIn.read(buf)
                             if (len > 0) {
+                                sockOut.writeShort(len)
                                 sockOut.write(buf, 0, len)
                                 sockOut.flush()
                             }
                         } catch (e: Exception) {
+                            log("toServer error: ${e.message}")
                             break
                         }
                     }
                 }
 
                 val toDevice = launch {
-                    val buf = ByteArray(32767)
                     while (isActive && socket.isConnected) {
                         try {
-                            val len = sockIn.read(buf)
+                            val len = sockIn.readShort().toInt() and 0xFFFF
                             if (len > 0) {
-                                tunOut.write(buf, 0, len)
+                                val buf = ByteArray(len)
+                                sockIn.readFully(buf)
+                                tunOut.write(buf)
                             }
                         } catch (e: Exception) {
+                            log("toDevice error: ${e.message}")
                             break
                         }
                     }
@@ -131,44 +145,54 @@ class AppVpnService : VpnService() {
                 toServer.join()
                 toDevice.join()
 
-                log("Túnel encerrado")
-                stopTunnel()
+                log("Túnel encerrado, a reconectar...")
+                delay(3000)
+                if (isActive) startTunnel(ip, port, mode, sni, payload)
 
             } catch (e: Exception) {
                 log("Erro no túnel: ${e.message}")
                 isConnected = false
                 onStatusChanged?.invoke(false)
+                delay(5000)
+                if (serviceJob?.isActive == true) startTunnel(ip, port, mode, sni, payload)
             }
         }
     }
 
     private fun connectSSL(ip: String, port: Int, sni: String): Socket? {
         return try {
-            log("A conectar SSL a $ip:$port com SNI: $sni")
-            val sslContext = SSLContext.getInstance("TLS")
-            sslContext.init(null, arrayOf<TrustManager>(object : X509TrustManager {
+            log("A conectar SSL a $ip:$port SNI: ${sni.ifEmpty { "none" }}")
+
+            val trustAll = arrayOf<TrustManager>(object : X509TrustManager {
                 override fun checkClientTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {}
                 override fun checkServerTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {}
                 override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
-            }), java.security.SecureRandom())
+            })
 
-            val factory = sslContext.socketFactory
-            val socket = Socket()
-            socket.connect(InetSocketAddress(ip, port), 10000)
-            protect(socket)
+            val sslContext = SSLContext.getInstance("TLS")
+            sslContext.init(null, trustAll, java.security.SecureRandom())
 
-            val sslSocket = factory.createSocket(socket, sni.ifEmpty { ip }, port, true) as SSLSocket
-            sslSocket.enabledProtocols = arrayOf("TLSv1.2", "TLSv1.3")
+            val rawSocket = Socket()
+            rawSocket.connect(InetSocketAddress(ip, port), 10000)
+            protect(rawSocket)
+
+            val sslSocket = sslContext.socketFactory.createSocket(
+                rawSocket, sni.ifEmpty { ip }, port, true
+            ) as SSLSocket
+
+            sslSocket.enabledProtocols = sslSocket.supportedProtocols
+                .filter { it.contains("TLS") }.toTypedArray()
 
             if (sni.isNotEmpty()) {
-                val params = sslSocket.sslParameters
-                params.serverNames = listOf(javax.net.ssl.SNIHostName(sni))
+                val params = SSLParameters()
+                params.serverNames = listOf(SNIHostName(sni))
                 sslSocket.sslParameters = params
             }
 
             sslSocket.startHandshake()
-            log("SSL handshake OK")
+            log("SSL handshake OK — ${sslSocket.session.protocol}")
             sslSocket
+
         } catch (e: Exception) {
             log("Erro SSL: ${e.message}")
             null
@@ -177,15 +201,16 @@ class AppVpnService : VpnService() {
 
     private fun connectHTTP(ip: String, port: Int, host: String, payload: String): Socket? {
         return try {
-            log("A conectar HTTP INJECT a $ip:$port")
+            log("A conectar HTTP a $ip:$port host: $host")
+
             val socket = Socket()
             socket.connect(InetSocketAddress(ip, port), 10000)
             protect(socket)
 
             val out = socket.getOutputStream()
-            val inp = socket.getInputStream()
+            val inp = BufferedReader(InputStreamReader(socket.getInputStream()))
 
-            val connectRequest = if (payload.isNotEmpty()) {
+            val request = if (payload.isNotEmpty()) {
                 payload
                     .replace("[host]", host)
                     .replace("[port]", port.toString())
@@ -193,28 +218,26 @@ class AppVpnService : VpnService() {
                     .replace("[cr]", "\r")
                     .replace("[lf]", "\n")
             } else {
-                "CONNECT $host:$port HTTP/1.1\r\nHost: $host\r\nProxy-Connection: Keep-Alive\r\n\r\n"
+                "CONNECT $host:$port HTTP/1.1\r\nHost: $host\r\nProxy-Connection: Keep-Alive\r\nUser-Agent: Mozilla/5.0\r\n\r\n"
             }
 
-            out.write(connectRequest.toByteArray())
+            out.write(request.toByteArray())
             out.flush()
             log("HTTP payload enviado")
 
-            val response = StringBuilder()
-            val buf = ByteArray(4096)
-            val len = inp.read(buf)
-            if (len > 0) response.append(String(buf, 0, len))
+            val responseLine = inp.readLine() ?: ""
+            log("HTTP response: $responseLine")
 
-            log("HTTP response: ${response.toString().take(100)}")
-
-            if (response.contains("200")) {
+            if (responseLine.contains("200")) {
+                while (inp.readLine()?.isNotEmpty() == true) { }
                 log("HTTP CONNECT OK")
                 socket
             } else {
-                log("HTTP CONNECT falhou: ${response.toString().take(200)}")
+                log("HTTP CONNECT falhou: $responseLine")
                 socket.close()
                 null
             }
+
         } catch (e: Exception) {
             log("Erro HTTP: ${e.message}")
             null
