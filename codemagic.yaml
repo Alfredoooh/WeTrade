@@ -8,7 +8,7 @@ workflows:
       - name: Generate release keystore
         script: |
           keytool -genkeypair \
-            -alias "wesports_key" \
+            -alias "wilin_key" \
             -keyalg RSA \
             -keysize 4096 \
             -validity 9125 \
@@ -124,7 +124,7 @@ workflows:
       - name: Generate release keystore
         script: |
           keytool -genkeypair \
-            -alias "wesports_key" \
+            -alias "wilin_key" \
             -keyalg RSA \
             -keysize 4096 \
             -validity 9125 \

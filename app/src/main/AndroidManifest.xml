@@ -14,14 +14,14 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.wesports"
+        android:theme="@style/Theme.wilin"
         android:enableOnBackInvokedCallback="true"
         android:usesCleartextTraffic="true">
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.wesports.Splash"
+            android:theme="@style/Theme.wilin.Splash"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:windowSoftInputMode="adjustResize"
             android:launchMode="singleTask">
@@ -34,7 +34,7 @@
         <activity
             android:name=".ui.TweakActivity"
             android:exported="false"
-            android:theme="@style/Theme.wesports"
+            android:theme="@style/Theme.wilin"
             android:windowSoftInputMode="adjustResize" />
 
         <service
