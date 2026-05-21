@@ -29,12 +29,12 @@
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
+        style="@style/Widget.BottomNav.Custom"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#FFFFFF"
         app:itemIconTint="@null"
         app:itemTextColor="#007AFF"
-        app:itemActiveIndicatorColor="@color/bottom_nav_item_background"
         app:labelVisibilityMode="labeled"
         app:menu="@menu/bottom_nav_menu" />
 
