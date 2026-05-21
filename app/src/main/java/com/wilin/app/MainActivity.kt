@@ -8,17 +8,21 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.StateListDrawable
 import android.os.Bundle
+import android.view.MenuItem
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
 import com.caverock.androidsvg.SVG
+import com.google.android.material.navigation.NavigationView
 import com.wilin.app.databinding.ActivityMainBinding
 import com.wilin.app.ui.GamesFragment
 import com.wilin.app.ui.HomeFragment
 import com.wilin.app.ui.SearchFragment
 import com.wilin.app.ui.SettingsActivity
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
     lateinit var binding: ActivityMainBinding
 
@@ -33,10 +37,38 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayShowTitleEnabled(false)
+        supportActionBar?.setDisplayShowTitleEnabled(true)
 
-        // Ícone settings
-        binding.btnSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 24, Color.BLACK))
+        // Toggle para abrir drawer pela direita
+        val toggle = ActionBarDrawerToggle(
+            this, binding.drawerLayout, binding.toolbar,
+            0, 0
+        )
+        binding.drawerLayout.addDrawerListener(toggle)
+        toggle.syncState()
+
+        // Ícone hamburger à direita
+        binding.toolbar.setNavigationIcon(null)
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
+        binding.toolbar.inflateMenu(R.menu.toolbar_menu)
+        binding.toolbar.setOnMenuItemClickListener { item ->
+            if (item.itemId == R.id.action_menu) {
+                if (binding.drawerLayout.isDrawerOpen(GravityCompat.END)) {
+                    binding.drawerLayout.closeDrawer(GravityCompat.END)
+                } else {
+                    binding.drawerLayout.openDrawer(GravityCompat.END)
+                }
+                true
+            } else false
+        }
+
+        // Ícones drawer via SVG
+        binding.navView.menu.findItem(R.id.drawer_settings).icon =
+            svgDrawable("icons/svg/settings.svg", 24, Color.BLACK)
+        binding.navView.menu.findItem(R.id.drawer_about).icon =
+            svgDrawable("icons/svg/back_arrow.svg", 24, Color.BLACK)
+
+        binding.navView.setNavigationItemSelectedListener(this)
 
         // Ícones bottom nav
         binding.bottomNav.menu.findItem(R.id.nav_home).icon =
@@ -45,10 +77,6 @@ class MainActivity : AppCompatActivity() {
             svgStateDrawable("icons/svg/magnifying_glass_filled.svg", "icons/svg/magnifying_glass_outline.svg")
         binding.bottomNav.menu.findItem(R.id.nav_games).icon =
             svgStateDrawable("icons/svg/game_filled.svg", "icons/svg/game_outline.svg")
-
-        binding.btnSettings.setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java))
-        }
 
         supportFragmentManager.beginTransaction()
             .add(R.id.container, homeFragment, "home")
@@ -65,6 +93,23 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_games -> showFragment(gamesFragment)
             }
             true
+        }
+    }
+
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.drawer_settings -> startActivity(Intent(this, SettingsActivity::class.java))
+            R.id.drawer_about -> { /* abrir sobre */ }
+        }
+        binding.drawerLayout.closeDrawer(GravityCompat.END)
+        return true
+    }
+
+    override fun onBackPressed() {
+        if (binding.drawerLayout.isDrawerOpen(GravityCompat.END)) {
+            binding.drawerLayout.closeDrawer(GravityCompat.END)
+        } else {
+            super.onBackPressed()
         }
     }
 

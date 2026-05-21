@@ -6,20 +6,20 @@
     android:background="#FFFFFF"
     android:padding="16dp">
 
-    <com.google.android.material.textfield.TextInputLayout
+    <EditText
+        android:id="@+id/etSearch"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_search_input"
         android:hint="Pesquisar..."
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etSearch"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:imeOptions="actionSearch"
-            android:inputType="text" />
-
-    </com.google.android.material.textfield.TextInputLayout>
+        android:textColorHint="#AAAAAA"
+        android:textColor="#000000"
+        android:textSize="15sp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:imeOptions="actionSearch"
+        android:inputType="text"
+        android:singleLine="true" />
 
     <TextView
         android:layout_width="wrap_content"
