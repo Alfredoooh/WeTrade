@@ -15,7 +15,6 @@ import com.wesports.app.MainActivity
 import com.wesports.app.R
 import com.wesports.app.databinding.FragmentServersBinding
 import com.wesports.app.model.Server
-import com.wesports.app.vpn.VpnManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -40,9 +39,13 @@ class ServersFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         adapter = ServerAdapter(servers) { server ->
-            (activity as? MainActivity)?.requestVpnPermission {
-                VpnManager.connect(requireContext(), server)
-                Toast.makeText(requireContext(), "A conectar a ${server.ip}...", Toast.LENGTH_SHORT).show()
+            val activity = activity as? MainActivity ?: return@ServerAdapter
+            activity.selectedServer = server
+            Toast.makeText(requireContext(), "Servidor selecionado: ${server.ip}", Toast.LENGTH_SHORT).show()
+            // Navegar para Home e iniciar VPN
+            activity.binding.bottomNav.selectedItemId = R.id.nav_home
+            activity.requestVpnPermission {
+                com.wesports.app.vpn.VpnManager.connect(requireContext(), server)
             }
         }
 
@@ -74,23 +77,26 @@ class ServersFragment : Fragment() {
                     servers.clear()
                     for (i in 0 until array.length()) {
                         val obj = array.getJSONObject(i)
-                        val speedRaw = obj.optString("speed", "0")
-                        val speedMbps = try {
-                            (speedRaw.toLong() / 1_000_000).toString() + " Mbps"
-                        } catch (e: Exception) { "-" }
-                        servers.add(Server(
-                            ip = obj.optString("ip", "-"),
-                            country = obj.optString("country", "-"),
-                            ping = obj.optString("ping", "-") + " ms",
-                            speed = speedMbps,
-                            ovpn = obj.optString("ovpn", "")
-                        ))
+                        val pingMs = obj.optInt("ping", 0)
+                        servers.add(
+                            Server(
+                                ip = obj.optString("ip", "-"),
+                                country = obj.optString("country", "-"),
+                                ping = "${pingMs} ms",
+                                speed = "0 Mbps",
+                                ovpn = obj.optString("ovpn", ""),
+                                port = obj.optInt("port", 443),
+                                type = obj.optString("type", "SSL")
+                            )
+                        )
                     }
+                    // Ordenar por ping
+                    servers.sortBy { s -> s.ping.replace(" ms", "").toIntOrNull() ?: 9999 }
                     adapter.notifyDataSetChanged()
                 }
             } catch (e: Exception) {
                 if (_binding == null) return@launch
-                Toast.makeText(requireContext(), "Erro ao carregar servidores", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Erro ao carregar servidores: ${e.message}", Toast.LENGTH_LONG).show()
             } finally {
                 if (_binding != null) binding.progressBar.visibility = View.GONE
             }
@@ -122,7 +128,7 @@ class ServerAdapter(
     override fun onBindViewHolder(holder: VH, position: Int) {
         val s = servers[position]
         holder.tvIp.text = s.ip
-        holder.tvCountry.text = s.country
+        holder.tvCountry.text = "${s.country} · ${s.type}"
         holder.tvPing.text = s.ping
         holder.tvSpeed.text = s.speed
         holder.btnConnect.setOnClickListener { onConnect(s) }

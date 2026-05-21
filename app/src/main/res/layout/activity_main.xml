@@ -9,14 +9,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#007AFF"
-        app:elevation="4dp">
+        app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="#007AFF"
-            app:title="WeSports VPN"
             app:titleTextColor="#FFFFFF"
             app:menu="@menu/appbar_menu" />
 
@@ -33,7 +32,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#FFFFFF"
-        app:itemIconTint="#007AFF"
+        app:itemIconTint="@null"
         app:itemTextColor="#007AFF"
         app:labelVisibilityMode="labeled"
         app:menu="@menu/bottom_nav_menu" />

@@ -10,21 +10,17 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="16dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Tweaks"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="#111111" />
+        android:paddingStart="4dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp">
 
         <Button
             android:id="@+id/btnAdd"
             android:layout_width="wrap_content"
             android:layout_height="36dp"
+            android:layout_gravity="end"
+            android:layout_marginStart="auto"
             android:text="+ Adicionar"
             android:textSize="13sp"
             android:textColor="#FFFFFF"
@@ -37,6 +33,7 @@
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="8dp" />
+        android:padding="8dp"
+        android:clipToPadding="false" />
 
 </LinearLayout>

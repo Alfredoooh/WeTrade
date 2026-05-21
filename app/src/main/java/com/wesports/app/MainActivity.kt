@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.widget.PopupMenu
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.Fragment
@@ -38,15 +39,13 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
+        binding.toolbar.title = "WeSports VPN"
+        binding.toolbar.setTitleTextColor(android.graphics.Color.WHITE)
 
         binding.toolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
-                R.id.menu_settings -> {
-                    Toast.makeText(this, "Definições", Toast.LENGTH_SHORT).show()
-                    true
-                }
-                R.id.menu_about -> {
-                    Toast.makeText(this, "WeSports VPN v1.0", Toast.LENGTH_SHORT).show()
+                R.id.menu_overflow -> {
+                    showOverflowMenu()
                     true
                 }
                 else -> false
@@ -63,12 +62,43 @@ class MainActivity : AppCompatActivity() {
 
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_home -> showFragment(homeFragment)
-                R.id.nav_servers -> showFragment(serversFragment)
-                R.id.nav_tweaks -> showFragment(tweaksFragment)
+                R.id.nav_home -> {
+                    binding.toolbar.title = "WeSports VPN"
+                    showFragment(homeFragment)
+                }
+                R.id.nav_servers -> {
+                    binding.toolbar.title = "Servidores"
+                    showFragment(serversFragment)
+                }
+                R.id.nav_tweaks -> {
+                    binding.toolbar.title = "Tweaks"
+                    showFragment(tweaksFragment)
+                }
             }
             true
         }
+    }
+
+    private fun showOverflowMenu() {
+        val anchor = binding.toolbar.findViewById<android.view.View>(R.id.menu_overflow)
+            ?: binding.toolbar
+        val popup = PopupMenu(this, anchor)
+        popup.menu.add(0, 1, 0, "Sobre")
+        popup.menu.add(0, 2, 1, "Versão")
+        popup.menu.add(0, 3, 2, "Configurações")
+        popup.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                1 -> AlertDialog.Builder(this)
+                    .setTitle("WeSports VPN")
+                    .setMessage("VPN com tunelamento SSL/HTTP via SNI.\nDesenvolvido para Angola.")
+                    .setPositiveButton("OK", null)
+                    .show()
+                2 -> Toast.makeText(this, "Versão 1.0.0", Toast.LENGTH_SHORT).show()
+                3 -> Toast.makeText(this, "Configurações em breve", Toast.LENGTH_SHORT).show()
+            }
+            true
+        }
+        popup.show()
     }
 
     private fun showFragment(fragment: Fragment) {
