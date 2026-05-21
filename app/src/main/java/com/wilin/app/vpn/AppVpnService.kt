@@ -124,7 +124,7 @@ class AppVpnService : VpnService() {
 
         // ── Interface VPN ────────────────────────────────────────────────────
         val pfd = Builder()
-            .setSession("WeSports VPN")
+            .setSession("wilin VPN")
             .addAddress("10.8.0.2", 24)
             .addDnsServer("8.8.8.8")
             .addDnsServer("1.1.1.1")
@@ -346,7 +346,7 @@ class AppVpnService : VpnService() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val ch = NotificationChannel(CHANNEL_ID, "WeSports VPN", NotificationManager.IMPORTANCE_LOW)
+            val ch = NotificationChannel(CHANNEL_ID, "wilin VPN", NotificationManager.IMPORTANCE_LOW)
             ch.description = "Estado da ligação VPN"
             getSystemService(NotificationManager::class.java)?.createNotificationChannel(ch)
         }
@@ -360,7 +360,7 @@ class AppVpnService : VpnService() {
         )
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(this, CHANNEL_ID)
-                .setContentTitle("WeSports VPN")
+                .setContentTitle("wilin VPN")
                 .setContentText(text)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setContentIntent(pi)
@@ -369,7 +369,7 @@ class AppVpnService : VpnService() {
         } else {
             @Suppress("DEPRECATION")
             Notification.Builder(this)
-                .setContentTitle("WeSports VPN")
+                .setContentTitle("wilin VPN")
                 .setContentText(text)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setContentIntent(pi)

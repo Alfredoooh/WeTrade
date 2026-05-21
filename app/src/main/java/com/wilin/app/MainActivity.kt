@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
-        binding.toolbar.title = "WeSports VPN"
+        binding.toolbar.title = "wilin VPN"
         binding.toolbar.setTitleTextColor(android.graphics.Color.WHITE)
 
         binding.toolbar.setOnMenuItemClickListener { item ->
@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
-                    binding.toolbar.title = "WeSports VPN"
+                    binding.toolbar.title = "wilin VPN"
                     showFragment(homeFragment)
                 }
                 R.id.nav_servers -> {
@@ -89,7 +89,7 @@ class MainActivity : AppCompatActivity() {
         popup.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 1 -> AlertDialog.Builder(this)
-                    .setTitle("WeSports VPN")
+                    .setTitle("wilin VPN")
                     .setMessage("VPN com tunelamento SSL/HTTP via SNI.\nDesenvolvido para Angola.")
                     .setPositiveButton("OK", null)
                     .show()
