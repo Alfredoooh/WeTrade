@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNav.menu.findItem(R.id.nav_home).icon =
             svgStateDrawable("icons/svg/home_filled.svg", "icons/svg/home_outline.svg")
         binding.bottomNav.menu.findItem(R.id.nav_search).icon =
-            svgStateDrawable("icons/svg/search_filled.svg", "icons/svg/search_outline.svg")
+            svgStateDrawable("icons/svg/magnifying_glass_filled.svg", "icons/svg/magnifying_glass_outline.svg")
         binding.bottomNav.menu.findItem(R.id.nav_games).icon =
             svgStateDrawable("icons/svg/game_filled.svg", "icons/svg/game_outline.svg")
 
