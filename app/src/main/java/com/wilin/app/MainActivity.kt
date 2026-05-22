@@ -3,15 +3,14 @@ package com.wilin.app
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.StateListDrawable
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
@@ -40,8 +39,10 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.setDisplayShowTitleEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
 
-        binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 24, Color.BLACK))
-        binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 24, Color.BLACK))
+        val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
+
+        binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 24, iconTint))
+        binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 24, iconTint))
 
         binding.drawerItemSettings.setOnClickListener {
             binding.drawerLayout.closeDrawer(GravityCompat.START)
@@ -78,8 +79,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.toolbar_menu, menu)
-        menu.findItem(R.id.action_menu).icon =
-            svgDrawable("icons/svg/menu.svg", 24, Color.BLACK)
+        val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
+        menu.findItem(R.id.action_menu).icon = svgDrawable("icons/svg/menu.svg", 24, iconTint)
         return true
     }
 
@@ -103,7 +104,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun svgDrawable(path: String, sizeDp: Int, tint: Int = Color.BLACK): BitmapDrawable {
+    private fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
         val px = (sizeDp * resources.displayMetrics.density).toInt()
         val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
         val svg = SVG.getFromAsset(assets, path)
@@ -116,8 +117,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun svgStateDrawable(filledPath: String, outlinePath: String): StateListDrawable {
-        val filled = svgDrawable(filledPath, 24, Color.BLACK)
-        val outline = svgDrawable(outlinePath, 24, Color.GRAY)
+        val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
+        val iconTintSecondary = ContextCompat.getColor(this, R.color.icon_tint_secondary)
+        val filled = svgDrawable(filledPath, 24, iconTint)
+        val outline = svgDrawable(outlinePath, 24, iconTintSecondary)
         return StateListDrawable().apply {
             addState(intArrayOf(android.R.attr.state_checked), filled)
             addState(intArrayOf(), outline)

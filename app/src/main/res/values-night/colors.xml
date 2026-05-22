@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Brand (igual nos dois temas) -->
+  <color name="colorPrimary">#007AFF</color>
+  <color name="colorPrimaryDark">#0055B3</color>
+  <color name="colorAccent">#007AFF</color>
+  <color name="blue_apple">#007AFF</color>
+  
+  <!-- Window backgrounds -->
+  <color name="background">#000000</color>
+  <color name="background_dark">#000000</color>
+  <color name="splash_background_light">#FFFFFF</color>
+  <color name="splash_background_dark">#000000</color>
+  
+  <!-- AppBar / Toolbar -->
+  <color name="appbar_background">#1C1C1E</color>
+  
+  <!-- Texto -->
+  <color name="text_primary">#FFFFFF</color>
+  <color name="text_secondary">#ABABAB</color>
+  
+  <!-- Bottom nav -->
+  <color name="bottom_nav_background">#1C1C1E</color>
+  <color name="bottom_nav_text_color">#007AFF</color>
+  
+  <!-- Drawer -->
+  <color name="drawer_background">#1C1C1E</color>
+  <color name="drawer_text">#FFFFFF</color>
+  
+  <!-- Superfícies / Cards -->
+  <color name="surface">#000000</color>
+  <color name="card_background">#1C1C1E</color>
+  
+  <!-- Separadores -->
+  <color name="divider">#2C2C2E</color>
+  
+  <!-- Settings -->
+  <color name="settings_section_label">#4DA3FF</color>
+  
+  <!-- Ícones -->
+  <color name="icon_tint">#FFFFFF</color>
+  <color name="icon_tint_secondary">#ABABAB</color>
+</resources>

@@ -4,11 +4,11 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.caverock.androidsvg.SVG
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.wilin.app.MainActivity
@@ -64,8 +64,8 @@ class SettingsActivity : AppCompatActivity() {
         supportActionBar?.title = getString(R.string.settings)
         binding.toolbar.setNavigationOnClickListener { finish() }
 
-        val blue = Color.parseColor("#007AFF")
-        val grey = Color.parseColor("#CCCCCC")
+        val blue = ContextCompat.getColor(this, R.color.colorPrimary)
+        val chevronTint = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
         binding.iconLanguage.setImageDrawable(svgDrawable("icons/svg/language.svg", 24, blue))
         binding.iconAppearance.setImageDrawable(svgDrawable("icons/svg/appearance.svg", 24, blue))
@@ -73,11 +73,11 @@ class SettingsActivity : AppCompatActivity() {
         binding.iconPrivacy.setImageDrawable(svgDrawable("icons/svg/privacy.svg", 24, blue))
         binding.iconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 24, blue))
 
-        binding.iconChevronLanguage.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 20, grey))
-        binding.iconChevronAppearance.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 20, grey))
-        binding.iconChevronNotifications.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 20, grey))
-        binding.iconChevronPrivacy.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 20, grey))
-        binding.iconChevronAbout.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 20, grey))
+        binding.iconChevronLanguage.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 20, chevronTint))
+        binding.iconChevronAppearance.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 20, chevronTint))
+        binding.iconChevronNotifications.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 20, chevronTint))
+        binding.iconChevronPrivacy.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 20, chevronTint))
+        binding.iconChevronAbout.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 20, chevronTint))
 
         val pInfo = packageManager.getPackageInfo(packageName, 0)
         binding.tvVersion.text = pInfo.versionName
