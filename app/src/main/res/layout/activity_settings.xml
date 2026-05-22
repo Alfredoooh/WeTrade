@@ -30,7 +30,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:paddingTop="8dp"
+            android:paddingBottom="24dp">
 
             <!-- Secção Geral -->
             <TextView
@@ -40,159 +41,154 @@
                 android:textSize="12sp"
                 android:textColor="@color/settings_section_label"
                 android:textAllCaps="true"
-                android:paddingBottom="8dp" />
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="4dp" />
 
+            <!-- Idioma -->
             <LinearLayout
+                android:id="@+id/itemLanguage"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@color/card_background">
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:background="?attr/selectableItemBackground">
 
-                <!-- Idioma -->
-                <LinearLayout
-                    android:id="@+id/itemLanguage"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:background="?attr/selectableItemBackground">
+                <ImageView
+                    android:id="@+id/iconLanguage"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp" />
 
-                    <ImageView
-                        android:id="@+id/iconLanguage"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/language"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary" />
 
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:text="@string/language"
-                        android:textSize="16sp"
-                        android:textColor="@color/text_primary" />
+                <ImageView
+                    android:id="@+id/iconChevronLanguage"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp" />
 
-                    <ImageView
-                        android:id="@+id/iconChevronLanguage"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp" />
+            </LinearLayout>
 
-                </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/divider"
+                android:layout_marginStart="56dp" />
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/divider"
-                    android:layout_marginStart="56dp" />
+            <!-- Aparência -->
+            <LinearLayout
+                android:id="@+id/itemAppearance"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:background="?attr/selectableItemBackground">
 
-                <!-- Aparência -->
-                <LinearLayout
-                    android:id="@+id/itemAppearance"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:background="?attr/selectableItemBackground">
+                <ImageView
+                    android:id="@+id/iconAppearance"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp" />
 
-                    <ImageView
-                        android:id="@+id/iconAppearance"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/appearance"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary" />
 
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:text="@string/appearance"
-                        android:textSize="16sp"
-                        android:textColor="@color/text_primary" />
+                <ImageView
+                    android:id="@+id/iconChevronAppearance"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp" />
 
-                    <ImageView
-                        android:id="@+id/iconChevronAppearance"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp" />
+            </LinearLayout>
 
-                </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/divider"
+                android:layout_marginStart="56dp" />
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/divider"
-                    android:layout_marginStart="56dp" />
+            <!-- Notificações -->
+            <LinearLayout
+                android:id="@+id/itemNotifications"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:background="?attr/selectableItemBackground">
 
-                <!-- Notificações -->
-                <LinearLayout
-                    android:id="@+id/itemNotifications"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:background="?attr/selectableItemBackground">
+                <ImageView
+                    android:id="@+id/iconNotifications"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp" />
 
-                    <ImageView
-                        android:id="@+id/iconNotifications"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/notifications"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary" />
 
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:text="@string/notifications"
-                        android:textSize="16sp"
-                        android:textColor="@color/text_primary" />
+                <ImageView
+                    android:id="@+id/iconChevronNotifications"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp" />
 
-                    <ImageView
-                        android:id="@+id/iconChevronNotifications"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp" />
+            </LinearLayout>
 
-                </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/divider"
+                android:layout_marginStart="56dp" />
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/divider"
-                    android:layout_marginStart="56dp" />
+            <!-- Privacidade -->
+            <LinearLayout
+                android:id="@+id/itemPrivacy"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:background="?attr/selectableItemBackground">
 
-                <!-- Privacidade -->
-                <LinearLayout
-                    android:id="@+id/itemPrivacy"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:background="?attr/selectableItemBackground">
+                <ImageView
+                    android:id="@+id/iconPrivacy"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp" />
 
-                    <ImageView
-                        android:id="@+id/iconPrivacy"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/privacy"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary" />
 
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:text="@string/privacy"
-                        android:textSize="16sp"
-                        android:textColor="@color/text_primary" />
-
-                    <ImageView
-                        android:id="@+id/iconChevronPrivacy"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp" />
-
-                </LinearLayout>
+                <ImageView
+                    android:id="@+id/iconChevronPrivacy"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp" />
 
             </LinearLayout>
 
@@ -204,78 +200,74 @@
                 android:textSize="12sp"
                 android:textColor="@color/settings_section_label"
                 android:textAllCaps="true"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
                 android:paddingTop="24dp"
-                android:paddingBottom="8dp" />
+                android:paddingBottom="4dp" />
 
+            <!-- Sobre -->
             <LinearLayout
+                android:id="@+id/itemAbout"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@color/card_background">
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:background="?attr/selectableItemBackground">
 
-                <LinearLayout
-                    android:id="@+id/itemAbout"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:background="?attr/selectableItemBackground">
+                <ImageView
+                    android:id="@+id/iconAbout"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp" />
 
-                    <ImageView
-                        android:id="@+id/iconAbout"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/about"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary" />
 
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:text="@string/about"
-                        android:textSize="16sp"
-                        android:textColor="@color/text_primary" />
+                <ImageView
+                    android:id="@+id/iconChevronAbout"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp" />
 
-                    <ImageView
-                        android:id="@+id/iconChevronAbout"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp" />
+            </LinearLayout>
 
-                </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/divider"
+                android:layout_marginStart="56dp" />
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/divider"
-                    android:layout_marginStart="56dp" />
+            <!-- Versão -->
+            <LinearLayout
+                android:id="@+id/itemVersion"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
 
-                <LinearLayout
-                    android:id="@+id/itemVersion"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/version"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary" />
 
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/version"
-                        android:textSize="16sp"
-                        android:textColor="@color/text_primary" />
-
-                    <TextView
-                        android:id="@+id/tvVersion"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="1.0.0"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
-
-                </LinearLayout>
+                <TextView
+                    android:id="@+id/tvVersion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1.0.0"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp" />
 
             </LinearLayout>
 

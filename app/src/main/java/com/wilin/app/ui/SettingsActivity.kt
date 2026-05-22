@@ -1,5 +1,6 @@
 package com.wilin.app.ui
 
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -7,11 +8,14 @@ import android.graphics.Canvas
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
+import android.view.View
+import android.widget.ArrayAdapter
+import android.widget.ListView
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import com.caverock.androidsvg.SVG
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.wilin.app.MainActivity
 import com.wilin.app.R
 import com.wilin.app.databinding.ActivitySettingsBinding
@@ -99,12 +103,84 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    private fun buildAppDialog(): AlertDialog.Builder {
+        val bgColor = ContextCompat.getColor(this, R.color.dialog_background)
+        val textPrimary = ContextCompat.getColor(this, R.color.text_primary)
+        val blue = ContextCompat.getColor(this, R.color.colorPrimary)
+
+        return AlertDialog.Builder(this).apply {
+            // O dialog em si vai ter o fundo via setView ou via tema —
+            // usamos um wrapper para forçar as cores
+        }.also { builder ->
+            // Guardamos referência para usar em show()
+            builder.setBackground(
+                android.graphics.drawable.ColorDrawable(bgColor)
+            )
+        }
+    }
+
     private fun showLanguageDialog() {
         val names = languages.map { it.first }.toTypedArray()
-        MaterialAlertDialogBuilder(this)
-            .setTitle(getString(R.string.select_language))
-            .setItems(names) { _, which -> setLocale(languages[which].second) }
-            .show()
+
+        val bgColor = ContextCompat.getColor(this, R.color.dialog_background)
+        val textPrimary = ContextCompat.getColor(this, R.color.text_primary)
+        val blue = ContextCompat.getColor(this, R.color.colorPrimary)
+        val dividerColor = ContextCompat.getColor(this, R.color.divider)
+
+        val listView = ListView(this).apply {
+            val adapter = object : ArrayAdapter<String>(
+                this@SettingsActivity,
+                android.R.layout.simple_list_item_1,
+                names
+            ) {
+                override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                    val v = super.getView(position, convertView, parent)
+                    (v as TextView).apply {
+                        setTextColor(textPrimary)
+                        setBackgroundColor(bgColor)
+                        setPadding(
+                            (16 * resources.displayMetrics.density).toInt(),
+                            (14 * resources.displayMetrics.density).toInt(),
+                            (16 * resources.displayMetrics.density).toInt(),
+                            (14 * resources.displayMetrics.density).toInt()
+                        )
+                        textSize = 15f
+                    }
+                    return v
+                }
+            }
+            setAdapter(adapter)
+            divider = android.graphics.drawable.ColorDrawable(dividerColor)
+            dividerHeight = 1
+            setBackgroundColor(bgColor)
+        }
+
+        val titleView = TextView(this).apply {
+            text = getString(R.string.select_language)
+            setTextColor(textPrimary)
+            textSize = 18f
+            setPadding(
+                (20 * resources.displayMetrics.density).toInt(),
+                (20 * resources.displayMetrics.density).toInt(),
+                (20 * resources.displayMetrics.density).toInt(),
+                (12 * resources.displayMetrics.density).toInt()
+            )
+            setBackgroundColor(bgColor)
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setCustomTitle(titleView)
+            .setView(listView)
+            .create()
+
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(bgColor))
+
+        listView.setOnItemClickListener { _, _, which, _ ->
+            dialog.dismiss()
+            setLocale(languages[which].second)
+        }
+
+        dialog.show()
     }
 
     private fun showThemeDialog() {
@@ -112,19 +188,79 @@ class SettingsActivity : AppCompatActivity() {
         val current = prefs.getString("theme", "system")
         val currentIndex = themeValues.indexOf(current).coerceAtLeast(0)
 
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Aparência")
-            .setSingleChoiceItems(themeOptions, currentIndex) { dialog, which ->
-                val selected = themeValues[which]
-                prefs.edit().putString("theme", selected).apply()
-                when (selected) {
-                    "light" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                    "dark"  -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                    else    -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        val bgColor = ContextCompat.getColor(this, R.color.dialog_background)
+        val textPrimary = ContextCompat.getColor(this, R.color.text_primary)
+        val blue = ContextCompat.getColor(this, R.color.colorPrimary)
+        val dividerColor = ContextCompat.getColor(this, R.color.divider)
+
+        val titleView = TextView(this).apply {
+            text = getString(R.string.appearance)
+            setTextColor(textPrimary)
+            textSize = 18f
+            setPadding(
+                (20 * resources.displayMetrics.density).toInt(),
+                (20 * resources.displayMetrics.density).toInt(),
+                (20 * resources.displayMetrics.density).toInt(),
+                (12 * resources.displayMetrics.density).toInt()
+            )
+            setBackgroundColor(bgColor)
+        }
+
+        var selectedIndex = currentIndex
+        var dialog: AlertDialog? = null
+
+        val listView = ListView(this).apply {
+            val adapter = object : ArrayAdapter<String>(
+                this@SettingsActivity,
+                android.R.layout.simple_list_item_single_choice,
+                themeOptions
+            ) {
+                override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                    val v = super.getView(position, convertView, parent)
+                    (v as android.widget.CheckedTextView).apply {
+                        setTextColor(textPrimary)
+                        setBackgroundColor(bgColor)
+                        setPadding(
+                            (16 * resources.displayMetrics.density).toInt(),
+                            (14 * resources.displayMetrics.density).toInt(),
+                            (16 * resources.displayMetrics.density).toInt(),
+                            (14 * resources.displayMetrics.density).toInt()
+                        )
+                        textSize = 15f
+                        // Tint no radio button
+                        compoundDrawableTintList = android.content.res.ColorStateList.valueOf(blue)
+                    }
+                    return v
                 }
-                dialog.dismiss()
             }
-            .show()
+            setAdapter(adapter)
+            choiceMode = ListView.CHOICE_MODE_SINGLE
+            setItemChecked(currentIndex, true)
+            divider = android.graphics.drawable.ColorDrawable(dividerColor)
+            dividerHeight = 1
+            setBackgroundColor(bgColor)
+        }
+
+        dialog = AlertDialog.Builder(this)
+            .setCustomTitle(titleView)
+            .setView(listView)
+            .create()
+
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(bgColor))
+
+        listView.setOnItemClickListener { _, _, which, _ ->
+            selectedIndex = which
+            val selected = themeValues[which]
+            prefs.edit().putString("theme", selected).apply()
+            when (selected) {
+                "light" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                "dark"  -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                else    -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+            }
+            dialog?.dismiss()
+        }
+
+        dialog.show()
     }
 
     private fun setLocale(langCode: String) {

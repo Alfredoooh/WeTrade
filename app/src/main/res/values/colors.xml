@@ -27,9 +27,12 @@
     <color name="drawer_background">#FFFFFF</color>
     <color name="drawer_text">#000000</color>
     
-    <!-- Superfícies / Cards / Modals / Dialogs -->
+    <!-- Superfícies / Cards -->
     <color name="surface">#FFFFFF</color>
-    <color name="card_background">#CFCFCF</color>
+    <color name="card_background">#E6E6E6</color>
+    
+    <!-- Dialogs / Modals / BottomSheets — fundo #E6E6E6 -->
+    <color name="dialog_background">#E6E6E6</color>
     
     <!-- Separadores -->
     <color name="divider">#E0E0E0</color>

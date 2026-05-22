@@ -5,8 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.StateListDrawable
 import android.os.Bundle
+import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
@@ -24,9 +24,11 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var binding: ActivityMainBinding
 
-    private val homeFragment = HomeFragment()
+    private val homeFragment   = HomeFragment()
     private val searchFragment = SearchFragment()
-    private val gamesFragment = GamesFragment()
+    private val gamesFragment  = GamesFragment()
+
+    private var currentTab = R.id.tabHome
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -45,6 +47,11 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(true)
 
+        val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
+
+        // Ícone do drawer em SVG, igual a todos os outros
+        binding.toolbar.navigationIcon = svgDrawable("icons/svg/menu.svg", 24, iconTint)
+
         binding.toolbar.setNavigationOnClickListener {
             if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
                 binding.drawerLayout.closeDrawer(GravityCompat.START)
@@ -52,8 +59,6 @@ class MainActivity : AppCompatActivity() {
                 binding.drawerLayout.openDrawer(GravityCompat.START)
             }
         }
-
-        val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
 
         binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 24, iconTint))
         binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 24, iconTint))
@@ -66,12 +71,39 @@ class MainActivity : AppCompatActivity() {
             binding.drawerLayout.closeDrawer(GravityCompat.START)
         }
 
-        binding.bottomNav.menu.findItem(R.id.nav_home).icon =
-            svgStateDrawable("icons/svg/home_filled.svg", "icons/svg/home_outline.svg")
-        binding.bottomNav.menu.findItem(R.id.nav_search).icon =
-            svgStateDrawable("icons/svg/magnifying_glass_filled.svg", "icons/svg/magnifying_glass_outline.svg")
-        binding.bottomNav.menu.findItem(R.id.nav_games).icon =
-            svgStateDrawable("icons/svg/game_filled.svg", "icons/svg/game_outline.svg")
+        val iconActive   = ContextCompat.getColor(this, R.color.icon_tint)
+        val iconInactive = ContextCompat.getColor(this, R.color.icon_tint_secondary)
+
+        val iconHome   = binding.tabHomeIcon
+        val iconSearch = binding.tabSearchIcon
+        val iconGames  = binding.tabGamesIcon
+
+        fun setIcons(activeTab: Int) {
+            iconHome.setImageDrawable(
+                svgDrawable("icons/svg/home_${if (activeTab == R.id.tabHome) "filled" else "outline"}.svg",
+                    24, if (activeTab == R.id.tabHome) iconActive else iconInactive))
+            iconSearch.setImageDrawable(
+                svgDrawable("icons/svg/magnifying_glass_${if (activeTab == R.id.tabSearch) "filled" else "outline"}.svg",
+                    24, if (activeTab == R.id.tabSearch) iconActive else iconInactive))
+            iconGames.setImageDrawable(
+                svgDrawable("icons/svg/game_${if (activeTab == R.id.tabGames) "filled" else "outline"}.svg",
+                    24, if (activeTab == R.id.tabGames) iconActive else iconInactive))
+        }
+
+        fun selectTab(tabId: Int) {
+            if (currentTab == tabId) return
+            currentTab = tabId
+            setIcons(tabId)
+            when (tabId) {
+                R.id.tabHome   -> showFragment(homeFragment)
+                R.id.tabSearch -> showFragment(searchFragment)
+                R.id.tabGames  -> showFragment(gamesFragment)
+            }
+        }
+
+        binding.tabHome.setOnClickListener   { selectTab(R.id.tabHome) }
+        binding.tabSearch.setOnClickListener { selectTab(R.id.tabSearch) }
+        binding.tabGames.setOnClickListener  { selectTab(R.id.tabGames) }
 
         supportFragmentManager.beginTransaction()
             .add(R.id.container, homeFragment, "home")
@@ -81,14 +113,7 @@ class MainActivity : AppCompatActivity() {
             .hide(gamesFragment)
             .commit()
 
-        binding.bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home   -> showFragment(homeFragment)
-                R.id.nav_search -> showFragment(searchFragment)
-                R.id.nav_games  -> showFragment(gamesFragment)
-            }
-            true
-        }
+        setIcons(R.id.tabHome)
     }
 
     override fun onBackPressed() {
@@ -99,7 +124,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
+    fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
         val px = (sizeDp * resources.displayMetrics.density).toInt()
         val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
         val svg = SVG.getFromAsset(assets, path)
@@ -109,17 +134,6 @@ class MainActivity : AppCompatActivity() {
         val drawable = BitmapDrawable(resources, bmp)
         drawable.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
         return drawable
-    }
-
-    private fun svgStateDrawable(filledPath: String, outlinePath: String): StateListDrawable {
-        val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
-        val iconTintSecondary = ContextCompat.getColor(this, R.color.icon_tint_secondary)
-        val filled = svgDrawable(filledPath, 24, iconTint)
-        val outline = svgDrawable(outlinePath, 24, iconTintSecondary)
-        return StateListDrawable().apply {
-            addState(intArrayOf(android.R.attr.state_checked), filled)
-            addState(intArrayOf(), outline)
-        }
     }
 
     private fun showFragment(fragment: Fragment) {
