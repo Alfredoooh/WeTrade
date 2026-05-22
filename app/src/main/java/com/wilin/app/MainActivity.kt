@@ -39,17 +39,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(true)
 
-        // Toggle para abrir drawer pela direita
-        val toggle = ActionBarDrawerToggle(
-            this, binding.drawerLayout, binding.toolbar,
-            0, 0
-        )
-        binding.drawerLayout.addDrawerListener(toggle)
-        toggle.syncState()
-
-        // Ícone hamburger à direita
-        binding.toolbar.setNavigationIcon(null)
-        supportActionBar?.setDisplayHomeAsUpEnabled(false)
         binding.toolbar.inflateMenu(R.menu.toolbar_menu)
         binding.toolbar.setOnMenuItemClickListener { item ->
             if (item.itemId == R.id.action_menu) {
@@ -66,7 +55,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         binding.navView.menu.findItem(R.id.drawer_settings).icon =
             svgDrawable("icons/svg/settings.svg", 24, Color.BLACK)
         binding.navView.menu.findItem(R.id.drawer_about).icon =
-            svgDrawable("icons/svg/back_arrow.svg", 24, Color.BLACK)
+            svgDrawable("icons/svg/about.svg", 24, Color.BLACK)
 
         binding.navView.setNavigationItemSelectedListener(this)
 
