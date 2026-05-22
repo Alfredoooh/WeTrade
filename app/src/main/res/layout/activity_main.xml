@@ -34,7 +34,11 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
-        <!-- Custom bottom nav: branco, sem labels, sem pills, sem M3 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/divider" />
+
         <LinearLayout
             android:id="@+id/bottomNav"
             android:layout_width="match_parent"
@@ -42,14 +46,6 @@
             android:background="@color/bottom_nav_background"
             android:orientation="horizontal">
 
-            <!-- Separador topo -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="0.5dp"
-                android:background="@color/divider"
-                android:layout_gravity="top" />
-
-            <!-- Tab: Início -->
             <FrameLayout
                 android:id="@+id/tabHome"
                 android:layout_width="0dp"
@@ -67,7 +63,6 @@
 
             </FrameLayout>
 
-            <!-- Tab: Pesquisar -->
             <FrameLayout
                 android:id="@+id/tabSearch"
                 android:layout_width="0dp"
@@ -85,7 +80,6 @@
 
             </FrameLayout>
 
-            <!-- Tab: Jogos -->
             <FrameLayout
                 android:id="@+id/tabGames"
                 android:layout_width="0dp"
@@ -107,7 +101,6 @@
 
     </LinearLayout>
 
-    <!-- Drawer lateral -->
     <LinearLayout
         android:id="@+id/drawerContainer"
         android:layout_width="280dp"

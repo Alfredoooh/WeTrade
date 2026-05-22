@@ -1,6 +1,5 @@
 package com.wilin.app.ui
 
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -16,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import com.caverock.androidsvg.SVG
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.wilin.app.MainActivity
 import com.wilin.app.R
 import com.wilin.app.databinding.ActivitySettingsBinding
@@ -106,9 +106,8 @@ class SettingsActivity : AppCompatActivity() {
     private fun showLanguageDialog() {
         val names = languages.map { it.first }.toTypedArray()
 
-        val bgColor = ContextCompat.getColor(this, R.color.dialog_background)
         val textPrimary = ContextCompat.getColor(this, R.color.text_primary)
-        val blue = ContextCompat.getColor(this, R.color.colorPrimary)
+        val bgColor = ContextCompat.getColor(this, R.color.dialog_background)
         val dividerColor = ContextCompat.getColor(this, R.color.divider)
 
         val listView = ListView(this).apply {
@@ -152,7 +151,7 @@ class SettingsActivity : AppCompatActivity() {
             setBackgroundColor(bgColor)
         }
 
-        val dialog = AlertDialog.Builder(this)
+        val dialog = MaterialAlertDialogBuilder(this)
             .setCustomTitle(titleView)
             .setView(listView)
             .create()
@@ -172,8 +171,8 @@ class SettingsActivity : AppCompatActivity() {
         val current = prefs.getString("theme", "system")
         val currentIndex = themeValues.indexOf(current).coerceAtLeast(0)
 
-        val bgColor = ContextCompat.getColor(this, R.color.dialog_background)
         val textPrimary = ContextCompat.getColor(this, R.color.text_primary)
+        val bgColor = ContextCompat.getColor(this, R.color.dialog_background)
         val blue = ContextCompat.getColor(this, R.color.colorPrimary)
         val dividerColor = ContextCompat.getColor(this, R.color.divider)
 
@@ -190,8 +189,7 @@ class SettingsActivity : AppCompatActivity() {
             setBackgroundColor(bgColor)
         }
 
-        var selectedIndex = currentIndex
-        var dialog: AlertDialog? = null
+        var dialog: android.app.AlertDialog? = null
 
         val listView = ListView(this).apply {
             val adapter = object : ArrayAdapter<String>(
@@ -224,7 +222,7 @@ class SettingsActivity : AppCompatActivity() {
             setBackgroundColor(bgColor)
         }
 
-        dialog = AlertDialog.Builder(this)
+        dialog = MaterialAlertDialogBuilder(this)
             .setCustomTitle(titleView)
             .setView(listView)
             .create()
@@ -232,7 +230,6 @@ class SettingsActivity : AppCompatActivity() {
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(bgColor))
 
         listView.setOnItemClickListener { _, _, which, _ ->
-            selectedIndex = which
             val selected = themeValues[which]
             prefs.edit().putString("theme", selected).apply()
             when (selected) {
