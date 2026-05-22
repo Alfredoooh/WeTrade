@@ -12,7 +12,7 @@
     <color name="splash_background_light">#FFFFFF</color>
     <color name="splash_background_dark">#121212</color>
     
-    <!-- AppBar / Toolbar / BottomNav -->
+    <!-- AppBar / Toolbar / BottomNav — igual ao fundo -->
     <color name="appbar_background">#FFFFFF</color>
     <color name="bottom_nav_background">#FFFFFF</color>
     <color name="bottom_nav_text_color">#007AFF</color>
@@ -24,21 +24,21 @@
     <color name="text_link">#007AFF</color>
     
     <!-- Drawer -->
-    <color name="drawer_background">#FFFFFF</color>
+    <color name="drawer_background">#F2F2F2</color>
     <color name="drawer_text">#000000</color>
     
     <!-- Superfícies / Cards -->
     <color name="surface">#FFFFFF</color>
     <color name="card_background">#E6E6E6</color>
     
-    <!-- Dialogs / Modals / BottomSheets — fundo #E6E6E6 -->
+    <!-- Dialogs / Modals / BottomSheets -->
     <color name="dialog_background">#E6E6E6</color>
     
     <!-- Separadores -->
     <color name="divider">#E0E0E0</color>
     
-    <!-- Settings -->
-    <color name="settings_section_label">#007AFF</color>
+    <!-- Settings — sem azul, usa text_secondary -->
+    <color name="settings_section_label">#888888</color>
     
     <!-- Ícones -->
     <color name="icon_tint">#000000</color>

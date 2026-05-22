@@ -12,9 +12,9 @@
   <color name="splash_background_light">#FFFFFF</color>
   <color name="splash_background_dark">#121212</color>
   
-  <!-- AppBar / Toolbar / BottomNav -->
-  <color name="appbar_background">#1F1F1F</color>
-  <color name="bottom_nav_background">#1F1F1F</color>
+  <!-- AppBar / Toolbar / BottomNav — igual ao corpo escuro -->
+  <color name="appbar_background">#121212</color>
+  <color name="bottom_nav_background">#121212</color>
   <color name="bottom_nav_text_color">#007AFF</color>
   
   <!-- Texto -->
@@ -23,7 +23,7 @@
   <color name="text_hint">#666666</color>
   <color name="text_link">#007AFF</color>
   
-  <!-- Drawer -->
+  <!-- Drawer — mantém tom ligeiramente elevado -->
   <color name="drawer_background">#1F1F1F</color>
   <color name="drawer_text">#FFFFFF</color>
   
@@ -35,8 +35,8 @@
   <!-- Separadores -->
   <color name="divider">#2C2C2C</color>
   
-  <!-- Settings -->
-  <color name="settings_section_label">#007AFF</color>
+  <!-- Settings — sem azul -->
+  <color name="settings_section_label">#ABABAB</color>
   
   <!-- Ícones -->
   <color name="icon_tint">#FFFFFF</color>

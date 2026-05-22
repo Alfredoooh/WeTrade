@@ -72,17 +72,17 @@ class SettingsActivity : AppCompatActivity() {
         supportActionBar?.title = getString(R.string.settings)
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
-        val blue = ContextCompat.getColor(this, R.color.colorPrimary)
         val chevronTint = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
         binding.toolbar.navigationIcon = svgDrawable("icons/svg/back_arrow.svg", 24, iconTint)
         binding.toolbar.setNavigationOnClickListener { finish() }
 
-        binding.iconLanguage.setImageDrawable(svgDrawable("icons/svg/language.svg", 24, blue))
-        binding.iconAppearance.setImageDrawable(svgDrawable("icons/svg/appearance.svg", 24, blue))
-        binding.iconNotifications.setImageDrawable(svgDrawable("icons/svg/notifications.svg", 24, blue))
-        binding.iconPrivacy.setImageDrawable(svgDrawable("icons/svg/privacy.svg", 24, blue))
-        binding.iconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 24, blue))
+        // Ícones todos com icon_tint — sem azul
+        binding.iconLanguage.setImageDrawable(svgDrawable("icons/svg/language.svg", 24, iconTint))
+        binding.iconAppearance.setImageDrawable(svgDrawable("icons/svg/appearance.svg", 24, iconTint))
+        binding.iconNotifications.setImageDrawable(svgDrawable("icons/svg/notifications.svg", 24, iconTint))
+        binding.iconPrivacy.setImageDrawable(svgDrawable("icons/svg/privacy.svg", 24, iconTint))
+        binding.iconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 24, iconTint))
 
         binding.iconChevronLanguage.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 20, chevronTint))
         binding.iconChevronAppearance.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 20, chevronTint))
@@ -251,11 +251,11 @@ class SettingsActivity : AppCompatActivity() {
         Locale.setDefault(locale)
         val config = resources.configuration
         config.setLocale(locale)
+        @Suppress("DEPRECATION")
         resources.updateConfiguration(config, resources.displayMetrics)
 
-        val intent = Intent(this, MainActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        startActivity(intent)
+        // Recria apenas a SettingsActivity para aplicar o idioma sem voltar ao início
+        recreate()
     }
 
     private fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
