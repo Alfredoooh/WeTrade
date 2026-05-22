@@ -91,6 +91,12 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.itemLanguage.setOnClickListener { showLanguageDialog() }
         binding.itemAppearance.setOnClickListener { showThemeDialog() }
+        binding.itemNotifications.setOnClickListener {
+            startActivity(Intent(this, NotificationsActivity::class.java))
+        }
+        binding.itemPrivacy.setOnClickListener {
+            startActivity(Intent(this, PrivacyActivity::class.java))
+        }
     }
 
     private fun showLanguageDialog() {

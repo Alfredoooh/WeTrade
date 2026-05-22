@@ -6,30 +6,30 @@
     <color name="colorAccent">#007AFF</color>
     <color name="blue_apple">#007AFF</color>
     
-    <!-- Window backgrounds -->
+    <!-- Window / fundo geral -->
     <color name="background">#FFFFFF</color>
     <color name="background_dark">#121212</color>
     <color name="splash_background_light">#FFFFFF</color>
     <color name="splash_background_dark">#121212</color>
     
-    <!-- AppBar / Toolbar -->
+    <!-- AppBar / Toolbar / BottomNav -->
     <color name="appbar_background">#FFFFFF</color>
+    <color name="bottom_nav_background">#FFFFFF</color>
+    <color name="bottom_nav_text_color">#007AFF</color>
     
     <!-- Texto -->
     <color name="text_primary">#000000</color>
     <color name="text_secondary">#888888</color>
-    
-    <!-- Bottom nav -->
-    <color name="bottom_nav_background">#FFFFFF</color>
-    <color name="bottom_nav_text_color">#007AFF</color>
+    <color name="text_hint">#AAAAAA</color>
+    <color name="text_link">#007AFF</color>
     
     <!-- Drawer -->
     <color name="drawer_background">#FFFFFF</color>
     <color name="drawer_text">#000000</color>
     
-    <!-- Superfícies / Cards -->
+    <!-- Superfícies / Cards / Modals / Dialogs -->
     <color name="surface">#FFFFFF</color>
-    <color name="card_background">#F2F2F7</color>
+    <color name="card_background">#CFCFCF</color>
     
     <!-- Separadores -->
     <color name="divider">#E0E0E0</color>
@@ -40,4 +40,13 @@
     <!-- Ícones -->
     <color name="icon_tint">#000000</color>
     <color name="icon_tint_secondary">#888888</color>
+    
+    <!-- Input / EditText -->
+    <color name="input_background">#F2F2F2</color>
+    <color name="input_text">#000000</color>
+    <color name="input_hint">#AAAAAA</color>
+    <color name="cursor_color">#007AFF</color>
+    
+    <!-- Ripple / selectable -->
+    <color name="ripple_color">#1A000000</color>
 </resources>
