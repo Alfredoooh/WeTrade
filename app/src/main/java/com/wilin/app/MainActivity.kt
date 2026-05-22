@@ -1,4 +1,3 @@
-// MainActivity.kt
 package com.wilin.app
 
 import android.content.Intent
@@ -46,6 +45,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Ligar SearchView ao SearchBar programaticamente
+        binding.searchView.setupWithSearchBar(binding.searchBar)
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(true)

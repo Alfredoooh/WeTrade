@@ -107,17 +107,14 @@
 
         </LinearLayout>
 
-        <!-- SearchView M3 ligado ao SearchBar via app:setupWithSearchBar -->
         <com.google.android.material.search.SearchView
             android:id="@+id/searchView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:hint="@string/search_hint"
-            app:setupWithSearchBar="@id/searchBar" />
+            android:hint="@string/search_hint" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
-    <!-- Drawer -->
     <LinearLayout
         android:id="@+id/drawerContainer"
         android:layout_width="280dp"
