@@ -189,7 +189,7 @@ class SettingsActivity : AppCompatActivity() {
             setBackgroundColor(bgColor)
         }
 
-        var dialog: android.app.AlertDialog? = null
+        var dialog: androidx.appcompat.app.AlertDialog? = null
 
         val listView = ListView(this).apply {
             val adapter = object : ArrayAdapter<String>(
