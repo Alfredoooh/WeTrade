@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">wilin</string>
+  <string name="settings">Настройки</string>
+  <string name="about">О приложении</string>
+  <string name="language">Язык</string>
+  <string name="appearance">Внешний вид</string>
+  <string name="notifications">Уведомления</string>
+  <string name="privacy">Конфиденциальность</string>
+  <string name="version">Версия</string>
+  <string name="general">Общие</string>
+  <string name="search_hint">Поиск...</string>
+  <string name="search_empty">Найдите что-нибудь для начала</string>
+  <string name="nav_home">Главная</string>
+  <string name="nav_search">Поиск</string>
+  <string name="nav_games">Игры</string>
+  <string name="drawer_settings">Настройки</string>
+  <string name="drawer_about">О приложении</string>
+  <string name="select_language">Выбрать язык</string>
+  <string name="language_applied">Язык изменён.</string>
+</resources>

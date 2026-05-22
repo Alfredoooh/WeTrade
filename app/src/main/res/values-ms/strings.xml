@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">wilin</string>
+  <string name="settings">Tetapan</string>
+  <string name="about">Tentang</string>
+  <string name="language">Bahasa</string>
+  <string name="appearance">Penampilan</string>
+  <string name="notifications">Pemberitahuan</string>
+  <string name="privacy">Privasi</string>
+  <string name="version">Versi</string>
+  <string name="general">Umum</string>
+  <string name="search_hint">Cari...</string>
+  <string name="search_empty">Cari sesuatu untuk bermula</string>
+  <string name="nav_home">Laman Utama</string>
+  <string name="nav_search">Cari</string>
+  <string name="nav_games">Permainan</string>
+  <string name="drawer_settings">Tetapan</string>
+  <string name="drawer_about">Tentang</string>
+  <string name="select_language">Pilih Bahasa</string>
+  <string name="language_applied">Bahasa ditukar.</string>
+</resources>

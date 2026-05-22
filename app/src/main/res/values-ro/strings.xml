@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">wilin</string>
+  <string name="settings">Setări</string>
+  <string name="about">Despre</string>
+  <string name="language">Limbă</string>
+  <string name="appearance">Aspect</string>
+  <string name="notifications">Notificări</string>
+  <string name="privacy">Confidențialitate</string>
+  <string name="version">Versiune</string>
+  <string name="general">General</string>
+  <string name="search_hint">Caută...</string>
+  <string name="search_empty">Caută ceva pentru a începe</string>
+  <string name="nav_home">Acasă</string>
+  <string name="nav_search">Caută</string>
+  <string name="nav_games">Jocuri</string>
+  <string name="drawer_settings">Setări</string>
+  <string name="drawer_about">Despre</string>
+  <string name="select_language">Selectează limba</string>
+  <string name="language_applied">Limbă schimbată.</string>
+</resources>

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.wilin" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">#007AFF</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorOnPrimary">@color/text_primary_dark</item>
+        <item name="android:statusBarColor">@color/appbar_background</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:navigationBarColor">#FFFFFF</item>
-        <item name="android:windowBackground">@color/splash_background_light</item>
+        <item name="android:navigationBarColor">@color/bottom_nav_background</item>
+        <item name="android:windowBackground">@color/background</item>
         <item name="bottomNavigationStyle">@style/Widget.BottomNav.Custom</item>
     </style>
 
@@ -24,6 +24,10 @@
 
     <style name="ThemeOverlay.BottomNav.Custom" parent="">
         <item name="colorSecondaryContainer">#1A007AFF</item>
-        <item name="colorOnSecondaryContainer">#007AFF</item>
+        <item name="colorOnSecondaryContainer">@color/colorPrimary</item>
+    </style>
+
+    <style name="Theme.wilin.Drawer" parent="Theme.wilin">
+        <item name="android:windowIsTranslucent">true</item>
     </style>
 </resources>

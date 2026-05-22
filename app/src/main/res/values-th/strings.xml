@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">wilin</string>
+  <string name="settings">การตั้งค่า</string>
+  <string name="about">เกี่ยวกับ</string>
+  <string name="language">ภาษา</string>
+  <string name="appearance">รูปลักษณ์</string>
+  <string name="notifications">การแจ้งเตือน</string>
+  <string name="privacy">ความเป็นส่วนตัว</string>
+  <string name="version">เวอร์ชัน</string>
+  <string name="general">ทั่วไป</string>
+  <string name="search_hint">ค้นหา...</string>
+  <string name="search_empty">ค้นหาบางอย่างเพื่อเริ่มต้น</string>
+  <string name="nav_home">หน้าหลัก</string>
+  <string name="nav_search">ค้นหา</string>
+  <string name="nav_games">เกม</string>
+  <string name="drawer_settings">การตั้งค่า</string>
+  <string name="drawer_about">เกี่ยวกับ</string>
+  <string name="select_language">เลือกภาษา</string>
+  <string name="language_applied">เปลี่ยนภาษาแล้ว</string>
+</resources>

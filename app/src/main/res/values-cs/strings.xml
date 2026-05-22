@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">wilin</string>
+  <string name="settings">Nastavení</string>
+  <string name="about">O aplikaci</string>
+  <string name="language">Jazyk</string>
+  <string name="appearance">Vzhled</string>
+  <string name="notifications">Oznámení</string>
+  <string name="privacy">Soukromí</string>
+  <string name="version">Verze</string>
+  <string name="general">Obecné</string>
+  <string name="search_hint">Hledat...</string>
+  <string name="search_empty">Vyhledejte něco pro začátek</string>
+  <string name="nav_home">Domů</string>
+  <string name="nav_search">Hledat</string>
+  <string name="nav_games">Hry</string>
+  <string name="drawer_settings">Nastavení</string>
+  <string name="drawer_about">O aplikaci</string>
+  <string name="select_language">Vybrat jazyk</string>
+  <string name="language_applied">Jazyk změněn.</string>
+</resources>

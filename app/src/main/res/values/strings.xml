@@ -3,4 +3,19 @@
     <string name="app_name">wilin</string>
     <string name="settings">Definições</string>
     <string name="about">Sobre</string>
+    <string name="language">Idioma</string>
+    <string name="appearance">Aparência</string>
+    <string name="notifications">Notificações</string>
+    <string name="privacy">Privacidade</string>
+    <string name="version">Versão</string>
+    <string name="general">Geral</string>
+    <string name="search_hint">Pesquisar...</string>
+    <string name="search_empty">Pesquisa algo para começar</string>
+    <string name="nav_home">Início</string>
+    <string name="nav_search">Pesquisar</string>
+    <string name="nav_games">Jogos</string>
+    <string name="drawer_settings">Definições</string>
+    <string name="drawer_about">Sobre</string>
+    <string name="select_language">Selecionar Idioma</string>
+    <string name="language_applied">Idioma alterado.</string>
 </resources>

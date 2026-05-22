@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">wilin</string>
+  <string name="settings">Beállítások</string>
+  <string name="about">Névjegy</string>
+  <string name="language">Nyelv</string>
+  <string name="appearance">Megjelenés</string>
+  <string name="notifications">Értesítések</string>
+  <string name="privacy">Adatvédelem</string>
+  <string name="version">Verzió</string>
+  <string name="general">Általános</string>
+  <string name="search_hint">Keresés...</string>
+  <string name="search_empty">Keressen valamit a kezdéshez</string>
+  <string name="nav_home">Főoldal</string>
+  <string name="nav_search">Keresés</string>
+  <string name="nav_games">Játékok</string>
+  <string name="drawer_settings">Beállítások</string>
+  <string name="drawer_about">Névjegy</string>
+  <string name="select_language">Válasszon nyelvet</string>
+  <string name="language_applied">Nyelv megváltoztatva.</string>
+</resources>

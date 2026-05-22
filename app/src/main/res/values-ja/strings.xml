@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">wilin</string>
+  <string name="settings">設定</string>
+  <string name="about">アプリについて</string>
+  <string name="language">言語</string>
+  <string name="appearance">外観</string>
+  <string name="notifications">通知</string>
+  <string name="privacy">プライバシー</string>
+  <string name="version">バージョン</string>
+  <string name="general">一般</string>
+  <string name="search_hint">検索...</string>
+  <string name="search_empty">何か検索してください</string>
+  <string name="nav_home">ホーム</string>
+  <string name="nav_search">検索</string>
+  <string name="nav_games">ゲーム</string>
+  <string name="drawer_settings">設定</string>
+  <string name="drawer_about">アプリについて</string>
+  <string name="select_language">言語を選択</string>
+  <string name="language_applied">言語が変更されました。</string>
+</resources>

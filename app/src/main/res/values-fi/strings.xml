@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">wilin</string>
+  <string name="settings">Asetukset</string>
+  <string name="about">Tietoja</string>
+  <string name="language">Kieli</string>
+  <string name="appearance">Ulkoasu</string>
+  <string name="notifications">Ilmoitukset</string>
+  <string name="privacy">Yksityisyys</string>
+  <string name="version">Versio</string>
+  <string name="general">Yleiset</string>
+  <string name="search_hint">Hae...</string>
+  <string name="search_empty">Hae jotain aloittaaksesi</string>
+  <string name="nav_home">Koti</string>
+  <string name="nav_search">Hae</string>
+  <string name="nav_games">Pelit</string>
+  <string name="drawer_settings">Asetukset</string>
+  <string name="drawer_about">Tietoja</string>
+  <string name="select_language">Valitse kieli</string>
+  <string name="language_applied">Kieli vaihdettu.</string>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">wilin</string>
+  <string name="settings">Paramètres</string>
+  <string name="about">À propos</string>
+  <string name="language">Langue</string>
+  <string name="appearance">Apparence</string>
+  <string name="notifications">Notifications</string>
+  <string name="privacy">Confidentialité</string>
+  <string name="version">Version</string>
+  <string name="general">Général</string>
+  <string name="search_hint">Rechercher...</string>
+  <string name="search_empty">Recherchez quelque chose pour commencer</string>
+  <string name="nav_home">Accueil</string>
+  <string name="nav_search">Rechercher</string>
+  <string name="nav_games">Jeux</string>
+  <string name="drawer_settings">Paramètres</string>
+  <string name="drawer_about">À propos</string>
+  <string name="select_language">Sélectionner la langue</string>
+  <string name="language_applied">Langue modifiée.</string>
+</resources>

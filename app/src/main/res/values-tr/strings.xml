@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">wilin</string>
+  <string name="settings">Ayarlar</string>
+  <string name="about">Hakkında</string>
+  <string name="language">Dil</string>
+  <string name="appearance">Görünüm</string>
+  <string name="notifications">Bildirimler</string>
+  <string name="privacy">Gizlilik</string>
+  <string name="version">Sürüm</string>
+  <string name="general">Genel</string>
+  <string name="search_hint">Ara...</string>
+  <string name="search_empty">Başlamak için bir şey ara</string>
+  <string name="nav_home">Ana Sayfa</string>
+  <string name="nav_search">Ara</string>
+  <string name="nav_games">Oyunlar</string>
+  <string name="drawer_settings">Ayarlar</string>
+  <string name="drawer_about">Hakkında</string>
+  <string name="select_language">Dil Seç</string>
+  <string name="language_applied">Dil değiştirildi.</string>
+</resources>

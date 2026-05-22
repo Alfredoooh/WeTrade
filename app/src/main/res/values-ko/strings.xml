@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">wilin</string>
+  <string name="settings">설정</string>
+  <string name="about">정보</string>
+  <string name="language">언어</string>
+  <string name="appearance">외관</string>
+  <string name="notifications">알림</string>
+  <string name="privacy">개인정보</string>
+  <string name="version">버전</string>
+  <string name="general">일반</string>
+  <string name="search_hint">검색...</string>
+  <string name="search_empty">검색어를 입력하세요</string>
+  <string name="nav_home">홈</string>
+  <string name="nav_search">검색</string>
+  <string name="nav_games">게임</string>
+  <string name="drawer_settings">설정</string>
+  <string name="drawer_about">정보</string>
+  <string name="select_language">언어 선택</string>
+  <string name="language_applied">언어가 변경되었습니다.</string>
+</resources>

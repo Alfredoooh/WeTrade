@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">wilin</string>
+  <string name="settings">הגדרות</string>
+  <string name="about">אודות</string>
+  <string name="language">שפה</string>
+  <string name="appearance">מראה</string>
+  <string name="notifications">התראות</string>
+  <string name="privacy">פרטיות</string>
+  <string name="version">גרסה</string>
+  <string name="general">כללי</string>
+  <string name="search_hint">חיפוש...</string>
+  <string name="search_empty">חפש משהו כדי להתחיל</string>
+  <string name="nav_home">בית</string>
+  <string name="nav_search">חיפוש</string>
+  <string name="nav_games">משחקים</string>
+  <string name="drawer_settings">הגדרות</string>
+  <string name="drawer_about">אודות</string>
+  <string name="select_language">בחר שפה</string>
+  <string name="language_applied">השפה שונתה.</string>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">wilin</string>
+  <string name="settings">Inställningar</string>
+  <string name="about">Om</string>
+  <string name="language">Språk</string>
+  <string name="appearance">Utseende</string>
+  <string name="notifications">Aviseringar</string>
+  <string name="privacy">Integritet</string>
+  <string name="version">Version</string>
+  <string name="general">Allmänt</string>
+  <string name="search_hint">Sök...</string>
+  <string name="search_empty">Sök något för att börja</string>
+  <string name="nav_home">Hem</string>
+  <string name="nav_search">Sök</string>
+  <string name="nav_games">Spel</string>
+  <string name="drawer_settings">Inställningar</string>
+  <string name="drawer_about">Om</string>
+  <string name="select_language">Välj språk</string>
+  <string name="language_applied">Språk ändrat.</string>
+</resources>

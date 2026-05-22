@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">wilin</string>
+  <string name="settings">Ρυθμίσεις</string>
+  <string name="about">Σχετικά</string>
+  <string name="language">Γλώσσα</string>
+  <string name="appearance">Εμφάνιση</string>
+  <string name="notifications">Ειδοποιήσεις</string>
+  <string name="privacy">Απόρρητο</string>
+  <string name="version">Έκδοση</string>
+  <string name="general">Γενικά</string>
+  <string name="search_hint">Αναζήτηση...</string>
+  <string name="search_empty">Αναζητήστε κάτι για να ξεκινήσετε</string>
+  <string name="nav_home">Αρχική</string>
+  <string name="nav_search">Αναζήτηση</string>
+  <string name="nav_games">Παιχνίδια</string>
+  <string name="drawer_settings">Ρυθμίσεις</string>
+  <string name="drawer_about">Σχετικά</string>
+  <string name="select_language">Επιλογή γλώσσας</string>
+  <string name="language_applied">Η γλώσσα άλλαξε.</string>
+</resources>

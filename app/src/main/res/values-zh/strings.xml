@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">wilin</string>
+  <string name="settings">设置</string>
+  <string name="about">关于</string>
+  <string name="language">语言</string>
+  <string name="appearance">外观</string>
+  <string name="notifications">通知</string>
+  <string name="privacy">隐私</string>
+  <string name="version">版本</string>
+  <string name="general">常规</string>
+  <string name="search_hint">搜索...</string>
+  <string name="search_empty">搜索内容以开始</string>
+  <string name="nav_home">主页</string>
+  <string name="nav_search">搜索</string>
+  <string name="nav_games">游戏</string>
+  <string name="drawer_settings">设置</string>
+  <string name="drawer_about">关于</string>
+  <string name="select_language">选择语言</string>
+  <string name="language_applied">语言已更改。</string>
+</resources>
