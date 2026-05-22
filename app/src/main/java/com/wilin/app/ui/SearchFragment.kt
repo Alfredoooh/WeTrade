@@ -1,3 +1,4 @@
+// SearchFragment.kt
 package com.wilin.app.ui
 
 import android.os.Bundle

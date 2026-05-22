@@ -1,33 +1,6 @@
+<!-- fragment_search.xml -->
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/background"
-    android:padding="16dp">
-
-    <EditText
-        android:id="@+id/etSearch"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="@drawable/bg_search_input"
-        android:hint="Pesquisar..."
-        android:textColorHint="@color/icon_tint_secondary"
-        android:textColor="@color/text_primary"
-        android:textSize="15sp"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:imeOptions="actionSearch"
-        android:inputType="text"
-        android:singleLine="true" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:layout_gravity="center_horizontal"
-        android:text="Pesquisa algo para começar"
-        android:textColor="@color/text_secondary"
-        android:textSize="16sp" />
-
-</LinearLayout>
+    android:background="@color/background" />
