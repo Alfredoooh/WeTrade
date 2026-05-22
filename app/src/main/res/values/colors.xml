@@ -1,61 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Primary -->
     <color name="colorPrimary">#007AFF</color>
     <color name="colorPrimaryDark">#0055B3</color>
     <color name="colorAccent">#007AFF</color>
     <color name="blue_apple">#007AFF</color>
-    
-    <!-- Background -->
     <color name="background">#FFFFFF</color>
     <color name="background_dark">#121212</color>
-    <color name="surface">#F2F2F7</color>
-    <color name="surface_dark">#1C1C1E</color>
-    
-    <!-- Text -->
-    <color name="text_primary">#000000</color>
-    <color name="text_primary_dark">#FFFFFF</color>
-    <color name="text_secondary">#888888</color>
-    <color name="text_secondary_dark">#ABABAB</color>
-    
-    <!-- Divider -->
-    <color name="divider">#E0E0E0</color>
-    <color name="divider_dark">#2C2C2E</color>
-    
-    <!-- Card -->
-    <color name="card_background">#FFFFFF</color>
-    <color name="card_background_dark">#1C1C1E</color>
-    <color name="card_stroke">#E0E0E0</color>
-    <color name="card_stroke_dark">#2C2C2E</color>
-    
-    <!-- AppBar -->
-    <color name="appbar_background">#FFFFFF</color>
-    <color name="appbar_background_dark">#1C1C1E</color>
-    
-    <!-- Bottom Nav -->
-    <color name="bottom_nav_background">#FFFFFF</color>
-    <color name="bottom_nav_background_dark">#1C1C1E</color>
-    <color name="bottom_nav_text_color">#007AFF</color>
-    
-    <!-- Drawer -->
-    <color name="drawer_background">#FFFFFF</color>
-    <color name="drawer_background_dark">#1C1C1E</color>
-    <color name="drawer_text">#000000</color>
-    <color name="drawer_text_dark">#FFFFFF</color>
-    
-    <!-- Icon -->
-    <color name="icon_color">#000000</color>
-    <color name="icon_color_dark">#FFFFFF</color>
-    <color name="icon_secondary">#888888</color>
-    
-    <!-- Splash -->
     <color name="splash_background_light">#FFFFFF</color>
     <color name="splash_background_dark">#121212</color>
-    
-    <!-- Search -->
-    <color name="search_input_background">#F2F2F2</color>
-    <color name="search_input_background_dark">#2C2C2E</color>
-    
-    <!-- Settings section label -->
-    <color name="settings_section_label">#007AFF</color>
+    <color name="bottom_nav_text_color">#007AFF</color>
 </resources>

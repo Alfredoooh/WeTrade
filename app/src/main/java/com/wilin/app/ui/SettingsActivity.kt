@@ -1,6 +1,5 @@
 package com.wilin.app.ui
 
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -11,6 +10,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.caverock.androidsvg.SVG
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.wilin.app.MainActivity
 import com.wilin.app.R
 import com.wilin.app.databinding.ActivitySettingsBinding
@@ -87,7 +87,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun showLanguageDialog() {
         val names = languages.map { it.first }.toTypedArray()
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(getString(R.string.select_language))
             .setItems(names) { _, which ->
                 setLocale(languages[which].second)

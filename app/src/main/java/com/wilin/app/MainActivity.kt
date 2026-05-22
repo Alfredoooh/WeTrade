@@ -8,6 +8,8 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.StateListDrawable
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -36,10 +38,7 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(true)
-
-        val toggle = ActionBarDrawerToggle(this, binding.drawerLayout, binding.toolbar, 0, 0)
-        binding.drawerLayout.addDrawerListener(toggle)
-        toggle.syncState()
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
 
         binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 24, Color.BLACK))
         binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 24, Color.BLACK))
@@ -75,6 +74,25 @@ class MainActivity : AppCompatActivity() {
             }
             true
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.toolbar_menu, menu)
+        menu.findItem(R.id.action_menu).icon =
+            svgDrawable("icons/svg/menu.svg", 24, Color.BLACK)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.action_menu) {
+            if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                binding.drawerLayout.closeDrawer(GravityCompat.START)
+            } else {
+                binding.drawerLayout.openDrawer(GravityCompat.START)
+            }
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onBackPressed() {

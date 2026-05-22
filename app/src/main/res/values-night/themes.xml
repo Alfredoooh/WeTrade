@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.wilin" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorOnPrimary">@color/text_primary_dark</item>
-        <item name="android:statusBarColor">@color/appbar_background_dark</item>
+        <item name="colorPrimary">#007AFF</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSurface">#1C1C1E</item>
+        <item name="colorOnSurface">#FFFFFF</item>
+        <item name="colorSurfaceVariant">#2C2C2E</item>
+        <item name="colorOnSurfaceVariant">#ABABAB</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:navigationBarColor">@color/bottom_nav_background_dark</item>
+        <item name="android:navigationBarColor">#1C1C1E</item>
         <item name="android:windowBackground">@color/background_dark</item>
         <item name="bottomNavigationStyle">@style/Widget.BottomNav.Custom</item>
     </style>
@@ -14,5 +18,16 @@
         <item name="windowSplashScreenBackground">@color/splash_background_dark</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
         <item name="postSplashScreenTheme">@style/Theme.wilin</item>
+    </style>
+
+    <style name="Widget.BottomNav.Custom" parent="Widget.Material3.BottomNavigationView">
+        <item name="materialThemeOverlay">@style/ThemeOverlay.BottomNav.Custom</item>
+        <item name="itemPaddingTop">4dp</item>
+        <item name="itemPaddingBottom">4dp</item>
+    </style>
+
+    <style name="ThemeOverlay.BottomNav.Custom" parent="">
+        <item name="colorSecondaryContainer">#1A007AFF</item>
+        <item name="colorOnSecondaryContainer">#007AFF</item>
     </style>
 </resources>
