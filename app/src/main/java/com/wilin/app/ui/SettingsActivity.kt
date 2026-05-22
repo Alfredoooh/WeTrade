@@ -8,6 +8,7 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import com.caverock.androidsvg.SVG
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -54,18 +55,24 @@ class SettingsActivity : AppCompatActivity() {
         "Tiếng Việt" to "vi"
     )
 
+    private val themeOptions = arrayOf("Sistema", "Claro", "Escuro")
+    private val themeValues = arrayOf("system", "light", "dark")
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
         supportActionBar?.title = getString(R.string.settings)
-        binding.toolbar.setNavigationOnClickListener { finish() }
 
+        val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val blue = ContextCompat.getColor(this, R.color.colorPrimary)
         val chevronTint = ContextCompat.getColor(this, R.color.icon_tint_secondary)
+
+        binding.toolbar.navigationIcon = svgDrawable("icons/svg/back_arrow.svg", 24, iconTint)
+        binding.toolbar.setNavigationOnClickListener { finish() }
 
         binding.iconLanguage.setImageDrawable(svgDrawable("icons/svg/language.svg", 24, blue))
         binding.iconAppearance.setImageDrawable(svgDrawable("icons/svg/appearance.svg", 24, blue))
@@ -83,14 +90,33 @@ class SettingsActivity : AppCompatActivity() {
         binding.tvVersion.text = pInfo.versionName
 
         binding.itemLanguage.setOnClickListener { showLanguageDialog() }
+        binding.itemAppearance.setOnClickListener { showThemeDialog() }
     }
 
     private fun showLanguageDialog() {
         val names = languages.map { it.first }.toTypedArray()
         MaterialAlertDialogBuilder(this)
             .setTitle(getString(R.string.select_language))
-            .setItems(names) { _, which ->
-                setLocale(languages[which].second)
+            .setItems(names) { _, which -> setLocale(languages[which].second) }
+            .show()
+    }
+
+    private fun showThemeDialog() {
+        val prefs = getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
+        val current = prefs.getString("theme", "system")
+        val currentIndex = themeValues.indexOf(current).coerceAtLeast(0)
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Aparência")
+            .setSingleChoiceItems(themeOptions, currentIndex) { dialog, which ->
+                val selected = themeValues[which]
+                prefs.edit().putString("theme", selected).apply()
+                when (selected) {
+                    "light" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                    "dark"  -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                    else    -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                }
+                dialog.dismiss()
             }
             .show()
     }

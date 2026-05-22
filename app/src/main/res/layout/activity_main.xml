@@ -23,7 +23,9 @@
                 android:layout_height="?attr/actionBarSize"
                 android:background="@color/appbar_background"
                 app:titleTextColor="@color/text_primary"
-                app:title="@string/app_name" />
+                app:title="@string/app_name"
+                app:navigationIcon="@drawable/ic_menu"
+                app:navigationIconTint="@color/icon_tint" />
 
         </com.google.android.material.appbar.AppBarLayout>
 
@@ -35,7 +37,6 @@
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNav"
-            style="@style/Widget.BottomNav.Custom"
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:background="@color/bottom_nav_background"
