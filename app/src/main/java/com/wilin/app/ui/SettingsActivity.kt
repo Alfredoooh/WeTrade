@@ -103,22 +103,6 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun buildAppDialog(): AlertDialog.Builder {
-        val bgColor = ContextCompat.getColor(this, R.color.dialog_background)
-        val textPrimary = ContextCompat.getColor(this, R.color.text_primary)
-        val blue = ContextCompat.getColor(this, R.color.colorPrimary)
-
-        return AlertDialog.Builder(this).apply {
-            // O dialog em si vai ter o fundo via setView ou via tema —
-            // usamos um wrapper para forçar as cores
-        }.also { builder ->
-            // Guardamos referência para usar em show()
-            builder.setBackground(
-                android.graphics.drawable.ColorDrawable(bgColor)
-            )
-        }
-    }
-
     private fun showLanguageDialog() {
         val names = languages.map { it.first }.toTypedArray()
 
@@ -227,7 +211,6 @@ class SettingsActivity : AppCompatActivity() {
                             (14 * resources.displayMetrics.density).toInt()
                         )
                         textSize = 15f
-                        // Tint no radio button
                         compoundDrawableTintList = android.content.res.ColorStateList.valueOf(blue)
                     }
                     return v
