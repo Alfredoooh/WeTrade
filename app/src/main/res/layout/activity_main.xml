@@ -38,6 +38,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/search_hint"
+                android:textColorHint="@color/text_hint"
+                android:background="@color/appbar_background"
+                app:navigationIconTint="@color/icon_tint"
+                app:tint="@color/icon_tint"
+                app:strokeWidth="0dp"
+                app:elevation="0dp"
                 android:visibility="gone" />
 
             <FrameLayout
@@ -111,7 +117,11 @@
             android:id="@+id/searchView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:hint="@string/search_hint" />
+            android:hint="@string/search_hint"
+            android:textColorHint="@color/text_hint"
+            app:backgroundTint="@color/appbar_background"
+            app:headerBackgroundTint="@color/appbar_background"
+            app:dividerColor="@color/divider" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

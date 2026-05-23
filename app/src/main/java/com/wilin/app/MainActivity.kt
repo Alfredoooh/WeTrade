@@ -46,14 +46,15 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Ligar SearchView ao SearchBar programaticamente
         binding.searchView.setupWithSearchBar(binding.searchBar)
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(true)
 
-        val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
+        val iconTint          = ContextCompat.getColor(this, R.color.icon_tint)
+        val iconTintSecondary = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
+        // Toolbar
         binding.toolbar.navigationIcon = svgDrawable("icons/svg/menu.svg", 24, iconTint)
         binding.toolbar.setNavigationOnClickListener {
             if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
@@ -63,6 +64,13 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // SearchBar — substituir ícone de lupa Material pelo SVG do projecto
+        binding.searchBar.navigationIcon = svgDrawable("icons/svg/magnifying_glass_outline.svg", 24, iconTintSecondary)
+
+        // SearchView — substituir ícone de voltar e limpar
+        binding.searchView.toolbar.navigationIcon = svgDrawable("icons/svg/back_arrow.svg", 24, iconTint)
+
+        // Drawer
         binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 24, iconTint))
         binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 24, iconTint))
 
@@ -74,7 +82,7 @@ class MainActivity : AppCompatActivity() {
             binding.drawerLayout.closeDrawer(GravityCompat.START)
         }
 
-        // SearchView M3 — ao submeter navega para BrowserResponseActivity
+        // SearchView — ao submeter navega para BrowserResponseActivity
         binding.searchView.editText.setOnEditorActionListener { textView, _, _ ->
             val query = textView.text.toString().trim()
             if (query.isNotEmpty()) {
@@ -87,7 +95,7 @@ class MainActivity : AppCompatActivity() {
             false
         }
 
-        // Listener do estado do SearchView para bloquear/desbloquear drawer
+        // Bloquear/desbloquear drawer conforme SearchView
         binding.searchView.addTransitionListener { _, _, newState ->
             if (newState == SearchView.TransitionState.SHOWING ||
                 newState == SearchView.TransitionState.SHOWN) {
