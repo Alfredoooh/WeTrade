@@ -9,7 +9,7 @@
     <string name="privacy">Privacidade</string>
     <string name="version">Versão</string>
     <string name="general">Geral</string>
-    <string name="search_hint">Pesquisar...</string>
+    <string name="search_hint">Pesquisar ou introduzir URL…</string>
     <string name="search_empty">Pesquisa algo para começar</string>
     <string name="nav_home">Início</string>
     <string name="nav_search">Pesquisar</string>
@@ -18,4 +18,22 @@
     <string name="drawer_about">Sobre</string>
     <string name="select_language">Selecionar Idioma</string>
     <string name="language_applied">Idioma alterado.</string>
+    <string name="recent">Recente</string>
+    <string name="bookmarks">Favoritos</string>
+    <string name="history">Histórico</string>
+    <string name="new_tab">Nova tab</string>
+    <string name="tabs">Tabs</string>
+    <string name="copy_url">Copiar URL</string>
+    <string name="open_in_browser">Abrir no browser</string>
+    <string name="find_in_page">Encontrar na página</string>
+    <string name="desktop_mode">Modo desktop</string>
+    <string name="share">Partilhar</string>
+    <string name="add_bookmark">Adicionar favorito</string>
+    <string name="remove_bookmark">Remover favorito</string>
+    <string name="bookmark_added">Adicionado aos favoritos</string>
+    <string name="bookmark_removed">Removido dos favoritos</string>
+    <string name="url_copied">URL copiado</string>
+    <string name="clear_history">Limpar histórico</string>
+    <string name="no_bookmarks">Nenhum favorito ainda</string>
+    <string name="no_history">Nenhum histórico ainda</string>
 </resources>
