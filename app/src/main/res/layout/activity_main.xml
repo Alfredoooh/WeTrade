@@ -120,7 +120,6 @@
             android:hint="@string/search_hint"
             android:textColorHint="@color/text_hint"
             app:backgroundTint="@color/appbar_background"
-            app:headerBackgroundTint="@color/appbar_background"
             app:dividerColor="@color/divider" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
