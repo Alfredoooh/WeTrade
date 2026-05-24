@@ -100,7 +100,7 @@ class BrowserResponseActivity : AppCompatActivity() {
         val loadUrl = when {
             query.isNotEmpty() -> { addToHistory(query); buildUrl(query) }
             tab != null && tab.url.isNotEmpty() -> tab.url
-            else -> "https://duckduckgo.com"
+            else -> "https://duckduckgo.com/?kae=${ddgThemeParam()}&k1=-1"
         }
         binding.webView.loadUrl(loadUrl)
 
@@ -313,10 +313,13 @@ class BrowserResponseActivity : AppCompatActivity() {
         binding.webView.loadUrl(buildUrl(input))
     }
 
+    private fun ddgThemeParam(): String =
+        if (resources.configuration.isNightModeActive) "d" else "l"
+
     private fun buildUrl(input: String): String = when {
         input.startsWith("http://") || input.startsWith("https://") -> input
         input.contains(".") && !input.contains(" ") -> "https://$input"
-        else -> "https://duckduckgo.com/?q=${Uri.encode(input)}&kae=d&k1=-1"
+        else -> "https://duckduckgo.com/?q=${Uri.encode(input)}&kae=${ddgThemeParam()}&k1=-1"
     }
 
     private fun refreshHistoryModal() { historyAdapter?.updateList(searchHistory.take(8)) }

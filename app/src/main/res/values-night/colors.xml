@@ -12,9 +12,9 @@
   <color name="splash_background_light">#FFFFFF</color>
   <color name="splash_background_dark">#121212</color>
   
-  <!-- AppBar / Toolbar / BottomNav -->
-  <color name="appbar_background">#1F1F1F</color>
-  <color name="bottom_nav_background">#1F1F1F</color>
+  <!-- AppBar / Toolbar / BottomNav — MESMA COR DO FUNDO -->
+  <color name="appbar_background">#121212</color>
+  <color name="bottom_nav_background">#121212</color>
   <color name="bottom_nav_text_color">#007AFF</color>
   
   <!-- Texto -->
@@ -24,7 +24,7 @@
   <color name="text_link">#007AFF</color>
   
   <!-- Drawer -->
-  <color name="drawer_background">#1F1F1F</color>
+  <color name="drawer_background">#1C1C1C</color>
   <color name="drawer_text">#FFFFFF</color>
   
   <!-- Superfícies / Cards -->

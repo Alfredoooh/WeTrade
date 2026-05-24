@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.StateListDrawable
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -47,8 +46,14 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Edge-to-edge desligado — deixamos o sistema gerir insets normalmente
         WindowCompat.setDecorFitsSystemWindows(window, true)
+
+        // Aplicar statusBar DEPOIS de setContentView para garantir que a window já está pronta
         applyStatusBarTheme()
+
+        // Forçar nova aplicação na próxima frame para sobrepor qualquer estado do splash
+        window.decorView.post { applyStatusBarTheme() }
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(true)
@@ -118,11 +123,16 @@ class MainActivity : AppCompatActivity() {
         applyStatusBarTheme()
     }
 
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) applyStatusBarTheme()
+    }
+
     private fun applyStatusBarTheme() {
         val isLight = !resources.configuration.isNightModeActive
-        WindowInsetsControllerCompat(window, window.decorView).apply {
-            isAppearanceLightStatusBars = isLight
-        }
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.isAppearanceLightStatusBars = isLight
+        controller.isAppearanceLightNavigationBars = isLight
     }
 
     override fun onBackPressed() {
