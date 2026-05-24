@@ -6,7 +6,6 @@
     android:orientation="vertical"
     android:background="@color/background">
 
-    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -37,15 +36,6 @@
             android:text="@string/tabs" />
 
         <ImageView
-            android:id="@+id/btnIncognito"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:padding="9dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true" />
-
-        <ImageView
             android:id="@+id/btnNewTab"
             android:layout_width="44dp"
             android:layout_height="44dp"
@@ -56,7 +46,7 @@
 
     </LinearLayout>
 
-    <!-- Selector Normal / Privado -->
+    <!-- Selector: Tabs (N) | Favoritos -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="44dp"
@@ -64,22 +54,24 @@
         android:background="@color/appbar_background">
 
         <LinearLayout
+            android:id="@+id/tabModeNormal"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
             android:clickable="true"
-            android:focusable="true"
-            android:id="@+id/tabModeNormal">
+            android:focusable="true">
+
             <TextView
                 android:id="@+id/tabModeNormalText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/normal_tabs"
+                android:text="21"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
+
             <View
                 android:id="@+id/tabIndicatorNormal"
                 android:layout_width="24dp"
@@ -87,31 +79,35 @@
                 android:layout_marginTop="4dp"
                 android:background="@color/colorPrimary"
                 android:visibility="visible" />
+
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/tabModeBookmarks"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
             android:clickable="true"
-            android:focusable="true"
-            android:id="@+id/tabModeIncognito">
+            android:focusable="true">
+
             <TextView
-                android:id="@+id/tabModeIncognitoText"
+                android:id="@+id/tabModeBookmarksText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/private_tabs"
+                android:text="@string/bookmarks"
                 android:textSize="14sp"
                 android:textColor="@color/text_secondary" />
+
             <View
-                android:id="@+id/tabIndicatorIncognito"
+                android:id="@+id/tabIndicatorBookmarks"
                 android:layout_width="24dp"
                 android:layout_height="2dp"
                 android:layout_marginTop="4dp"
                 android:background="@color/colorPrimary"
                 android:visibility="invisible" />
+
         </LinearLayout>
 
     </LinearLayout>
@@ -126,10 +122,9 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="6dp"
+        android:padding="8dp"
         android:clipToPadding="false" />
 
-    <!-- Bottom bar Tabs -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"

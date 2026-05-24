@@ -121,6 +121,14 @@ class BrowserResponseActivity : AppCompatActivity() {
         }
         binding.btnTabs.setOnClickListener {
             TabManager.save(this)
+            runCatching {
+    val bmp = Bitmap.createBitmap(binding.webView.width, binding.webView.height, Bitmap.Config.ARGB_8888)
+    val c = Canvas(bmp)
+    binding.webView.draw(c)
+    val scaled = Bitmap.createScaledBitmap(bmp, 400, 300, true)
+    bmp.recycle()
+    TabScreenshots.save(currentTabId, scaled)
+}
             startActivity(Intent(this, TabsActivity::class.java))
         }
         binding.btnMore.setOnClickListener { showMoreMenu() }

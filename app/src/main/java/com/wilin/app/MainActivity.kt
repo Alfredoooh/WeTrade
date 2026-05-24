@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
         insetsController = WindowInsetsControllerCompat(window, window.decorView)
-        window.decorView.post { applyStatusBarTheme() }
+        applyStatusBarTheme()
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
@@ -137,9 +137,9 @@ class MainActivity : AppCompatActivity() {
         updateAppBar(R.id.tabHome)
     }
 
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) applyStatusBarTheme()
+    override fun onResume() {
+        super.onResume()
+        applyStatusBarTheme()
     }
 
     override fun onBackPressed() {
