@@ -10,15 +10,20 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.PorterDuff
+import android.graphics.Rect
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.Gravity
 import android.view.KeyEvent
+import android.view.PixelCopy
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
@@ -52,6 +57,7 @@ private data class PopupItem(val icon: String, val label: String, val action: ()
 class BrowserResponseActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityBrowserResponseBinding
+    private lateinit var insetsController: WindowInsetsControllerCompat
     private var currentTabId: String = ""
     private var isLoading = false
     private var isDesktopMode = false
@@ -85,8 +91,8 @@ class BrowserResponseActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
-        val isLight = !resources.configuration.isNightModeActive
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
+        insetsController = WindowInsetsControllerCompat(window, window.decorView)
+        applyStatusBarTheme()
 
         TabManager.init(this)
         loadHistory()
@@ -101,7 +107,7 @@ class BrowserResponseActivity : AppCompatActivity() {
         binding.tabsIcon.setImageDrawable(svgDrawable("icons/svg/tabs.svg", 24, iconTint))
         binding.btnMore.setImageDrawable(svgDrawable("icons/svg/more_vertical.svg", 24, iconTint))
         binding.modalSearchIcon.setImageDrawable(svgDrawable("icons/svg/magnifying_glass_outline.svg", 20, iconSecondary))
-        binding.modalClearBtn.setImageDrawable(svgDrawable("icons/svg/close_mini.svg", 16, iconSecondary))
+        binding.modalClearBtn.setImageDrawable(svgDrawable("icons/svg/close.svg", 16, iconSecondary))
 
         val tabId = intent.getStringExtra(EXTRA_TAB_ID)
         val query = intent.getStringExtra(EXTRA_QUERY) ?: ""
@@ -130,18 +136,13 @@ class BrowserResponseActivity : AppCompatActivity() {
         binding.btnReload.setOnClickListener {
             if (isLoading) binding.webView.stopLoading() else binding.webView.reload()
         }
+
+        // FIX: screenshot via PixelCopy (API 26+) ou software layer — nunca crashes
         binding.btnTabs.setOnClickListener {
             TabManager.save(this)
-            runCatching {
-                val bmp = Bitmap.createBitmap(binding.webView.width, binding.webView.height, Bitmap.Config.ARGB_8888)
-                val c = Canvas(bmp)
-                binding.webView.draw(c)
-                val scaled = Bitmap.createScaledBitmap(bmp, 400, 300, true)
-                bmp.recycle()
-                TabScreenshots.save(currentTabId, scaled)
-            }
-            startActivity(Intent(this, TabsActivity::class.java))
+            captureAndOpenTabs()
         }
+
         binding.btnMore.setOnClickListener { showMoreMenu() }
         binding.urlBar.setOnClickListener { showSearchModal() }
         binding.searchModal.setOnClickListener { hideSearchModal() }
@@ -166,15 +167,67 @@ class BrowserResponseActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        val isLight = !resources.configuration.isNightModeActive
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
+        applyStatusBarTheme()
         updateTabsCount()
     }
 
-    // ── Find-in-Page (substituição do showFindDialog removido no API 33) ─────
+    private fun applyStatusBarTheme() {
+        val isLight = !resources.configuration.isNightModeActive
+        insetsController.isAppearanceLightStatusBars = isLight
+    }
+
+    // ── Screenshot segura (fix crash de bitmap vazio no WebView) ────────────
+
+    private fun captureAndOpenTabs() {
+        val w = binding.webView.width
+        val h = binding.webView.height
+
+        // Sem dimensões válidas — abre directamente sem screenshot
+        if (w <= 0 || h <= 0) {
+            startActivity(Intent(this, TabsActivity::class.java))
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // PixelCopy: única forma fiável de capturar WebView com HW acceleration
+            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val location = IntArray(2)
+            binding.webView.getLocationInWindow(location)
+            val srcRect = Rect(location[0], location[1], location[0] + w, location[1] + h)
+
+            PixelCopy.request(window, srcRect, bitmap, { result ->
+                if (result == PixelCopy.SUCCESS) {
+                    val scaled = Bitmap.createScaledBitmap(bitmap, 400, 300, true)
+                    bitmap.recycle()
+                    TabScreenshots.save(currentTabId, scaled)
+                } else {
+                    bitmap.recycle()
+                }
+                // Callback já corre na main thread (Handler passado abaixo)
+                startActivity(Intent(this, TabsActivity::class.java))
+            }, Handler(Looper.getMainLooper()))
+
+        } else {
+            // API < 26: forçar software layer temporariamente
+            runCatching {
+                binding.webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+                val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                binding.webView.draw(Canvas(bmp))
+                binding.webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                val scaled = Bitmap.createScaledBitmap(bmp, 400, 300, true)
+                bmp.recycle()
+                TabScreenshots.save(currentTabId, scaled)
+            }.onFailure {
+                binding.webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+            }
+            startActivity(Intent(this, TabsActivity::class.java))
+        }
+    }
+
+    // ── Find-in-Page (substitui showFindDialog removido no API 33) ──────────
 
     private fun buildFindBar() {
-        val dp = resources.displayMetrics.density
+        val dp       = resources.displayMetrics.density
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
@@ -189,8 +242,8 @@ class BrowserResponseActivity : AppCompatActivity() {
         }
 
         findInput = EditText(this).apply {
-            hint    = getString(R.string.find_in_page)
-            maxLines = 1
+            hint       = getString(R.string.find_in_page)
+            maxLines   = 1
             imeOptions = EditorInfo.IME_ACTION_SEARCH
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
@@ -221,7 +274,7 @@ class BrowserResponseActivity : AppCompatActivity() {
         findClose = ImageView(this).apply {
             val sz = (36 * dp).toInt()
             layoutParams = LinearLayout.LayoutParams(sz, sz)
-            setImageDrawable(svgDrawable("icons/svg/close_mini.svg", 18, iconSec))
+            setImageDrawable(svgDrawable("icons/svg/close.svg", 18, iconSec))
             isClickable = true; isFocusable = true
             background = ContextCompat.getDrawable(this@BrowserResponseActivity, R.drawable.ripple_item)
         }
@@ -232,7 +285,6 @@ class BrowserResponseActivity : AppCompatActivity() {
         findBar.addView(findNext)
         findBar.addView(findClose)
 
-        // Adiciona a findBar ao root como FrameLayout overlay no topo
         (binding.root as? FrameLayout)?.addView(
             findBar,
             FrameLayout.LayoutParams(
@@ -247,12 +299,8 @@ class BrowserResponseActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) {}
             override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {
                 val q = s?.toString() ?: ""
-                if (q.isEmpty()) {
-                    binding.webView.clearMatches()
-                    findCount.text = ""
-                } else {
-                    binding.webView.findAllAsync(q)
-                }
+                if (q.isEmpty()) { binding.webView.clearMatches(); findCount.text = "" }
+                else binding.webView.findAllAsync(q)
             }
         })
 
@@ -263,10 +311,7 @@ class BrowserResponseActivity : AppCompatActivity() {
         }
 
         binding.webView.setFindListener { activeMatchOrdinal, numberOfMatches, _ ->
-            findCount.text = if (numberOfMatches > 0)
-                "${activeMatchOrdinal + 1}/$numberOfMatches"
-            else
-                "0/0"
+            findCount.text = if (numberOfMatches > 0) "${activeMatchOrdinal + 1}/$numberOfMatches" else "0/0"
         }
 
         findPrev.setOnClickListener  { binding.webView.findNext(false) }
@@ -281,8 +326,8 @@ class BrowserResponseActivity : AppCompatActivity() {
         findBar.alpha = 0f
         findBar.animate().alpha(1f).setDuration(180).start()
         findInput.requestFocus()
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.showSoftInput(findInput, InputMethodManager.SHOW_IMPLICIT)
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+            .showSoftInput(findInput, InputMethodManager.SHOW_IMPLICIT)
     }
 
     private fun hideFindBar() {
@@ -291,8 +336,8 @@ class BrowserResponseActivity : AppCompatActivity() {
         binding.webView.clearMatches()
         findInput.setText("")
         findCount.text = ""
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.hideSoftInputFromWindow(findInput.windowToken, 0)
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+            .hideSoftInputFromWindow(findInput.windowToken, 0)
         findBar.animate().alpha(0f).setDuration(150).withEndAction {
             findBar.visibility = View.GONE
         }.start()
@@ -314,7 +359,7 @@ class BrowserResponseActivity : AppCompatActivity() {
             settings.mediaPlaybackRequiresUserGesture = false
             settings.mixedContentMode      = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
 
-            setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
+            setDownloadListener(DownloadListener { url, userAgent, _, mimeType, _ ->
                 val request = DownloadManager.Request(Uri.parse(url)).apply {
                     setMimeType(mimeType)
                     addRequestHeader("User-Agent", userAgent)
@@ -322,8 +367,7 @@ class BrowserResponseActivity : AppCompatActivity() {
                     setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                     setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, url.substringAfterLast("/"))
                 }
-                val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-                dm.enqueue(request)
+                (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
                 Toast.makeText(this@BrowserResponseActivity, "A descarregar…", Toast.LENGTH_SHORT).show()
             })
 
@@ -347,7 +391,7 @@ class BrowserResponseActivity : AppCompatActivity() {
                     isLoading = true
                     binding.progressBar.visibility = View.VISIBLE
                     val sec = ContextCompat.getColor(this@BrowserResponseActivity, R.color.icon_tint_secondary)
-                    binding.btnReload.setImageDrawable(svgDrawable("icons/svg/close_mini.svg", 20, sec))
+                    binding.btnReload.setImageDrawable(svgDrawable("icons/svg/close.svg", 20, sec))
                     updateUrlBar(url ?: "")
                     updateNavButtons()
                 }
@@ -393,19 +437,15 @@ class BrowserResponseActivity : AppCompatActivity() {
         val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
         val bgColor   = ContextCompat.getColor(this, R.color.popup_background)
         val textColor = ContextCompat.getColor(this, R.color.text_primary)
-
         val items = listOf(
-            PopupItem("icons/svg/download.svg", getString(R.string.download_image)) {
-                downloadFile(imgUrl)
-            },
+            PopupItem("icons/svg/download.svg", getString(R.string.download_image)) { downloadFile(imgUrl) },
             PopupItem("icons/svg/copy.svg", getString(R.string.copy_image_url)) {
                 val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 cm.setPrimaryClip(ClipData.newPlainText("img_url", imgUrl))
                 Toast.makeText(this, "URL copiado", Toast.LENGTH_SHORT).show()
             },
             PopupItem("icons/svg/external.svg", getString(R.string.open_image_new_tab)) {
-                val t = TabManager.newTab(imgUrl)
-                TabManager.setCurrentId(t.id)
+                val t = TabManager.newTab(imgUrl); TabManager.setCurrentId(t.id)
                 binding.webView.loadUrl(imgUrl)
             },
             PopupItem("icons/svg/share.svg", getString(R.string.share)) {
@@ -415,7 +455,6 @@ class BrowserResponseActivity : AppCompatActivity() {
                 ))
             },
         )
-
         showAnimatedPopup(items, iconTint, bgColor, textColor, Gravity.CENTER)
     }
 
@@ -426,8 +465,7 @@ class BrowserResponseActivity : AppCompatActivity() {
                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, url.substringAfterLast("/"))
             }
-            val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            dm.enqueue(request)
+            (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
             Toast.makeText(this, "A descarregar…", Toast.LENGTH_SHORT).show()
         }.onFailure {
             Toast.makeText(this, "Erro ao descarregar", Toast.LENGTH_SHORT).show()
@@ -441,8 +479,7 @@ class BrowserResponseActivity : AppCompatActivity() {
             Thread {
                 runCatching {
                     val conn = java.net.URL(faviconUrl).openConnection() as java.net.HttpURLConnection
-                    conn.connectTimeout = 3000
-                    conn.readTimeout    = 3000
+                    conn.connectTimeout = 3000; conn.readTimeout = 3000
                     val bmp = android.graphics.BitmapFactory.decodeStream(conn.inputStream)
                     if (bmp != null) runOnUiThread { binding.faviconImg.setImageBitmap(bmp) }
                     conn.disconnect()
@@ -456,14 +493,9 @@ class BrowserResponseActivity : AppCompatActivity() {
         val display = runCatching {
             Uri.parse(url).host?.removePrefix("www.") ?: url
         }.getOrDefault(url)
-
         binding.urlText.text = display
-
-        val lockTint = if (isHttps)
-            ContextCompat.getColor(this, R.color.colorPrimary)
-        else
-            ContextCompat.getColor(this, R.color.text_hint)
-
+        val lockTint = if (isHttps) ContextCompat.getColor(this, R.color.colorPrimary)
+                       else ContextCompat.getColor(this, R.color.text_hint)
         val lockIcon = if (isHttps) "icons/svg/lock.svg" else "icons/svg/lock_open.svg"
         binding.lockIcon.setImageDrawable(svgDrawable(lockIcon, 12, lockTint))
     }
@@ -512,8 +544,8 @@ class BrowserResponseActivity : AppCompatActivity() {
         binding.modalSearchInput.setText(binding.webView.url ?: "")
         binding.modalSearchInput.selectAll()
         binding.modalSearchInput.requestFocus()
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.showSoftInput(binding.modalSearchInput, InputMethodManager.SHOW_IMPLICIT)
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+            .showSoftInput(binding.modalSearchInput, InputMethodManager.SHOW_IMPLICIT)
         refreshHistoryModal()
     }
 
@@ -521,8 +553,8 @@ class BrowserResponseActivity : AppCompatActivity() {
         binding.searchModal.animate().alpha(0f).setDuration(150).withEndAction {
             binding.searchModal.visibility = View.GONE
         }.start()
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.hideSoftInputFromWindow(binding.modalSearchInput.windowToken, 0)
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+            .hideSoftInputFromWindow(binding.modalSearchInput.windowToken, 0)
         binding.modalSearchInput.setText("")
     }
 
@@ -606,22 +638,18 @@ class BrowserResponseActivity : AppCompatActivity() {
         val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
         val bgColor   = ContextCompat.getColor(this, R.color.popup_background)
         val textColor = ContextCompat.getColor(this, R.color.text_primary)
-
         val isBookmarked = isCurrentBookmarked()
         val items = listOf(
             PopupItem("icons/svg/bookmark${if (isBookmarked) "_filled" else ""}.svg",
                 getString(if (isBookmarked) R.string.remove_bookmark else R.string.add_bookmark)) { toggleBookmark() },
-            PopupItem("icons/svg/share.svg", getString(R.string.share)) { shareUrl() },
-            PopupItem("icons/svg/copy.svg", getString(R.string.copy_url)) { copyUrl() },
-            PopupItem("icons/svg/find.svg", getString(R.string.find_in_page)) { showFindBar() },
+            PopupItem("icons/svg/share.svg",   getString(R.string.share))        { shareUrl() },
+            PopupItem("icons/svg/copy.svg",    getString(R.string.copy_url))     { copyUrl() },
+            PopupItem("icons/svg/find.svg",    getString(R.string.find_in_page)) { showFindBar() },
             PopupItem("icons/svg/desktop.svg", getString(R.string.desktop_mode)) { toggleDesktopMode() },
-            PopupItem("icons/svg/download.svg", "Descarregar página") { downloadFile(binding.webView.url ?: "") },
-            PopupItem("icons/svg/history.svg", getString(R.string.history)) {
-                startActivity(Intent(this, HistoryActivity::class.java))
-            },
-            PopupItem("icons/svg/external.svg", getString(R.string.open_in_browser)) { openExternal() },
+            PopupItem("icons/svg/download.svg","Descarregar página")             { downloadFile(binding.webView.url ?: "") },
+            PopupItem("icons/svg/history.svg", getString(R.string.history))      { startActivity(Intent(this, HistoryActivity::class.java)) },
+            PopupItem("icons/svg/external.svg",getString(R.string.open_in_browser)) { openExternal() },
         )
-
         showAnimatedPopup(items, iconTint, bgColor, textColor, Gravity.BOTTOM or Gravity.END)
     }
 
@@ -641,7 +669,7 @@ class BrowserResponseActivity : AppCompatActivity() {
 
         items.forEach { item ->
             val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
+                orientation  = LinearLayout.HORIZONTAL
                 this.gravity = Gravity.CENTER_VERTICAL
                 val h = (16 * resources.displayMetrics.density).toInt()
                 val v = (12 * resources.displayMetrics.density).toInt()
@@ -660,7 +688,7 @@ class BrowserResponseActivity : AppCompatActivity() {
             row.addView(iv); row.addView(tv)
             menuView.addView(row)
 
-            // FIX: fechar o popup antes de executar a ação
+            // FIX: fechar popup antes de executar ação
             row.setOnClickListener {
                 pop?.dismiss()
                 item.action()
@@ -680,10 +708,10 @@ class BrowserResponseActivity : AppCompatActivity() {
         pop.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
         pop.elevation = 12f
 
-        // FIX: offset corrigido — x negativo para alinhar ao lado direito sem sair do ecrã
-        val xOffset = -(12 * resources.displayMetrics.density).toInt()
-        val yOffset =  (60 * resources.displayMetrics.density).toInt()
-        pop.showAtLocation(binding.root, gravity, xOffset, yOffset)
+        // FIX: xOffset negativo para alinhar correctamente ao Gravity.END
+        val xOff = -(12 * resources.displayMetrics.density).toInt()
+        val yOff =  (60 * resources.displayMetrics.density).toInt()
+        pop.showAtLocation(binding.root, gravity, xOff, yOff)
     }
 
     private fun shareUrl() {

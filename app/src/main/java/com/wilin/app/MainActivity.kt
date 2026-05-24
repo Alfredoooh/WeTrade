@@ -51,7 +51,10 @@ class MainActivity : AppCompatActivity() {
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
         insetsController = WindowInsetsControllerCompat(window, window.decorView)
-        applyStatusBarTheme()
+
+        // Flash trick: força o sistema a re-renderizar os ícones da status bar
+        // correctamente ao aplicar o oposto por ~50ms e voltar ao estado certo
+        applyStatusBarFlashFix()
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
@@ -139,6 +142,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // onResume: aplica directamente sem flash (o flash só é necessário no onCreate)
         applyStatusBarTheme()
     }
 
@@ -150,9 +154,25 @@ class MainActivity : AppCompatActivity() {
         super.onBackPressed()
     }
 
+    // Aplica o tema correcto da status bar
     private fun applyStatusBarTheme() {
         val isLight = !resources.configuration.isNightModeActive
         insetsController.isAppearanceLightStatusBars = isLight
+    }
+
+    // Flash trick: inverte os ícones da status bar por 50ms e volta ao correcto.
+    // Força o sistema a re-renderizar e corrige o bug em que os ícones ficam
+    // com a cor errada ao abrir o app.
+    private fun applyStatusBarFlashFix() {
+        val isLight = !resources.configuration.isNightModeActive
+        // Aplica o oposto imediatamente (imperceptível — acontece antes do primeiro frame)
+        insetsController.isAppearanceLightStatusBars = !isLight
+        // Volta ao estado correcto em 50ms (< 3 frames a 60fps — invisível ao utilizador)
+        window.decorView.postDelayed({
+            if (!isDestroyed) {
+                insetsController.isAppearanceLightStatusBars = isLight
+            }
+        }, 50L)
     }
 
     private fun launchSearchWithAnim() {
@@ -166,10 +186,7 @@ class MainActivity : AppCompatActivity() {
                     .setDuration(60)
                     .withEndAction {
                         startActivity(Intent(this, SearchActivity::class.java))
-                        overridePendingTransition(
-                            android.R.anim.fade_in,
-                            android.R.anim.fade_out
-                        )
+                        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
                     }.start()
             }.start()
     }
