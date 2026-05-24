@@ -24,6 +24,7 @@ import com.wilin.app.databinding.ActivityMainBinding
 import com.wilin.app.ui.BrowserResponseActivity
 import com.wilin.app.ui.GamesFragment
 import com.wilin.app.ui.HomeFragment
+import com.wilin.app.ui.SearchActivity
 import com.wilin.app.ui.SearchFragment
 import com.wilin.app.ui.SettingsActivity
 
@@ -52,12 +53,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
-        // Mesmo padrão do SettingsActivity — directo, sem post/onWindowFocusChanged
         val isLight = !resources.configuration.isNightModeActive
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
 
-        val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
-        val iconSec   = ContextCompat.getColor(this, R.color.icon_tint_secondary)
+        val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
+        val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
         binding.btnMenu.setImageDrawable(svgDrawable("icons/svg/menu.svg", 24, iconTint))
         binding.btnMenu.setOnClickListener {
@@ -67,11 +67,9 @@ class MainActivity : AppCompatActivity() {
                 binding.drawerLayout.openDrawer(GravityCompat.START)
         }
 
-        // Search pill — ao clicar expande levemente e abre SearchActivity
         binding.searchPillIcon.setImageDrawable(
             svgDrawable("icons/svg/magnifying_glass_outline.svg", 18, iconSec))
         binding.searchPill.setOnClickListener {
-            // Animação expand antes de abrir
             binding.searchPill.animate()
                 .scaleX(1.03f).scaleY(1.03f)
                 .setDuration(120)
@@ -83,7 +81,6 @@ class MainActivity : AppCompatActivity() {
                 }.start()
         }
 
-        // Drawer
         binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 18, iconTint))
         binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 18, iconTint))
         binding.drawerChevronSettings.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 16, iconSec))

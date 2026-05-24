@@ -65,19 +65,19 @@ class TabsActivity : AppCompatActivity() {
             finish()
         }
 
-        // Selector Normal / Privado
+        // Selector Normal / Privado — fix: setTextColor nos TextView filhos, não no LinearLayout pai
         binding.tabModeNormal.setOnClickListener {
             showIncognito = false
-            binding.tabModeNormal.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
-            binding.tabModeIncognito.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
+            binding.tabModeNormalText.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
+            binding.tabModeIncognitoText.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
             binding.tabIndicatorNormal.visibility = View.VISIBLE
             binding.tabIndicatorIncognito.visibility = View.INVISIBLE
             refreshAdapter()
         }
         binding.tabModeIncognito.setOnClickListener {
             showIncognito = true
-            binding.tabModeIncognito.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
-            binding.tabModeNormal.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
+            binding.tabModeIncognitoText.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
+            binding.tabModeNormalText.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
             binding.tabIndicatorIncognito.visibility = View.VISIBLE
             binding.tabIndicatorNormal.visibility = View.INVISIBLE
             refreshAdapter()
@@ -174,7 +174,6 @@ class TabsAdapter(
             clipToOutline = true
         }
 
-        // Mini WebView preview
         val wv = WebView(ctx).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -188,7 +187,6 @@ class TabsAdapter(
             isClickable = false
         }
 
-        // Overlay escuro em cima do webview para legibilidade
         val overlay = View(ctx).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -197,7 +195,6 @@ class TabsAdapter(
             setBackgroundColor(0x40000000)
         }
 
-        // Título no rodapé
         val titleContainer = LinearLayout(ctx).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -217,7 +214,6 @@ class TabsAdapter(
         }
         titleContainer.addView(titleTv)
 
-        // Borda activa no topo
         val activeBorder = View(ctx).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, (3 * dp).toInt()
@@ -226,7 +222,6 @@ class TabsAdapter(
             visibility = View.GONE
         }
 
-        // Close button
         val closeBtn = ImageView(ctx).apply {
             layoutParams = FrameLayout.LayoutParams(
                 (32 * dp).toInt(), (32 * dp).toInt()
