@@ -30,6 +30,8 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupWindow
@@ -45,7 +47,6 @@ import com.caverock.androidsvg.SVG
 import com.wilin.app.R
 import com.wilin.app.databinding.ActivityBrowserResponseBinding
 
-// Data class ao nível do ficheiro — partilhada por todas as funções, sem cast problemático
 private data class PopupItem(val icon: String, val label: String, val action: () -> Unit)
 
 class BrowserResponseActivity : AppCompatActivity() {
@@ -56,6 +57,15 @@ class BrowserResponseActivity : AppCompatActivity() {
     private var isDesktopMode = false
     private var bottomBarVisible = true
     private var lastScrollY = 0
+
+    // Find-in-page
+    private var findBarVisible = false
+    private lateinit var findBar: LinearLayout
+    private lateinit var findInput: EditText
+    private lateinit var findPrev: ImageView
+    private lateinit var findNext: ImageView
+    private lateinit var findClose: ImageView
+    private lateinit var findCount: TextView
 
     private val searchHistory = mutableListOf<String>()
     private var historyAdapter: HistoryModalAdapter? = null
@@ -80,6 +90,7 @@ class BrowserResponseActivity : AppCompatActivity() {
 
         TabManager.init(this)
         loadHistory()
+        buildFindBar()
 
         val iconTint      = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSecondary = ContextCompat.getColor(this, R.color.icon_tint_secondary)
@@ -90,7 +101,7 @@ class BrowserResponseActivity : AppCompatActivity() {
         binding.tabsIcon.setImageDrawable(svgDrawable("icons/svg/tabs.svg", 24, iconTint))
         binding.btnMore.setImageDrawable(svgDrawable("icons/svg/more_vertical.svg", 24, iconTint))
         binding.modalSearchIcon.setImageDrawable(svgDrawable("icons/svg/magnifying_glass_outline.svg", 20, iconSecondary))
-        binding.modalClearBtn.setImageDrawable(svgDrawable("icons/svg/close.svg", 16, iconSecondary))
+        binding.modalClearBtn.setImageDrawable(svgDrawable("icons/svg/close_mini.svg", 16, iconSecondary))
 
         val tabId = intent.getStringExtra(EXTRA_TAB_ID)
         val query = intent.getStringExtra(EXTRA_QUERY) ?: ""
@@ -122,13 +133,13 @@ class BrowserResponseActivity : AppCompatActivity() {
         binding.btnTabs.setOnClickListener {
             TabManager.save(this)
             runCatching {
-    val bmp = Bitmap.createBitmap(binding.webView.width, binding.webView.height, Bitmap.Config.ARGB_8888)
-    val c = Canvas(bmp)
-    binding.webView.draw(c)
-    val scaled = Bitmap.createScaledBitmap(bmp, 400, 300, true)
-    bmp.recycle()
-    TabScreenshots.save(currentTabId, scaled)
-}
+                val bmp = Bitmap.createBitmap(binding.webView.width, binding.webView.height, Bitmap.Config.ARGB_8888)
+                val c = Canvas(bmp)
+                binding.webView.draw(c)
+                val scaled = Bitmap.createScaledBitmap(bmp, 400, 300, true)
+                bmp.recycle()
+                TabScreenshots.save(currentTabId, scaled)
+            }
             startActivity(Intent(this, TabsActivity::class.java))
         }
         binding.btnMore.setOnClickListener { showMoreMenu() }
@@ -159,6 +170,135 @@ class BrowserResponseActivity : AppCompatActivity() {
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
         updateTabsCount()
     }
+
+    // ── Find-in-Page (substituição do showFindDialog removido no API 33) ─────
+
+    private fun buildFindBar() {
+        val dp = resources.displayMetrics.density
+        val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
+        val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
+
+        findBar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity     = Gravity.CENTER_VERTICAL
+            val pad = (8 * dp).toInt()
+            setPadding(pad, pad, pad, pad)
+            setBackgroundColor(ContextCompat.getColor(this@BrowserResponseActivity, R.color.popup_background))
+            elevation = 8f
+            visibility = View.GONE
+        }
+
+        findInput = EditText(this).apply {
+            hint    = getString(R.string.find_in_page)
+            maxLines = 1
+            imeOptions = EditorInfo.IME_ACTION_SEARCH
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+
+        findCount = TextView(this).apply {
+            textSize = 12f
+            val hPad = (8 * dp).toInt()
+            setPadding(hPad, 0, hPad, 0)
+            setTextColor(ContextCompat.getColor(this@BrowserResponseActivity, R.color.text_hint))
+        }
+
+        findPrev = ImageView(this).apply {
+            val sz = (36 * dp).toInt()
+            layoutParams = LinearLayout.LayoutParams(sz, sz)
+            setImageDrawable(svgDrawable("icons/svg/arrow_left.svg", 20, iconTint))
+            isClickable = true; isFocusable = true
+            background = ContextCompat.getDrawable(this@BrowserResponseActivity, R.drawable.ripple_item)
+        }
+
+        findNext = ImageView(this).apply {
+            val sz = (36 * dp).toInt()
+            layoutParams = LinearLayout.LayoutParams(sz, sz)
+            setImageDrawable(svgDrawable("icons/svg/arrow_right.svg", 20, iconTint))
+            isClickable = true; isFocusable = true
+            background = ContextCompat.getDrawable(this@BrowserResponseActivity, R.drawable.ripple_item)
+        }
+
+        findClose = ImageView(this).apply {
+            val sz = (36 * dp).toInt()
+            layoutParams = LinearLayout.LayoutParams(sz, sz)
+            setImageDrawable(svgDrawable("icons/svg/close_mini.svg", 18, iconSec))
+            isClickable = true; isFocusable = true
+            background = ContextCompat.getDrawable(this@BrowserResponseActivity, R.drawable.ripple_item)
+        }
+
+        findBar.addView(findInput)
+        findBar.addView(findCount)
+        findBar.addView(findPrev)
+        findBar.addView(findNext)
+        findBar.addView(findClose)
+
+        // Adiciona a findBar ao root como FrameLayout overlay no topo
+        (binding.root as? FrameLayout)?.addView(
+            findBar,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.TOP
+            )
+        )
+
+        findInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun afterTextChanged(s: Editable?) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {
+                val q = s?.toString() ?: ""
+                if (q.isEmpty()) {
+                    binding.webView.clearMatches()
+                    findCount.text = ""
+                } else {
+                    binding.webView.findAllAsync(q)
+                }
+            }
+        })
+
+        findInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                binding.webView.findNext(true); true
+            } else false
+        }
+
+        binding.webView.setFindListener { activeMatchOrdinal, numberOfMatches, _ ->
+            findCount.text = if (numberOfMatches > 0)
+                "${activeMatchOrdinal + 1}/$numberOfMatches"
+            else
+                "0/0"
+        }
+
+        findPrev.setOnClickListener  { binding.webView.findNext(false) }
+        findNext.setOnClickListener  { binding.webView.findNext(true) }
+        findClose.setOnClickListener { hideFindBar() }
+    }
+
+    private fun showFindBar() {
+        if (findBarVisible) return
+        findBarVisible = true
+        findBar.visibility = View.VISIBLE
+        findBar.alpha = 0f
+        findBar.animate().alpha(1f).setDuration(180).start()
+        findInput.requestFocus()
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(findInput, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun hideFindBar() {
+        if (!findBarVisible) return
+        findBarVisible = false
+        binding.webView.clearMatches()
+        findInput.setText("")
+        findCount.text = ""
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(findInput.windowToken, 0)
+        findBar.animate().alpha(0f).setDuration(150).withEndAction {
+            findBar.visibility = View.GONE
+        }.start()
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
@@ -473,7 +613,7 @@ class BrowserResponseActivity : AppCompatActivity() {
                 getString(if (isBookmarked) R.string.remove_bookmark else R.string.add_bookmark)) { toggleBookmark() },
             PopupItem("icons/svg/share.svg", getString(R.string.share)) { shareUrl() },
             PopupItem("icons/svg/copy.svg", getString(R.string.copy_url)) { copyUrl() },
-            PopupItem("icons/svg/find.svg", getString(R.string.find_in_page)) { findInPage() },
+            PopupItem("icons/svg/find.svg", getString(R.string.find_in_page)) { showFindBar() },
             PopupItem("icons/svg/desktop.svg", getString(R.string.desktop_mode)) { toggleDesktopMode() },
             PopupItem("icons/svg/download.svg", "Descarregar página") { downloadFile(binding.webView.url ?: "") },
             PopupItem("icons/svg/history.svg", getString(R.string.history)) {
@@ -489,6 +629,9 @@ class BrowserResponseActivity : AppCompatActivity() {
         items: List<PopupItem>,
         iconTint: Int, bgColor: Int, textColor: Int, gravity: Int
     ) {
+        // FIX: declarar pop antes do forEach para poder referenciá-lo nos listeners
+        var pop: PopupWindow? = null
+
         val menuView = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background  = ContextCompat.getDrawable(this@BrowserResponseActivity, R.drawable.popup_bg)
@@ -516,14 +659,19 @@ class BrowserResponseActivity : AppCompatActivity() {
             val tv = TextView(this).apply { text = item.label; setTextColor(textColor); textSize = 14f }
             row.addView(iv); row.addView(tv)
             menuView.addView(row)
-            row.setOnClickListener { item.action() }
+
+            // FIX: fechar o popup antes de executar a ação
+            row.setOnClickListener {
+                pop?.dismiss()
+                item.action()
+            }
         }
 
         menuView.scaleX = 0.85f; menuView.scaleY = 0.85f; menuView.alpha = 0f
         menuView.animate().scaleX(1f).scaleY(1f).alpha(1f)
             .setDuration(220).setInterpolator(OvershootInterpolator(1.2f)).start()
 
-        val pop = PopupWindow(
+        pop = PopupWindow(
             menuView,
             (220 * resources.displayMetrics.density).toInt(),
             LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -531,9 +679,11 @@ class BrowserResponseActivity : AppCompatActivity() {
         )
         pop.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
         pop.elevation = 12f
-        pop.showAtLocation(binding.root, gravity,
-            (12 * resources.displayMetrics.density).toInt(),
-            (60 * resources.displayMetrics.density).toInt())
+
+        // FIX: offset corrigido — x negativo para alinhar ao lado direito sem sair do ecrã
+        val xOffset = -(12 * resources.displayMetrics.density).toInt()
+        val yOffset =  (60 * resources.displayMetrics.density).toInt()
+        pop.showAtLocation(binding.root, gravity, xOffset, yOffset)
     }
 
     private fun shareUrl() {
@@ -562,11 +712,6 @@ class BrowserResponseActivity : AppCompatActivity() {
         binding.webView.reload()
     }
 
-    private fun findInPage() {
-        binding.webView.findAllAsync("")
-        binding.webView.showFindDialog(null, true)
-    }
-
     private fun isCurrentBookmarked(): Boolean {
         val url = binding.webView.url ?: return false
         val raw = getSharedPreferences("wilin_bookmarks", Context.MODE_PRIVATE)
@@ -591,6 +736,7 @@ class BrowserResponseActivity : AppCompatActivity() {
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         when {
+            findBarVisible -> hideFindBar()
             binding.searchModal.visibility == View.VISIBLE -> hideSearchModal()
             binding.webView.canGoBack() -> binding.webView.goBack()
             else -> super.onBackPressed()
