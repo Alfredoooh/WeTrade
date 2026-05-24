@@ -36,6 +36,7 @@ class TabsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
+        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         val isLight = !resources.configuration.isNightModeActive
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
 

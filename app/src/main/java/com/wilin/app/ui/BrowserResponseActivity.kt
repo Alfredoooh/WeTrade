@@ -172,6 +172,7 @@ class BrowserResponseActivity : AppCompatActivity() {
     }
 
     private fun applyStatusBarTheme() {
+        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         val isLight = !resources.configuration.isNightModeActive
         insetsController.isAppearanceLightStatusBars = isLight
     }
