@@ -11,6 +11,7 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
+        <!-- AppBar -->
         <com.google.android.material.appbar.AppBarLayout
             android:id="@+id/appBarLayout"
             android:layout_width="match_parent"
@@ -18,14 +19,71 @@
             android:background="@color/appbar_background"
             app:elevation="0dp">
 
-            <com.google.android.material.appbar.MaterialToolbar
-                android:id="@+id/toolbar"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:background="@color/appbar_background"
-                app:titleTextColor="@color/text_primary"
-                app:title="@string/app_name"
-                app:navigationIconTint="@color/icon_tint" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="4dp"
+                android:paddingEnd="12dp">
+
+                <!-- Botão menu (esconde quando tab search está activa) -->
+                <ImageView
+                    android:id="@+id/btnMenu"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:padding="12dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <!-- Título normal (Home / Games) -->
+                <TextView
+                    android:id="@+id/toolbarTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/app_name"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:paddingStart="4dp" />
+
+                <!-- Search pill (visível só quando tab search está activa) -->
+                <LinearLayout
+                    android:id="@+id/searchPill"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/search_pill_bg"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:visibility="gone"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <ImageView
+                        android:id="@+id/searchPillIcon"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_marginEnd="8dp" />
+
+                    <TextView
+                        android:id="@+id/searchPillHint"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/search_hint"
+                        android:textSize="14sp"
+                        android:textColor="@color/text_hint"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
+
+                </LinearLayout>
+
+            </LinearLayout>
 
         </com.google.android.material.appbar.AppBarLayout>
 
@@ -40,6 +98,7 @@
             android:layout_height="0.5dp"
             android:background="@color/divider" />
 
+        <!-- Bottom nav -->
         <LinearLayout
             android:id="@+id/bottomNav"
             android:layout_width="match_parent"
@@ -96,77 +155,137 @@
 
     </LinearLayout>
 
+    <!-- Drawer redesenhado -->
     <LinearLayout
         android:id="@+id/drawerContainer"
         android:layout_width="280dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:orientation="vertical"
-        android:background="@color/drawer_background">
+        android:background="@color/drawer_background"
+        android:fitsSystemWindows="true">
 
+        <!-- Header com logo/nome -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="120dp"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="bottom"
-            android:padding="16dp"
-            android:background="@color/drawer_background">
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="32dp"
+            android:paddingBottom="20dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/app_name"
-                android:textSize="22sp"
+                android:textSize="28sp"
                 android:textStyle="bold"
+                android:letterSpacing="0.02"
                 android:textColor="@color/drawer_text" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Browser"
+                android:textSize="13sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="2dp" />
+
         </LinearLayout>
 
         <View
             android:layout_width="match_parent"
-            android:layout_height="1dp"
+            android:layout_height="0.5dp"
+            android:marginStart="20dp"
+            android:marginEnd="20dp"
             android:background="@color/divider" />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="MENU"
+            android:textSize="11sp"
+            android:letterSpacing="0.12"
+            android:textColor="@color/text_secondary"
+            android:paddingStart="20dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="4dp" />
+
+        <!-- Item Definições -->
         <LinearLayout
             android:id="@+id/drawerItemSettings"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="52dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
             android:background="?attr/selectableItemBackground">
-            <ImageView
-                android:id="@+id/drawerIconSettings"
-                android:layout_width="24dp"
-                android:layout_height="24dp" />
+
+            <FrameLayout
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/drawer_icon_bg"
+                android:layout_marginEnd="14dp">
+                <ImageView
+                    android:id="@+id/drawerIconSettings"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_gravity="center" />
+            </FrameLayout>
+
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
+                android:layout_weight="1"
                 android:text="@string/drawer_settings"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textColor="@color/drawer_text" />
+
+            <ImageView
+                android:id="@+id/drawerChevronSettings"
+                android:layout_width="16dp"
+                android:layout_height="16dp" />
+
         </LinearLayout>
 
+        <!-- Item Sobre -->
         <LinearLayout
             android:id="@+id/drawerItemAbout"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="52dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
             android:background="?attr/selectableItemBackground">
-            <ImageView
-                android:id="@+id/drawerIconAbout"
-                android:layout_width="24dp"
-                android:layout_height="24dp" />
+
+            <FrameLayout
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/drawer_icon_bg"
+                android:layout_marginEnd="14dp">
+                <ImageView
+                    android:id="@+id/drawerIconAbout"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_gravity="center" />
+            </FrameLayout>
+
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
+                android:layout_weight="1"
                 android:text="@string/drawer_about"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textColor="@color/drawer_text" />
+
+            <ImageView
+                android:id="@+id/drawerChevronAbout"
+                android:layout_width="16dp"
+                android:layout_height="16dp" />
+
         </LinearLayout>
 
     </LinearLayout>

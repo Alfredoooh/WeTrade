@@ -6,7 +6,6 @@ import android.graphics.Canvas
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
@@ -17,6 +16,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import com.caverock.androidsvg.SVG
 import com.wilin.app.databinding.ActivityMainBinding
+import com.wilin.app.ui.BrowserResponseActivity
 import com.wilin.app.ui.GamesFragment
 import com.wilin.app.ui.HomeFragment
 import com.wilin.app.ui.SearchFragment
@@ -46,31 +46,33 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Edge-to-edge desligado — deixamos o sistema gerir insets normalmente
         WindowCompat.setDecorFitsSystemWindows(window, true)
-
-        // Aplicar statusBar DEPOIS de setContentView para garantir que a window já está pronta
         applyStatusBarTheme()
-
-        // Forçar nova aplicação na próxima frame para sobrepor qualquer estado do splash
         window.decorView.post { applyStatusBarTheme() }
 
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayShowTitleEnabled(true)
+        val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
+        val iconSec   = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
-        val iconTint          = ContextCompat.getColor(this, R.color.icon_tint)
-        val iconTintSecondary = ContextCompat.getColor(this, R.color.icon_tint_secondary)
-
-        binding.toolbar.navigationIcon = svgDrawable("icons/svg/menu.svg", 24, iconTint)
-        binding.toolbar.setNavigationOnClickListener {
+        // Menu button
+        binding.btnMenu.setImageDrawable(svgDrawable("icons/svg/menu.svg", 24, iconTint))
+        binding.btnMenu.setOnClickListener {
             if (binding.drawerLayout.isDrawerOpen(GravityCompat.START))
                 binding.drawerLayout.closeDrawer(GravityCompat.START)
             else
                 binding.drawerLayout.openDrawer(GravityCompat.START)
         }
 
-        binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 24, iconTint))
-        binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 24, iconTint))
+        // Search pill no AppBar — abre BrowserResponseActivity directamente
+        binding.searchPillIcon.setImageDrawable(svgDrawable("icons/svg/magnifying_glass_outline.svg", 18, iconSec))
+        binding.searchPill.setOnClickListener {
+            startActivity(Intent(this, BrowserResponseActivity::class.java))
+        }
+
+        // Drawer
+        binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 18, iconTint))
+        binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 18, iconTint))
+        binding.drawerChevronSettings.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 16, iconSec))
+        binding.drawerChevronAbout.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 16, iconSec))
 
         binding.drawerItemSettings.setOnClickListener {
             binding.drawerLayout.closeDrawer(GravityCompat.START)
@@ -80,22 +82,37 @@ class MainActivity : AppCompatActivity() {
             binding.drawerLayout.closeDrawer(GravityCompat.START)
         }
 
+        // Tab icons
         fun setIcons(activeTab: Int) {
             binding.tabHomeIcon.setImageDrawable(
                 svgDrawable("icons/svg/home_${if (activeTab == R.id.tabHome) "filled" else "outline"}.svg",
-                    24, if (activeTab == R.id.tabHome) iconTint else iconTintSecondary))
+                    24, if (activeTab == R.id.tabHome) iconTint else iconSec))
             binding.tabSearchIcon.setImageDrawable(
                 svgDrawable("icons/svg/magnifying_glass_${if (activeTab == R.id.tabSearch) "filled" else "outline"}.svg",
-                    24, if (activeTab == R.id.tabSearch) iconTint else iconTintSecondary))
+                    24, if (activeTab == R.id.tabSearch) iconTint else iconSec))
             binding.tabGamesIcon.setImageDrawable(
                 svgDrawable("icons/svg/game_${if (activeTab == R.id.tabGames) "filled" else "outline"}.svg",
-                    24, if (activeTab == R.id.tabGames) iconTint else iconTintSecondary))
+                    24, if (activeTab == R.id.tabGames) iconTint else iconSec))
+        }
+
+        // AppBar: mostra pill quando tab search, título + menu quando outras tabs
+        fun updateAppBar(tabId: Int) {
+            if (tabId == R.id.tabSearch) {
+                binding.toolbarTitle.visibility = android.view.View.GONE
+                binding.btnMenu.visibility      = android.view.View.GONE
+                binding.searchPill.visibility   = android.view.View.VISIBLE
+            } else {
+                binding.searchPill.visibility   = android.view.View.GONE
+                binding.toolbarTitle.visibility = android.view.View.VISIBLE
+                binding.btnMenu.visibility      = android.view.View.VISIBLE
+            }
         }
 
         fun selectTab(tabId: Int) {
             if (currentTab == tabId) return
             currentTab = tabId
             setIcons(tabId)
+            updateAppBar(tabId)
             when (tabId) {
                 R.id.tabHome   -> showFragment(homeFragment)
                 R.id.tabSearch -> showFragment(searchFragment)
@@ -116,6 +133,7 @@ class MainActivity : AppCompatActivity() {
             .commit()
 
         setIcons(R.id.tabHome)
+        updateAppBar(R.id.tabHome)
     }
 
     override fun onResume() {
@@ -131,7 +149,7 @@ class MainActivity : AppCompatActivity() {
     private fun applyStatusBarTheme() {
         val isLight = !resources.configuration.isNightModeActive
         val controller = WindowInsetsControllerCompat(window, window.decorView)
-        controller.isAppearanceLightStatusBars = isLight
+        controller.isAppearanceLightStatusBars     = isLight
         controller.isAppearanceLightNavigationBars = isLight
     }
 

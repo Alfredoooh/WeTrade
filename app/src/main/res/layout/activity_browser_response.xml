@@ -6,13 +6,11 @@
     android:layout_height="match_parent"
     android:background="@color/background">
 
-    <!-- WebView ocupa tudo -->
     <WebView
         android:id="@+id/webView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Progress bar no topo, sobreposta -->
     <View
         android:id="@+id/progressBar"
         android:layout_width="0dp"
@@ -21,7 +19,16 @@
         android:layout_gravity="top"
         android:visibility="gone" />
 
-    <!-- Bottom bar compacta que esconde ao scroll -->
+    <!-- Divider em cima do bottomBar, separado -->
+    <View
+        android:id="@+id/bottomBarDivider"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:layout_gravity="bottom"
+        android:translationY="-48dp"
+        android:background="@color/divider" />
+
+    <!-- Bottom bar -->
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="match_parent"
@@ -33,14 +40,6 @@
         android:paddingStart="4dp"
         android:paddingEnd="4dp">
 
-        <!-- Divider topo -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:background="@color/divider"
-            android:layout_gravity="top" />
-
-        <!-- Voltar -->
         <ImageView
             android:id="@+id/btnBack"
             android:layout_width="40dp"
@@ -50,7 +49,6 @@
             android:clickable="true"
             android:focusable="true" />
 
-        <!-- Avançar -->
         <ImageView
             android:id="@+id/btnForward"
             android:layout_width="40dp"
@@ -60,7 +58,6 @@
             android:clickable="true"
             android:focusable="true" />
 
-        <!-- URL input clicável — ocupa o espaço restante -->
         <LinearLayout
             android:id="@+id/urlBar"
             android:layout_width="0dp"
@@ -68,7 +65,7 @@
             android:layout_weight="1"
             android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp"
-            android:background="@color/card_background"
+            android:background="@drawable/search_pill_bg"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingStart="8dp"
@@ -100,7 +97,6 @@
                 android:hint="@string/search_hint"
                 android:textColorHint="@color/text_hint" />
 
-            <!-- Reload / Stop dentro da urlBar -->
             <ImageView
                 android:id="@+id/btnReload"
                 android:layout_width="20dp"
@@ -112,22 +108,19 @@
 
         </LinearLayout>
 
-        <!-- Tabs -->
         <FrameLayout
             android:id="@+id/btnTabs"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
-            android:focusable="true"
-            android:gravity="center">
+            android:focusable="true">
 
             <ImageView
                 android:id="@+id/tabsIcon"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
-                android:layout_gravity="center"
-                android:padding="0dp" />
+                android:layout_gravity="center" />
 
             <TextView
                 android:id="@+id/tabsCount"
@@ -144,7 +137,6 @@
 
         </FrameLayout>
 
-        <!-- Mais opções -->
         <ImageView
             android:id="@+id/btnMore"
             android:layout_width="40dp"
@@ -156,7 +148,7 @@
 
     </LinearLayout>
 
-    <!-- Modal de pesquisa (começa invisible, sobe ao clicar URL) -->
+    <!-- Modal de pesquisa -->
     <LinearLayout
         android:id="@+id/searchModal"
         android:layout_width="match_parent"
@@ -174,7 +166,6 @@
             android:paddingTop="8dp"
             android:paddingBottom="16dp">
 
-            <!-- Handle -->
             <View
                 android:layout_width="36dp"
                 android:layout_height="4dp"
@@ -182,13 +173,12 @@
                 android:layout_marginBottom="8dp"
                 android:background="@color/divider" />
 
-            <!-- Campo de pesquisa -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="44dp"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
-                android:background="@color/card_background"
+                android:background="@drawable/search_pill_bg"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:paddingStart="12dp"
@@ -225,7 +215,6 @@
 
             </LinearLayout>
 
-            <!-- Histórico recente -->
             <TextView
                 android:id="@+id/modalHistoryLabel"
                 android:layout_width="match_parent"
