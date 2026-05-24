@@ -3,14 +3,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="@color/incognito_bg">
 
     <WebView
         android:id="@+id/webView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- BottomBar + progressBar agrupados -->
+    <!-- BottomBar incógnito -->
     <LinearLayout
         android:id="@+id/bottomBarWrapper"
         android:layout_width="match_parent"
@@ -18,7 +18,6 @@
         android:layout_gravity="bottom"
         android:orientation="vertical">
 
-        <!-- Progress bar no TOPO do bottomBar -->
         <View
             android:id="@+id/progressBar"
             android:layout_width="0dp"
@@ -29,13 +28,13 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="0.5dp"
-            android:background="@color/divider" />
+            android:background="#33FFFFFF" />
 
         <LinearLayout
             android:id="@+id/bottomBar"
             android:layout_width="match_parent"
             android:layout_height="52dp"
-            android:background="@color/appbar_background"
+            android:background="@color/incognito_surface"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingStart="4dp"
@@ -59,7 +58,6 @@
                 android:clickable="true"
                 android:focusable="true" />
 
-            <!-- URL bar com border radius -->
             <LinearLayout
                 android:id="@+id/urlBar"
                 android:layout_width="0dp"
@@ -67,7 +65,7 @@
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
                 android:layout_marginEnd="4dp"
-                android:background="@drawable/search_pill_bg"
+                android:background="@drawable/incognito_pill_bg"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:paddingStart="10dp"
@@ -76,16 +74,10 @@
                 android:focusable="true">
 
                 <ImageView
-                    android:id="@+id/faviconImg"
+                    android:id="@+id/incognitoIcon"
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:layout_marginEnd="6dp" />
-
-                <ImageView
-                    android:id="@+id/lockIcon"
-                    android:layout_width="12dp"
-                    android:layout_height="12dp"
-                    android:layout_marginEnd="4dp" />
 
                 <TextView
                     android:id="@+id/urlText"
@@ -93,11 +85,11 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:textSize="13sp"
-                    android:textColor="@color/text_primary"
+                    android:textColor="#FFFFFF"
                     android:maxLines="1"
                     android:ellipsize="end"
                     android:hint="@string/search_hint"
-                    android:textColorHint="@color/text_hint" />
+                    android:textColorHint="#66FFFFFF" />
 
                 <ImageView
                     android:id="@+id/btnReload"
@@ -110,38 +102,17 @@
 
             </LinearLayout>
 
-            <!-- Tabs button com badge VERMELHO -->
-            <FrameLayout
-                android:id="@+id/btnTabs"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true">
-
-                <ImageView
-                    android:id="@+id/tabsIcon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_gravity="center" />
-
-                <TextView
-                    android:id="@+id/tabsCount"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_gravity="top|end"
-                    android:layout_marginTop="2dp"
-                    android:layout_marginEnd="2dp"
-                    android:background="@drawable/badge_red_bg"
-                    android:textColor="#FFFFFF"
-                    android:textSize="8sp"
-                    android:gravity="center"
-                    android:visibility="gone" />
-
-            </FrameLayout>
-
             <ImageView
                 android:id="@+id/btnMore"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <ImageView
+                android:id="@+id/btnClose"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:padding="8dp"
@@ -153,7 +124,7 @@
 
     </LinearLayout>
 
-    <!-- Modal de pesquisa com animação -->
+    <!-- Modal incógnito -->
     <FrameLayout
         android:id="@+id/searchModal"
         android:layout_width="match_parent"
@@ -169,7 +140,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
             android:orientation="vertical"
-            android:background="@drawable/modal_top_rounded"
+            android:background="@drawable/incognito_modal_bg"
             android:paddingTop="8dp"
             android:paddingBottom="16dp">
 
@@ -178,14 +149,14 @@
                 android:layout_height="4dp"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginBottom="8dp"
-                android:background="@color/divider" />
+                android:background="#33FFFFFF" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="44dp"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
-                android:background="@drawable/search_pill_bg"
+                android:background="@drawable/incognito_pill_bg"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:paddingStart="12dp"
@@ -204,8 +175,8 @@
                     android:layout_weight="1"
                     android:background="@null"
                     android:textSize="15sp"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_hint"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#66FFFFFF"
                     android:hint="@string/search_hint"
                     android:inputType="textUri"
                     android:imeOptions="actionGo"
@@ -221,24 +192,6 @@
                     android:visibility="gone" />
 
             </LinearLayout>
-
-            <TextView
-                android:id="@+id/modalHistoryLabel"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/recent"
-                android:textSize="12sp"
-                android:textColor="@color/text_secondary" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/modalHistoryList"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:maxHeight="240dp"
-                android:nestedScrollingEnabled="false" />
 
         </LinearLayout>
 

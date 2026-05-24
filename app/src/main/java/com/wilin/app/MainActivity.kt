@@ -6,6 +6,11 @@ import android.graphics.Canvas
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
+import android.view.View
+import android.view.animation.DecelerateInterpolator
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
@@ -47,13 +52,13 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
-        applyStatusBarTheme()
-        window.decorView.post { applyStatusBarTheme() }
+        // Mesmo padrão do SettingsActivity — directo, sem post/onWindowFocusChanged
+        val isLight = !resources.configuration.isNightModeActive
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
 
         val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec   = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
-        // Menu button
         binding.btnMenu.setImageDrawable(svgDrawable("icons/svg/menu.svg", 24, iconTint))
         binding.btnMenu.setOnClickListener {
             if (binding.drawerLayout.isDrawerOpen(GravityCompat.START))
@@ -62,10 +67,20 @@ class MainActivity : AppCompatActivity() {
                 binding.drawerLayout.openDrawer(GravityCompat.START)
         }
 
-        // Search pill no AppBar — abre BrowserResponseActivity directamente
-        binding.searchPillIcon.setImageDrawable(svgDrawable("icons/svg/magnifying_glass_outline.svg", 18, iconSec))
+        // Search pill — ao clicar expande levemente e abre SearchActivity
+        binding.searchPillIcon.setImageDrawable(
+            svgDrawable("icons/svg/magnifying_glass_outline.svg", 18, iconSec))
         binding.searchPill.setOnClickListener {
-            startActivity(Intent(this, BrowserResponseActivity::class.java))
+            // Animação expand antes de abrir
+            binding.searchPill.animate()
+                .scaleX(1.03f).scaleY(1.03f)
+                .setDuration(120)
+                .setInterpolator(DecelerateInterpolator())
+                .withEndAction {
+                    binding.searchPill.animate().scaleX(1f).scaleY(1f).setDuration(80).start()
+                    startActivity(Intent(this, SearchActivity::class.java))
+                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                }.start()
         }
 
         // Drawer
@@ -82,7 +97,6 @@ class MainActivity : AppCompatActivity() {
             binding.drawerLayout.closeDrawer(GravityCompat.START)
         }
 
-        // Tab icons
         fun setIcons(activeTab: Int) {
             binding.tabHomeIcon.setImageDrawable(
                 svgDrawable("icons/svg/home_${if (activeTab == R.id.tabHome) "filled" else "outline"}.svg",
@@ -95,16 +109,15 @@ class MainActivity : AppCompatActivity() {
                     24, if (activeTab == R.id.tabGames) iconTint else iconSec))
         }
 
-        // AppBar: mostra pill quando tab search, título + menu quando outras tabs
         fun updateAppBar(tabId: Int) {
             if (tabId == R.id.tabSearch) {
-                binding.toolbarTitle.visibility = android.view.View.GONE
-                binding.btnMenu.visibility      = android.view.View.GONE
-                binding.searchPill.visibility   = android.view.View.VISIBLE
+                binding.toolbarTitle.visibility = View.GONE
+                binding.btnMenu.visibility      = View.GONE
+                binding.searchPill.visibility   = View.VISIBLE
             } else {
-                binding.searchPill.visibility   = android.view.View.GONE
-                binding.toolbarTitle.visibility = android.view.View.VISIBLE
-                binding.btnMenu.visibility      = android.view.View.VISIBLE
+                binding.searchPill.visibility   = View.GONE
+                binding.toolbarTitle.visibility = View.VISIBLE
+                binding.btnMenu.visibility      = View.VISIBLE
             }
         }
 
@@ -138,19 +151,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        applyStatusBarTheme()
-    }
-
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) applyStatusBarTheme()
-    }
-
-    private fun applyStatusBarTheme() {
         val isLight = !resources.configuration.isNightModeActive
-        val controller = WindowInsetsControllerCompat(window, window.decorView)
-        controller.isAppearanceLightStatusBars     = isLight
-        controller.isAppearanceLightNavigationBars = isLight
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
     }
 
     override fun onBackPressed() {
@@ -175,10 +177,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
-            .hide(homeFragment)
-            .hide(searchFragment)
-            .hide(gamesFragment)
-            .show(fragment)
-            .commit()
+            .hide(homeFragment).hide(searchFragment).hide(gamesFragment)
+            .show(fragment).commit()
     }
 }

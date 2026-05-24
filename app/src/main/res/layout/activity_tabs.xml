@@ -14,7 +14,7 @@
         android:gravity="center_vertical"
         android:background="@color/appbar_background"
         android:paddingStart="4dp"
-        android:paddingEnd="16dp">
+        android:paddingEnd="8dp">
 
         <ImageView
             android:id="@+id/btnCloseTabsActivity"
@@ -30,11 +30,20 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:textSize="18sp"
+            android:textSize="17sp"
             android:textStyle="bold"
             android:textColor="@color/text_primary"
             android:layout_marginStart="4dp"
             android:text="@string/tabs" />
+
+        <ImageView
+            android:id="@+id/btnIncognito"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="9dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true" />
 
         <ImageView
             android:id="@+id/btnNewTab"
@@ -47,6 +56,66 @@
 
     </LinearLayout>
 
+    <!-- Selector Normal / Privado -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:orientation="horizontal"
+        android:background="@color/appbar_background">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:id="@+id/tabModeNormal">
+            <TextView
+                android:id="@+id/tabModeNormalText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/normal_tabs"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary" />
+            <View
+                android:id="@+id/tabIndicatorNormal"
+                android:layout_width="24dp"
+                android:layout_height="2dp"
+                android:layout_marginTop="4dp"
+                android:background="@color/colorPrimary"
+                android:visibility="visible" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:id="@+id/tabModeIncognito">
+            <TextView
+                android:id="@+id/tabModeIncognitoText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/private_tabs"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary" />
+            <View
+                android:id="@+id/tabIndicatorIncognito"
+                android:layout_width="24dp"
+                android:layout_height="2dp"
+                android:layout_marginTop="4dp"
+                android:background="@color/colorPrimary"
+                android:visibility="invisible" />
+        </LinearLayout>
+
+    </LinearLayout>
+
     <View
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
@@ -55,8 +124,36 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/tabsRecycler"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:padding="6dp"
         android:clipToPadding="false" />
+
+    <!-- Bottom bar Tabs -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@color/appbar_background"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp">
+
+        <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/btnDone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/done"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/colorPrimary"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="8dp" />
+
+    </LinearLayout>
 
 </LinearLayout>

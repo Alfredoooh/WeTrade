@@ -22,6 +22,7 @@
     <string name="bookmarks">Favoritos</string>
     <string name="history">Histórico</string>
     <string name="new_tab">Nova tab</string>
+    <string name="new_incognito_tab">Nova aba privada</string>
     <string name="tabs">Tabs</string>
     <string name="copy_url">Copiar URL</string>
     <string name="open_in_browser">Abrir no browser</string>
@@ -36,4 +37,15 @@
     <string name="clear_history">Limpar histórico</string>
     <string name="no_bookmarks">Nenhum favorito ainda</string>
     <string name="no_history">Nenhum histórico ainda</string>
+    <string name="incognito">Privado</string>
+    <string name="incognito_desc">A navegação privada não guarda histórico nem cookies</string>
+    <string name="search_engine">Motor de pesquisa</string>
+    <string name="ai_search">IA</string>
+    <string name="download_image">Guardar imagem</string>
+    <string name="open_image_new_tab">Abrir imagem em nova tab</string>
+    <string name="copy_image_url">Copiar URL da imagem</string>
+    <string name="close_all_tabs">Fechar todas</string>
+    <string name="private_tabs">Tabs privadas</string>
+    <string name="normal_tabs">Tabs normais</string>
+    <string name="done">Concluído</string>
 </resources>

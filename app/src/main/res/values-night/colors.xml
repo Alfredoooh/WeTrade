@@ -1,55 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <!-- Brand -->
   <color name="colorPrimary">#007AFF</color>
   <color name="colorPrimaryDark">#0055B3</color>
   <color name="colorAccent">#007AFF</color>
   <color name="blue_apple">#007AFF</color>
+  <color name="red_badge">#FF453A</color>
   
-  <!-- Window / fundo geral -->
   <color name="background">#121212</color>
   <color name="background_dark">#121212</color>
   <color name="splash_background_light">#FFFFFF</color>
   <color name="splash_background_dark">#121212</color>
   
-  <!-- AppBar / Toolbar / BottomNav — MESMA COR DO FUNDO -->
   <color name="appbar_background">#121212</color>
   <color name="bottom_nav_background">#121212</color>
   <color name="bottom_nav_text_color">#007AFF</color>
   
-  <!-- Texto -->
   <color name="text_primary">#FFFFFF</color>
   <color name="text_secondary">#ABABAB</color>
   <color name="text_hint">#666666</color>
   <color name="text_link">#007AFF</color>
   
-  <!-- Drawer -->
-  <color name="drawer_background">#1C1C1C</color>
+  <color name="drawer_background">#121212</color>
   <color name="drawer_text">#FFFFFF</color>
   
-  <!-- Superfícies / Cards -->
-  <color name="surface">#121212</color>
+  <color name="surface">#1E1E1E</color>
   <color name="card_background">#2B2B2B</color>
   
-  <!-- Dialogs / Modals / BottomSheets -->
+  <color name="popup_background">#2B2B2B</color>
+  <color name="popup_shadow">#28FFFFFF</color>
+  
   <color name="dialog_background">#2B2B2B</color>
   
-  <!-- Separadores -->
   <color name="divider">#2C2C2C</color>
   
-  <!-- Settings -->
   <color name="settings_section_label">#ABABAB</color>
   
-  <!-- Ícones -->
   <color name="icon_tint">#FFFFFF</color>
   <color name="icon_tint_secondary">#ABABAB</color>
   
-  <!-- Input / EditText -->
   <color name="input_background">#2B2B2B</color>
   <color name="input_text">#FFFFFF</color>
   <color name="input_hint">#666666</color>
   <color name="cursor_color">#007AFF</color>
   
-  <!-- Ripple -->
   <color name="ripple_color">#1AFFFFFF</color>
+  
+  <color name="incognito_bg">#0D0D1A</color>
+  <color name="incognito_surface">#1A1A2E</color>
+  <color name="incognito_text">#FFFFFF</color>
 </resources>

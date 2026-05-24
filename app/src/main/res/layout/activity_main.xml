@@ -18,44 +18,46 @@
             android:background="@color/appbar_background"
             app:elevation="0dp">
 
-            <LinearLayout
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="4dp"
-                android:paddingEnd="12dp">
+                android:layout_height="?attr/actionBarSize">
 
+                <!-- Menu button — visível só fora da aba search -->
                 <ImageView
                     android:id="@+id/btnMenu"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:padding="12dp"
+                    android:layout_gravity="start|center_vertical"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true" />
 
+                <!-- Título normal -->
                 <TextView
                     android:id="@+id/toolbarTitle"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_gravity="start|center_vertical"
+                    android:layout_marginStart="56dp"
                     android:text="@string/app_name"
                     android:textSize="20sp"
                     android:textStyle="bold"
-                    android:textColor="@color/text_primary"
-                    android:paddingStart="4dp" />
+                    android:textColor="@color/text_primary" />
 
+                <!-- Search pill centralizada e curta — só na aba search -->
                 <LinearLayout
                     android:id="@+id/searchPill"
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
+                    android:layout_height="42dp"
+                    android:layout_gravity="center"
+                    android:layout_marginStart="48dp"
+                    android:layout_marginEnd="48dp"
                     android:background="@drawable/search_pill_bg"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
                     android:visibility="gone"
                     android:clickable="true"
                     android:focusable="true">
@@ -77,9 +79,19 @@
                         android:maxLines="1"
                         android:ellipsize="end" />
 
+                    <!-- More options na aba search -->
+                    <ImageView
+                        android:id="@+id/searchPillMore"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginStart="4dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
                 </LinearLayout>
 
-            </LinearLayout>
+            </FrameLayout>
 
         </com.google.android.material.appbar.AppBarLayout>
 
@@ -150,7 +162,7 @@
 
     </LinearLayout>
 
-    <!-- Drawer -->
+    <!-- Drawer branco puro -->
     <LinearLayout
         android:id="@+id/drawerContainer"
         android:layout_width="280dp"
@@ -160,69 +172,47 @@
         android:background="@color/drawer_background"
         android:fitsSystemWindows="true">
 
-        <!-- Header -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="32dp"
-            android:paddingBottom="20dp">
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="40dp"
+            android:paddingBottom="16dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/app_name"
-                android:textSize="28sp"
+                android:text="globe.com"
+                android:textSize="26sp"
                 android:textStyle="bold"
-                android:letterSpacing="0.02"
                 android:textColor="@color/drawer_text" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Browser"
-                android:textSize="13sp"
-                android:textColor="@color/text_secondary"
-                android:layout_marginTop="2dp" />
 
         </LinearLayout>
 
         <View
             android:layout_width="match_parent"
             android:layout_height="0.5dp"
-            android:layout_marginStart="20dp"
-            android:layout_marginEnd="20dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp"
             android:background="@color/divider" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="MENU"
-            android:textSize="11sp"
-            android:letterSpacing="0.12"
-            android:textColor="@color/text_secondary"
-            android:paddingStart="20dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="4dp" />
-
-        <!-- Definições -->
         <LinearLayout
             android:id="@+id/drawerItemSettings"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="56dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
             android:background="?attr/selectableItemBackground">
 
             <FrameLayout
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/drawer_icon_bg"
-                android:layout_marginEnd="14dp">
+                android:layout_marginEnd="16dp">
                 <ImageView
                     android:id="@+id/drawerIconSettings"
                     android:layout_width="18dp"
@@ -245,22 +235,21 @@
 
         </LinearLayout>
 
-        <!-- Sobre -->
         <LinearLayout
             android:id="@+id/drawerItemAbout"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="56dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
             android:background="?attr/selectableItemBackground">
 
             <FrameLayout
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/drawer_icon_bg"
-                android:layout_marginEnd="14dp">
+                android:layout_marginEnd="16dp">
                 <ImageView
                     android:id="@+id/drawerIconAbout"
                     android:layout_width="18dp"

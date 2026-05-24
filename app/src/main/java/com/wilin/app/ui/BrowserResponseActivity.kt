@@ -1,6 +1,7 @@
 package com.wilin.app.ui
 
 import android.annotation.SuppressLint
+import android.app.DownloadManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -10,17 +11,23 @@ import android.graphics.Canvas
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
+import android.view.animation.DecelerateInterpolator
+import android.view.animation.OvershootInterpolator
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.webkit.DownloadListener
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.ImageView
@@ -100,7 +107,7 @@ class BrowserResponseActivity : AppCompatActivity() {
         val loadUrl = when {
             query.isNotEmpty() -> { addToHistory(query); buildUrl(query) }
             tab != null && tab.url.isNotEmpty() -> tab.url
-            else -> "https://duckduckgo.com/?kae=${ddgThemeParam()}&k1=-1"
+            else -> buildDuckDuckGoHome()
         }
         binding.webView.loadUrl(loadUrl)
 
@@ -139,18 +146,47 @@ class BrowserResponseActivity : AppCompatActivity() {
         super.onResume()
         val isLight = !resources.configuration.isNightModeActive
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
+        updateTabsCount()
     }
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
         binding.webView.apply {
-            settings.javaScriptEnabled    = true
-            settings.domStorageEnabled    = true
+            settings.javaScriptEnabled     = true
+            settings.domStorageEnabled     = true
             settings.setSupportZoom(true)
-            settings.builtInZoomControls  = true
-            settings.displayZoomControls  = false
-            settings.loadWithOverviewMode = true
-            settings.useWideViewPort      = true
+            settings.builtInZoomControls   = true
+            settings.displayZoomControls   = false
+            settings.loadWithOverviewMode  = true
+            settings.useWideViewPort       = true
+            settings.allowFileAccess       = true
+            settings.mediaPlaybackRequiresUserGesture = false
+            settings.mixedContentMode      = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+
+            // Download listener
+            setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
+                val request = DownloadManager.Request(Uri.parse(url)).apply {
+                    setMimeType(mimeType)
+                    addRequestHeader("User-Agent", userAgent)
+                    setDescription("A descarregar ficheiro…")
+                    setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                    setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, url.substringAfterLast("/"))
+                }
+                val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                dm.enqueue(request)
+                Toast.makeText(this@BrowserResponseActivity, "A descarregar…", Toast.LENGTH_SHORT).show()
+            })
+
+            // Long press em imagens
+            setOnLongClickListener {
+                val result = hitTestResult
+                if (result.type == WebView.HitTestResult.IMAGE_TYPE ||
+                    result.type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
+                    val imgUrl = result.extra ?: return@setOnLongClickListener false
+                    showImageContextMenu(imgUrl)
+                    true
+                } else false
+            }
 
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -204,6 +240,53 @@ class BrowserResponseActivity : AppCompatActivity() {
         }
     }
 
+    private fun showImageContextMenu(imgUrl: String) {
+        val bgColor   = ContextCompat.getColor(this, R.color.popup_background)
+        val textColor = ContextCompat.getColor(this, R.color.text_primary)
+        val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
+
+        data class Item(val icon: String, val label: String, val action: () -> Unit)
+
+        val items = listOf(
+            Item("icons/svg/download.svg", getString(R.string.download_image)) {
+                downloadFile(imgUrl)
+            },
+            Item("icons/svg/copy.svg", getString(R.string.copy_image_url)) {
+                val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                cm.setPrimaryClip(ClipData.newPlainText("img_url", imgUrl))
+                Toast.makeText(this, "URL copiado", Toast.LENGTH_SHORT).show()
+            },
+            Item("icons/svg/external.svg", getString(R.string.open_image_new_tab)) {
+                val t = TabManager.newTab(imgUrl)
+                TabManager.setCurrentId(t.id)
+                binding.webView.loadUrl(imgUrl)
+            },
+            Item("icons/svg/share.svg", getString(R.string.share)) {
+                startActivity(Intent.createChooser(
+                    Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, imgUrl) },
+                    getString(R.string.share)
+                ))
+            },
+        )
+
+        showAnimatedPopup(items, iconTint, bgColor, textColor, Gravity.CENTER)
+    }
+
+    private fun downloadFile(url: String) {
+        runCatching {
+            val request = DownloadManager.Request(Uri.parse(url)).apply {
+                setDescription("A descarregar…")
+                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, url.substringAfterLast("/"))
+            }
+            val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            dm.enqueue(request)
+            Toast.makeText(this, "A descarregar…", Toast.LENGTH_SHORT).show()
+        }.onFailure {
+            Toast.makeText(this, "Erro ao descarregar", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun loadFaviconViaJs(pageUrl: String) {
         runCatching {
             val host = Uri.parse(pageUrl).host ?: return
@@ -251,7 +334,7 @@ class BrowserResponseActivity : AppCompatActivity() {
 
     private fun updateTabsCount() {
         val count = TabManager.count()
-        if (count > 1) {
+        if (count > 0) {
             binding.tabsCount.visibility = View.VISIBLE
             binding.tabsCount.text = if (count > 99) "99" else count.toString()
         } else {
@@ -273,6 +356,12 @@ class BrowserResponseActivity : AppCompatActivity() {
 
     private fun showSearchModal() {
         binding.searchModal.visibility = View.VISIBLE
+        binding.searchModal.alpha = 0f
+        binding.searchModal.animate().alpha(1f).setDuration(180).start()
+        binding.modalContainer.translationY = 80f
+        binding.modalContainer.animate()
+            .translationY(0f).setDuration(280)
+            .setInterpolator(DecelerateInterpolator(2f)).start()
         binding.modalSearchInput.setText(binding.webView.url ?: "")
         binding.modalSearchInput.selectAll()
         binding.modalSearchInput.requestFocus()
@@ -282,7 +371,9 @@ class BrowserResponseActivity : AppCompatActivity() {
     }
 
     private fun hideSearchModal() {
-        binding.searchModal.visibility = View.GONE
+        binding.searchModal.animate().alpha(0f).setDuration(150).withEndAction {
+            binding.searchModal.visibility = View.GONE
+        }.start()
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(binding.modalSearchInput.windowToken, 0)
         binding.modalSearchInput.setText("")
@@ -316,10 +407,26 @@ class BrowserResponseActivity : AppCompatActivity() {
     private fun ddgThemeParam(): String =
         if (resources.configuration.isNightModeActive) "d" else "l"
 
-    private fun buildUrl(input: String): String = when {
-        input.startsWith("http://") || input.startsWith("https://") -> input
-        input.contains(".") && !input.contains(" ") -> "https://$input"
-        else -> "https://duckduckgo.com/?q=${Uri.encode(input)}&kae=${ddgThemeParam()}&k1=-1"
+    private fun buildDuckDuckGoHome(): String {
+        val prefs  = getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
+        return when (prefs.getString("search_engine", "duckduckgo")) {
+            "google" -> "https://www.google.com"
+            "bing"   -> "https://www.bing.com"
+            "brave"  -> "https://search.brave.com"
+            else     -> "https://duckduckgo.com/?kae=${ddgThemeParam()}&k1=-1"
+        }
+    }
+
+    private fun buildUrl(input: String): String {
+        if (input.startsWith("http://") || input.startsWith("https://")) return input
+        if (input.contains(".") && !input.contains(" ")) return "https://$input"
+        val prefs = getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
+        return when (prefs.getString("search_engine", "duckduckgo")) {
+            "google" -> "https://www.google.com/search?q=${Uri.encode(input)}"
+            "bing"   -> "https://www.bing.com/search?q=${Uri.encode(input)}"
+            "brave"  -> "https://search.brave.com/search?q=${Uri.encode(input)}"
+            else     -> "https://duckduckgo.com/?q=${Uri.encode(input)}&kae=${ddgThemeParam()}&k1=-1"
+        }
     }
 
     private fun refreshHistoryModal() { historyAdapter?.updateList(searchHistory.take(8)) }
@@ -338,8 +445,8 @@ class BrowserResponseActivity : AppCompatActivity() {
     }
 
     private fun loadHistory() {
-        val prefs = getSharedPreferences(PREFS_HISTORY, Context.MODE_PRIVATE)
-        val raw = prefs.getString(KEY_HISTORY, "") ?: ""
+        val raw = getSharedPreferences(PREFS_HISTORY, Context.MODE_PRIVATE)
+            .getString(KEY_HISTORY, "") ?: ""
         if (raw.isNotEmpty()) searchHistory.addAll(raw.split("|||").filter { it.isNotEmpty() })
     }
 
@@ -350,43 +457,53 @@ class BrowserResponseActivity : AppCompatActivity() {
 
     private fun showMoreMenu() {
         val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
-        val bgColor   = ContextCompat.getColor(this, R.color.card_background)
+        val bgColor   = ContextCompat.getColor(this, R.color.popup_background)
         val textColor = ContextCompat.getColor(this, R.color.text_primary)
-        val ripple    = ContextCompat.getDrawable(this, R.drawable.ripple_item)
 
-        data class MenuItem(val icon: String, val label: String, val action: () -> Unit)
+        data class Item(val icon: String, val label: String, val action: () -> Unit)
 
         val isBookmarked = isCurrentBookmarked()
         val items = listOf(
-            MenuItem("icons/svg/bookmark${if (isBookmarked) "_filled" else ""}.svg",
+            Item("icons/svg/bookmark${if (isBookmarked) "_filled" else ""}.svg",
                 getString(if (isBookmarked) R.string.remove_bookmark else R.string.add_bookmark)) { toggleBookmark() },
-            MenuItem("icons/svg/share.svg", getString(R.string.share)) { shareUrl() },
-            MenuItem("icons/svg/copy.svg", getString(R.string.copy_url)) { copyUrl() },
-            MenuItem("icons/svg/find.svg", getString(R.string.find_in_page)) { findInPage() },
-            MenuItem("icons/svg/desktop.svg", getString(R.string.desktop_mode)) { toggleDesktopMode() },
-            MenuItem("icons/svg/history.svg", getString(R.string.history)) {
+            Item("icons/svg/share.svg", getString(R.string.share)) { shareUrl() },
+            Item("icons/svg/copy.svg", getString(R.string.copy_url)) { copyUrl() },
+            Item("icons/svg/find.svg", getString(R.string.find_in_page)) { findInPage() },
+            Item("icons/svg/desktop.svg", getString(R.string.desktop_mode)) { toggleDesktopMode() },
+            Item("icons/svg/download.svg", "Descarregar página") { downloadFile(binding.webView.url ?: "") },
+            Item("icons/svg/history.svg", getString(R.string.history)) {
                 startActivity(Intent(this, HistoryActivity::class.java))
             },
-            MenuItem("icons/svg/external.svg", getString(R.string.open_in_browser)) { openExternal() },
+            Item("icons/svg/external.svg", getString(R.string.open_in_browser)) { openExternal() },
         )
+
+        showAnimatedPopup(items, iconTint, bgColor, textColor, Gravity.BOTTOM or Gravity.END)
+    }
+
+    private fun showAnimatedPopup(
+        items: List<Any>,
+        iconTint: Int, bgColor: Int, textColor: Int, gravity: Int
+    ) {
+        data class Item(val icon: String, val label: String, val action: () -> Unit)
+        @Suppress("UNCHECKED_CAST")
+        val castItems = items as List<Item>
 
         val menuView = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(bgColor)
+            background  = ContextCompat.getDrawable(this@BrowserResponseActivity, R.drawable.popup_bg)
             val pad = (8 * resources.displayMetrics.density).toInt()
             setPadding(0, pad, 0, pad)
         }
 
-        items.forEach { item ->
+        castItems.forEach { item ->
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                val hPad = (16 * resources.displayMetrics.density).toInt()
-                val vPad = (12 * resources.displayMetrics.density).toInt()
-                setPadding(hPad, vPad, hPad, vPad)
-                isClickable = true
-                isFocusable = true
-                background = ripple?.constantState?.newDrawable()?.mutate()
+                this.gravity = Gravity.CENTER_VERTICAL
+                val h = (16 * resources.displayMetrics.density).toInt()
+                val v = (12 * resources.displayMetrics.density).toInt()
+                setPadding(h, v, h, v)
+                isClickable = true; isFocusable = true
+                background = ContextCompat.getDrawable(this@BrowserResponseActivity, R.drawable.ripple_item)
             }
             val iv = ImageView(this).apply {
                 layoutParams = LinearLayout.LayoutParams(
@@ -395,28 +512,27 @@ class BrowserResponseActivity : AppCompatActivity() {
                 ).also { it.marginEnd = (12 * resources.displayMetrics.density).toInt() }
                 setImageDrawable(svgDrawable(item.icon, 20, iconTint))
             }
-            val tv = TextView(this).apply {
-                text = item.label
-                setTextColor(textColor)
-                textSize = 14f
-            }
-            row.addView(iv)
-            row.addView(tv)
+            val tv = TextView(this).apply { text = item.label; setTextColor(textColor); textSize = 14f }
+            row.addView(iv); row.addView(tv)
             menuView.addView(row)
             row.setOnClickListener { item.action() }
         }
 
+        menuView.scaleX = 0.85f; menuView.scaleY = 0.85f; menuView.alpha = 0f
+        menuView.animate().scaleX(1f).scaleY(1f).alpha(1f)
+            .setDuration(220).setInterpolator(OvershootInterpolator(1.2f)).start()
+
         val pop = PopupWindow(
             menuView,
-            (200 * resources.displayMetrics.density).toInt(),
+            (220 * resources.displayMetrics.density).toInt(),
             LinearLayout.LayoutParams.WRAP_CONTENT,
             true
         )
-        pop.setBackgroundDrawable(ColorDrawable(bgColor))
-        pop.elevation = 8f
-        pop.showAtLocation(binding.root, Gravity.BOTTOM or Gravity.END,
+        pop.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
+        pop.elevation = 12f
+        pop.showAtLocation(binding.root, gravity,
             (12 * resources.displayMetrics.density).toInt(),
-            (56 * resources.displayMetrics.density).toInt())
+            (60 * resources.displayMetrics.density).toInt())
     }
 
     private fun shareUrl() {
@@ -452,8 +568,8 @@ class BrowserResponseActivity : AppCompatActivity() {
 
     private fun isCurrentBookmarked(): Boolean {
         val url = binding.webView.url ?: return false
-        val prefs = getSharedPreferences("wilin_bookmarks", Context.MODE_PRIVATE)
-        val raw = prefs.getString("bookmarks", "") ?: ""
+        val raw = getSharedPreferences("wilin_bookmarks", Context.MODE_PRIVATE)
+            .getString("bookmarks", "") ?: ""
         return raw.split("|||").any { it.startsWith("$url::") }
     }
 
@@ -461,14 +577,12 @@ class BrowserResponseActivity : AppCompatActivity() {
         val url   = binding.webView.url ?: return
         val title = binding.webView.title ?: url
         val prefs = getSharedPreferences("wilin_bookmarks", Context.MODE_PRIVATE)
-        val raw   = prefs.getString("bookmarks", "") ?: ""
-        val list  = raw.split("|||").filter { it.isNotEmpty() }.toMutableList()
-
+        val list  = (prefs.getString("bookmarks", "") ?: "").split("|||")
+            .filter { it.isNotEmpty() }.toMutableList()
         val existing = list.indexOfFirst { it.startsWith("$url::") }
         val msg: String
         if (existing >= 0) { list.removeAt(existing); msg = getString(R.string.bookmark_removed) }
         else { list.add(0, "$url::$title"); msg = getString(R.string.bookmark_added) }
-
         prefs.edit().putString("bookmarks", list.joinToString("|||")).apply()
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
@@ -514,15 +628,13 @@ class HistoryModalAdapter(
                 RecyclerView.LayoutParams.MATCH_PARENT,
                 RecyclerView.LayoutParams.WRAP_CONTENT
             )
-            val hPad = (16 * context.resources.displayMetrics.density).toInt()
-            val vPad = (10 * context.resources.displayMetrics.density).toInt()
-            setPadding(hPad, vPad, hPad, vPad)
-            textSize = 14f
-            maxLines = 1
+            val h = (16 * context.resources.displayMetrics.density).toInt()
+            val v = (10 * context.resources.displayMetrics.density).toInt()
+            setPadding(h, v, h, v)
+            textSize = 14f; maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
             setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
-            isClickable = true
-            isFocusable = true
+            isClickable = true; isFocusable = true
             background = ContextCompat.getDrawable(ctx, R.drawable.ripple_item)
         }
         return VH(tv)
