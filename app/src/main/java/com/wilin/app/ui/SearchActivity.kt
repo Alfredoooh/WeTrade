@@ -27,6 +27,9 @@ import com.caverock.androidsvg.SVG
 import com.wilin.app.R
 import com.wilin.app.databinding.ActivitySearchBinding
 
+// Data class ao nível do ficheiro — sem data class local dentro de funções
+private data class SearchPopupItem(val icon: String, val label: String, val action: () -> Unit)
+
 class SearchActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySearchBinding
@@ -67,7 +70,6 @@ class SearchActivity : AppCompatActivity() {
             adapter = historyAdapter
         }
 
-        // Animação entrada: vem de cima, expande como o input a crescer
         binding.searchCard.translationY = -40f
         binding.searchCard.alpha = 0f
         binding.searchCard.animate()
@@ -104,9 +106,9 @@ class SearchActivity : AppCompatActivity() {
         }
     }
 
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) applyStatusBarTheme()
+    override fun onResume() {
+        super.onResume()
+        applyStatusBarTheme()
     }
 
     private fun applyStatusBarTheme() {
@@ -142,20 +144,18 @@ class SearchActivity : AppCompatActivity() {
         val textColor = ContextCompat.getColor(this, R.color.text_primary)
         val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
 
-        data class Item(val icon: String, val label: String, val action: () -> Unit)
-
         val items = listOf(
-            Item("icons/svg/ai.svg", getString(R.string.ai_search)) {
+            SearchPopupItem("icons/svg/ai.svg", getString(R.string.ai_search)) {
                 navigate("https://chat.openai.com")
             },
-            Item("icons/svg/search_engine.svg", getString(R.string.search_engine)) {
+            SearchPopupItem("icons/svg/search_engine.svg", getString(R.string.search_engine)) {
                 showEngineSelector()
             },
-            Item("icons/svg/incognito.svg", getString(R.string.incognito)) {
+            SearchPopupItem("icons/svg/incognito.svg", getString(R.string.incognito)) {
                 startActivity(Intent(this, IncognitoActivity::class.java))
                 overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
             },
-            Item("icons/svg/history.svg", getString(R.string.history)) {
+            SearchPopupItem("icons/svg/history.svg", getString(R.string.history)) {
                 startActivity(Intent(this, HistoryActivity::class.java))
             },
         )

@@ -1,3 +1,4 @@
+// BrowserResponseActivity.kt
 package com.wilin.app.ui
 
 import android.annotation.SuppressLint
@@ -11,7 +12,6 @@ import android.graphics.Canvas
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -44,6 +44,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.caverock.androidsvg.SVG
 import com.wilin.app.R
 import com.wilin.app.databinding.ActivityBrowserResponseBinding
+
+// Data class ao nível do ficheiro — partilhada por todas as funções, sem cast problemático
+private data class PopupItem(val icon: String, val label: String, val action: () -> Unit)
 
 class BrowserResponseActivity : AppCompatActivity() {
 
@@ -163,7 +166,6 @@ class BrowserResponseActivity : AppCompatActivity() {
             settings.mediaPlaybackRequiresUserGesture = false
             settings.mixedContentMode      = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
 
-            // Download listener
             setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
                 val request = DownloadManager.Request(Uri.parse(url)).apply {
                     setMimeType(mimeType)
@@ -177,7 +179,6 @@ class BrowserResponseActivity : AppCompatActivity() {
                 Toast.makeText(this@BrowserResponseActivity, "A descarregar…", Toast.LENGTH_SHORT).show()
             })
 
-            // Long press em imagens
             setOnLongClickListener {
                 val result = hitTestResult
                 if (result.type == WebView.HitTestResult.IMAGE_TYPE ||
@@ -241,27 +242,25 @@ class BrowserResponseActivity : AppCompatActivity() {
     }
 
     private fun showImageContextMenu(imgUrl: String) {
+        val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
         val bgColor   = ContextCompat.getColor(this, R.color.popup_background)
         val textColor = ContextCompat.getColor(this, R.color.text_primary)
-        val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
-
-        data class Item(val icon: String, val label: String, val action: () -> Unit)
 
         val items = listOf(
-            Item("icons/svg/download.svg", getString(R.string.download_image)) {
+            PopupItem("icons/svg/download.svg", getString(R.string.download_image)) {
                 downloadFile(imgUrl)
             },
-            Item("icons/svg/copy.svg", getString(R.string.copy_image_url)) {
+            PopupItem("icons/svg/copy.svg", getString(R.string.copy_image_url)) {
                 val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 cm.setPrimaryClip(ClipData.newPlainText("img_url", imgUrl))
                 Toast.makeText(this, "URL copiado", Toast.LENGTH_SHORT).show()
             },
-            Item("icons/svg/external.svg", getString(R.string.open_image_new_tab)) {
+            PopupItem("icons/svg/external.svg", getString(R.string.open_image_new_tab)) {
                 val t = TabManager.newTab(imgUrl)
                 TabManager.setCurrentId(t.id)
                 binding.webView.loadUrl(imgUrl)
             },
-            Item("icons/svg/share.svg", getString(R.string.share)) {
+            PopupItem("icons/svg/share.svg", getString(R.string.share)) {
                 startActivity(Intent.createChooser(
                     Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, imgUrl) },
                     getString(R.string.share)
@@ -408,7 +407,7 @@ class BrowserResponseActivity : AppCompatActivity() {
         if (resources.configuration.isNightModeActive) "d" else "l"
 
     private fun buildDuckDuckGoHome(): String {
-        val prefs  = getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
         return when (prefs.getString("search_engine", "duckduckgo")) {
             "google" -> "https://www.google.com"
             "bing"   -> "https://www.bing.com"
@@ -460,34 +459,28 @@ class BrowserResponseActivity : AppCompatActivity() {
         val bgColor   = ContextCompat.getColor(this, R.color.popup_background)
         val textColor = ContextCompat.getColor(this, R.color.text_primary)
 
-        data class Item(val icon: String, val label: String, val action: () -> Unit)
-
         val isBookmarked = isCurrentBookmarked()
         val items = listOf(
-            Item("icons/svg/bookmark${if (isBookmarked) "_filled" else ""}.svg",
+            PopupItem("icons/svg/bookmark${if (isBookmarked) "_filled" else ""}.svg",
                 getString(if (isBookmarked) R.string.remove_bookmark else R.string.add_bookmark)) { toggleBookmark() },
-            Item("icons/svg/share.svg", getString(R.string.share)) { shareUrl() },
-            Item("icons/svg/copy.svg", getString(R.string.copy_url)) { copyUrl() },
-            Item("icons/svg/find.svg", getString(R.string.find_in_page)) { findInPage() },
-            Item("icons/svg/desktop.svg", getString(R.string.desktop_mode)) { toggleDesktopMode() },
-            Item("icons/svg/download.svg", "Descarregar página") { downloadFile(binding.webView.url ?: "") },
-            Item("icons/svg/history.svg", getString(R.string.history)) {
+            PopupItem("icons/svg/share.svg", getString(R.string.share)) { shareUrl() },
+            PopupItem("icons/svg/copy.svg", getString(R.string.copy_url)) { copyUrl() },
+            PopupItem("icons/svg/find.svg", getString(R.string.find_in_page)) { findInPage() },
+            PopupItem("icons/svg/desktop.svg", getString(R.string.desktop_mode)) { toggleDesktopMode() },
+            PopupItem("icons/svg/download.svg", "Descarregar página") { downloadFile(binding.webView.url ?: "") },
+            PopupItem("icons/svg/history.svg", getString(R.string.history)) {
                 startActivity(Intent(this, HistoryActivity::class.java))
             },
-            Item("icons/svg/external.svg", getString(R.string.open_in_browser)) { openExternal() },
+            PopupItem("icons/svg/external.svg", getString(R.string.open_in_browser)) { openExternal() },
         )
 
         showAnimatedPopup(items, iconTint, bgColor, textColor, Gravity.BOTTOM or Gravity.END)
     }
 
     private fun showAnimatedPopup(
-        items: List<Any>,
+        items: List<PopupItem>,
         iconTint: Int, bgColor: Int, textColor: Int, gravity: Int
     ) {
-        data class Item(val icon: String, val label: String, val action: () -> Unit)
-        @Suppress("UNCHECKED_CAST")
-        val castItems = items as List<Item>
-
         val menuView = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background  = ContextCompat.getDrawable(this@BrowserResponseActivity, R.drawable.popup_bg)
@@ -495,7 +488,7 @@ class BrowserResponseActivity : AppCompatActivity() {
             setPadding(0, pad, 0, pad)
         }
 
-        castItems.forEach { item ->
+        items.forEach { item ->
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 this.gravity = Gravity.CENTER_VERTICAL
