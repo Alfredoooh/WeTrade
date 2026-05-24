@@ -7,13 +7,11 @@ import android.graphics.Canvas
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
-import android.view.View
-import android.widget.ArrayAdapter
-import android.widget.ListView
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.caverock.androidsvg.SVG
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.wilin.app.MainActivity
@@ -60,24 +58,27 @@ class SettingsActivity : AppCompatActivity() {
     )
 
     private val themeOptions = arrayOf("Sistema", "Claro", "Escuro")
-    private val themeValues = arrayOf("system", "light", "dark")
+    private val themeValues  = arrayOf("system", "light", "dark")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+        val isLight = !resources.configuration.isNightModeActive
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
+
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
         supportActionBar?.title = getString(R.string.settings)
 
-        val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
+        val iconTint    = ContextCompat.getColor(this, R.color.icon_tint)
         val chevronTint = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
         binding.toolbar.navigationIcon = svgDrawable("icons/svg/back_arrow.svg", 24, iconTint)
         binding.toolbar.setNavigationOnClickListener { finish() }
 
-        // Ícones todos com icon_tint — sem azul
         binding.iconLanguage.setImageDrawable(svgDrawable("icons/svg/language.svg", 24, iconTint))
         binding.iconAppearance.setImageDrawable(svgDrawable("icons/svg/appearance.svg", 24, iconTint))
         binding.iconNotifications.setImageDrawable(svgDrawable("icons/svg/notifications.svg", 24, iconTint))
@@ -105,142 +106,30 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun showLanguageDialog() {
         val names = languages.map { it.first }.toTypedArray()
-
-        val textPrimary = ContextCompat.getColor(this, R.color.text_primary)
-        val bgColor = ContextCompat.getColor(this, R.color.dialog_background)
-        val dividerColor = ContextCompat.getColor(this, R.color.divider)
-
-        val listView = ListView(this).apply {
-            val adapter = object : ArrayAdapter<String>(
-                this@SettingsActivity,
-                android.R.layout.simple_list_item_1,
-                names
-            ) {
-                override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
-                    val v = super.getView(position, convertView, parent)
-                    (v as TextView).apply {
-                        setTextColor(textPrimary)
-                        setBackgroundColor(bgColor)
-                        setPadding(
-                            (16 * resources.displayMetrics.density).toInt(),
-                            (14 * resources.displayMetrics.density).toInt(),
-                            (16 * resources.displayMetrics.density).toInt(),
-                            (14 * resources.displayMetrics.density).toInt()
-                        )
-                        textSize = 15f
-                    }
-                    return v
-                }
-            }
-            setAdapter(adapter)
-            divider = android.graphics.drawable.ColorDrawable(dividerColor)
-            dividerHeight = 1
-            setBackgroundColor(bgColor)
-        }
-
-        val titleView = TextView(this).apply {
-            text = getString(R.string.select_language)
-            setTextColor(textPrimary)
-            textSize = 18f
-            setPadding(
-                (20 * resources.displayMetrics.density).toInt(),
-                (20 * resources.displayMetrics.density).toInt(),
-                (20 * resources.displayMetrics.density).toInt(),
-                (12 * resources.displayMetrics.density).toInt()
-            )
-            setBackgroundColor(bgColor)
-        }
-
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setCustomTitle(titleView)
-            .setView(listView)
-            .create()
-
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(bgColor))
-
-        listView.setOnItemClickListener { _, _, which, _ ->
-            dialog.dismiss()
-            setLocale(languages[which].second)
-        }
-
-        dialog.show()
+        MaterialAlertDialogBuilder(this)
+            .setTitle(getString(R.string.select_language))
+            .setItems(names) { _, which -> setLocale(languages[which].second) }
+            .show()
     }
 
     private fun showThemeDialog() {
-        val prefs = getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
-        val current = prefs.getString("theme", "system")
+        val prefs        = getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
+        val current      = prefs.getString("theme", "system")
         val currentIndex = themeValues.indexOf(current).coerceAtLeast(0)
 
-        val textPrimary = ContextCompat.getColor(this, R.color.text_primary)
-        val bgColor = ContextCompat.getColor(this, R.color.dialog_background)
-        val blue = ContextCompat.getColor(this, R.color.colorPrimary)
-        val dividerColor = ContextCompat.getColor(this, R.color.divider)
-
-        val titleView = TextView(this).apply {
-            text = getString(R.string.appearance)
-            setTextColor(textPrimary)
-            textSize = 18f
-            setPadding(
-                (20 * resources.displayMetrics.density).toInt(),
-                (20 * resources.displayMetrics.density).toInt(),
-                (20 * resources.displayMetrics.density).toInt(),
-                (12 * resources.displayMetrics.density).toInt()
-            )
-            setBackgroundColor(bgColor)
-        }
-
-        var dialog: androidx.appcompat.app.AlertDialog? = null
-
-        val listView = ListView(this).apply {
-            val adapter = object : ArrayAdapter<String>(
-                this@SettingsActivity,
-                android.R.layout.simple_list_item_single_choice,
-                themeOptions
-            ) {
-                override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
-                    val v = super.getView(position, convertView, parent)
-                    (v as android.widget.CheckedTextView).apply {
-                        setTextColor(textPrimary)
-                        setBackgroundColor(bgColor)
-                        setPadding(
-                            (16 * resources.displayMetrics.density).toInt(),
-                            (14 * resources.displayMetrics.density).toInt(),
-                            (16 * resources.displayMetrics.density).toInt(),
-                            (14 * resources.displayMetrics.density).toInt()
-                        )
-                        textSize = 15f
-                        compoundDrawableTintList = android.content.res.ColorStateList.valueOf(blue)
-                    }
-                    return v
+        MaterialAlertDialogBuilder(this)
+            .setTitle(getString(R.string.appearance))
+            .setSingleChoiceItems(themeOptions, currentIndex) { dialog, which ->
+                val selected = themeValues[which]
+                prefs.edit().putString("theme", selected).apply()
+                when (selected) {
+                    "light" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                    "dark"  -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                    else    -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
                 }
+                dialog.dismiss()
             }
-            setAdapter(adapter)
-            choiceMode = ListView.CHOICE_MODE_SINGLE
-            setItemChecked(currentIndex, true)
-            divider = android.graphics.drawable.ColorDrawable(dividerColor)
-            dividerHeight = 1
-            setBackgroundColor(bgColor)
-        }
-
-        dialog = MaterialAlertDialogBuilder(this)
-            .setCustomTitle(titleView)
-            .setView(listView)
-            .create()
-
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(bgColor))
-
-        listView.setOnItemClickListener { _, _, which, _ ->
-            val selected = themeValues[which]
-            prefs.edit().putString("theme", selected).apply()
-            when (selected) {
-                "light" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                "dark"  -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                else    -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-            }
-            dialog?.dismiss()
-        }
-
-        dialog.show()
+            .show()
     }
 
     private fun setLocale(langCode: String) {
@@ -253,16 +142,14 @@ class SettingsActivity : AppCompatActivity() {
         config.setLocale(locale)
         @Suppress("DEPRECATION")
         resources.updateConfiguration(config, resources.displayMetrics)
-
-        // Recria apenas a SettingsActivity para aplicar o idioma sem voltar ao início
         recreate()
     }
 
     private fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
-        val px = (sizeDp * resources.displayMetrics.density).toInt()
+        val px  = (sizeDp * resources.displayMetrics.density).toInt()
         val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
         val svg = SVG.getFromAsset(assets, path)
-        svg.documentWidth = px.toFloat()
+        svg.documentWidth  = px.toFloat()
         svg.documentHeight = px.toFloat()
         svg.renderToCanvas(Canvas(bmp))
         val drawable = BitmapDrawable(resources, bmp)

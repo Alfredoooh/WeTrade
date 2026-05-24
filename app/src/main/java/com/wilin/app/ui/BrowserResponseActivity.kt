@@ -30,6 +30,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.caverock.androidsvg.SVG
@@ -62,6 +64,10 @@ class BrowserResponseActivity : AppCompatActivity() {
         binding = ActivityBrowserResponseBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+        val isLight = !resources.configuration.isNightModeActive
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
+
         TabManager.init(this)
         loadHistory()
 
@@ -92,25 +98,16 @@ class BrowserResponseActivity : AppCompatActivity() {
 
         val tab = TabManager.getCurrent()
         val loadUrl = when {
-            query.isNotEmpty() -> {
-                val url = buildUrl(query)
-                addToHistory(query)
-                url
-            }
+            query.isNotEmpty() -> { addToHistory(query); buildUrl(query) }
             tab != null && tab.url.isNotEmpty() -> tab.url
             else -> "https://duckduckgo.com"
         }
         binding.webView.loadUrl(loadUrl)
 
-        binding.btnBack.setOnClickListener {
-            if (binding.webView.canGoBack()) binding.webView.goBack()
-        }
-        binding.btnForward.setOnClickListener {
-            if (binding.webView.canGoForward()) binding.webView.goForward()
-        }
+        binding.btnBack.setOnClickListener { if (binding.webView.canGoBack()) binding.webView.goBack() }
+        binding.btnForward.setOnClickListener { if (binding.webView.canGoForward()) binding.webView.goForward() }
         binding.btnReload.setOnClickListener {
-            if (isLoading) binding.webView.stopLoading()
-            else binding.webView.reload()
+            if (isLoading) binding.webView.stopLoading() else binding.webView.reload()
         }
         binding.btnTabs.setOnClickListener {
             TabManager.save(this)
@@ -138,14 +135,20 @@ class BrowserResponseActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        val isLight = !resources.configuration.isNightModeActive
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
         binding.webView.apply {
-            settings.javaScriptEnabled   = true
-            settings.domStorageEnabled   = true
+            settings.javaScriptEnabled    = true
+            settings.domStorageEnabled    = true
             settings.setSupportZoom(true)
-            settings.builtInZoomControls = true
-            settings.displayZoomControls = false
+            settings.builtInZoomControls  = true
+            settings.displayZoomControls  = false
             settings.loadWithOverviewMode = true
             settings.useWideViewPort      = true
 
@@ -299,32 +302,24 @@ class BrowserResponseActivity : AppCompatActivity() {
             if (actionId == EditorInfo.IME_ACTION_GO ||
                 (event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)) {
                 val input = v.text.toString().trim()
-                if (input.isNotEmpty()) {
-                    hideSearchModal()
-                    navigateTo(input)
-                }
+                if (input.isNotEmpty()) { hideSearchModal(); navigateTo(input) }
                 true
             } else false
         }
     }
 
     private fun navigateTo(input: String) {
-        val url = buildUrl(input)
         addToHistory(input)
-        binding.webView.loadUrl(url)
+        binding.webView.loadUrl(buildUrl(input))
     }
 
-    private fun buildUrl(input: String): String {
-        return when {
-            input.startsWith("http://") || input.startsWith("https://") -> input
-            input.contains(".") && !input.contains(" ") -> "https://$input"
-            else -> "https://duckduckgo.com/?q=${Uri.encode(input)}&kae=d&k1=-1"
-        }
+    private fun buildUrl(input: String): String = when {
+        input.startsWith("http://") || input.startsWith("https://") -> input
+        input.contains(".") && !input.contains(" ") -> "https://$input"
+        else -> "https://duckduckgo.com/?q=${Uri.encode(input)}&kae=d&k1=-1"
     }
 
-    private fun refreshHistoryModal() {
-        historyAdapter?.updateList(searchHistory.take(8))
-    }
+    private fun refreshHistoryModal() { historyAdapter?.updateList(searchHistory.take(8)) }
 
     private fun filterHistory(query: String) {
         val filtered = if (query.isEmpty()) searchHistory.take(8)
@@ -424,10 +419,8 @@ class BrowserResponseActivity : AppCompatActivity() {
     private fun shareUrl() {
         val url = binding.webView.url ?: return
         startActivity(Intent.createChooser(
-            Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, url)
-            }, getString(R.string.share)
+            Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, url) },
+            getString(R.string.share)
         ))
     }
 
@@ -470,13 +463,9 @@ class BrowserResponseActivity : AppCompatActivity() {
 
         val existing = list.indexOfFirst { it.startsWith("$url::") }
         val msg: String
-        if (existing >= 0) {
-            list.removeAt(existing)
-            msg = getString(R.string.bookmark_removed)
-        } else {
-            list.add(0, "$url::$title")
-            msg = getString(R.string.bookmark_added)
-        }
+        if (existing >= 0) { list.removeAt(existing); msg = getString(R.string.bookmark_removed) }
+        else { list.add(0, "$url::$title"); msg = getString(R.string.bookmark_added) }
+
         prefs.edit().putString("bookmarks", list.joinToString("|||")).apply()
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }

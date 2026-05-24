@@ -6,123 +6,95 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <androidx.coordinatorlayout.widget.CoordinatorLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/appBarLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/appbar_background"
+            app:elevation="0dp">
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="@color/appbar_background"
+                app:titleTextColor="@color/text_primary"
+                app:title="@string/app_name"
+                app:navigationIconTint="@color/icon_tint" />
+
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <FrameLayout
+            android:id="@+id/container"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/divider" />
 
         <LinearLayout
+            android:id="@+id/bottomNav"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
-
-            <com.google.android.material.appbar.AppBarLayout
-                android:id="@+id/appBarLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@color/appbar_background"
-                app:elevation="0dp">
-
-                <com.google.android.material.appbar.MaterialToolbar
-                    android:id="@+id/toolbar"
-                    android:layout_width="match_parent"
-                    android:layout_height="?attr/actionBarSize"
-                    android:background="@color/appbar_background"
-                    app:titleTextColor="@color/text_primary"
-                    app:title="@string/app_name"
-                    app:navigationIconTint="@color/icon_tint" />
-
-            </com.google.android.material.appbar.AppBarLayout>
-
-            <com.google.android.material.search.SearchBar
-                android:id="@+id/searchBar"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/search_hint"
-                android:textColorHint="@color/text_hint"
-                android:background="@color/appbar_background"
-                app:navigationIconTint="@color/icon_tint"
-                app:tint="@color/icon_tint"
-                app:strokeWidth="0dp"
-                app:elevation="0dp"
-                android:visibility="gone" />
+            android:layout_height="56dp"
+            android:background="@color/bottom_nav_background"
+            android:orientation="horizontal">
 
             <FrameLayout
-                android:id="@+id/container"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
+                android:id="@+id/tabHome"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:id="@+id/tabHomeIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center" />
+            </FrameLayout>
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="0.5dp"
-                android:background="@color/divider" />
+            <FrameLayout
+                android:id="@+id/tabSearch"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:id="@+id/tabSearchIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center" />
+            </FrameLayout>
 
-            <LinearLayout
-                android:id="@+id/bottomNav"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:background="@color/bottom_nav_background"
-                android:orientation="horizontal">
-
-                <FrameLayout
-                    android:id="@+id/tabHome"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:focusable="true">
-                    <ImageView
-                        android:id="@+id/tabHomeIcon"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center" />
-                </FrameLayout>
-
-                <FrameLayout
-                    android:id="@+id/tabSearch"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:focusable="true">
-                    <ImageView
-                        android:id="@+id/tabSearchIcon"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center" />
-                </FrameLayout>
-
-                <FrameLayout
-                    android:id="@+id/tabGames"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:focusable="true">
-                    <ImageView
-                        android:id="@+id/tabGamesIcon"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center" />
-                </FrameLayout>
-
-            </LinearLayout>
+            <FrameLayout
+                android:id="@+id/tabGames"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:id="@+id/tabGamesIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center" />
+            </FrameLayout>
 
         </LinearLayout>
 
-        <com.google.android.material.search.SearchView
-            android:id="@+id/searchView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:hint="@string/search_hint"
-            android:textColorHint="@color/text_hint"
-            app:backgroundTint="@color/appbar_background"
-            app:dividerColor="@color/divider" />
-
-    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/drawerContainer"

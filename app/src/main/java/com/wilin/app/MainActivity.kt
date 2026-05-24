@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.StateListDrawable
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -12,11 +13,11 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.GravityCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import com.caverock.androidsvg.SVG
-import com.google.android.material.search.SearchView
 import com.wilin.app.databinding.ActivityMainBinding
-import com.wilin.app.ui.BrowserResponseActivity
 import com.wilin.app.ui.GamesFragment
 import com.wilin.app.ui.HomeFragment
 import com.wilin.app.ui.SearchFragment
@@ -46,7 +47,8 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.searchView.setupWithSearchBar(binding.searchBar)
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+        applyStatusBarTheme()
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(true)
@@ -54,23 +56,14 @@ class MainActivity : AppCompatActivity() {
         val iconTint          = ContextCompat.getColor(this, R.color.icon_tint)
         val iconTintSecondary = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
-        // Toolbar
         binding.toolbar.navigationIcon = svgDrawable("icons/svg/menu.svg", 24, iconTint)
         binding.toolbar.setNavigationOnClickListener {
-            if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            if (binding.drawerLayout.isDrawerOpen(GravityCompat.START))
                 binding.drawerLayout.closeDrawer(GravityCompat.START)
-            } else {
+            else
                 binding.drawerLayout.openDrawer(GravityCompat.START)
-            }
         }
 
-        // SearchBar — substituir ícone de lupa Material pelo SVG do projecto
-        binding.searchBar.navigationIcon = svgDrawable("icons/svg/magnifying_glass_outline.svg", 24, iconTintSecondary)
-
-        // SearchView — substituir ícone de voltar e limpar
-        binding.searchView.toolbar.navigationIcon = svgDrawable("icons/svg/back_arrow.svg", 24, iconTint)
-
-        // Drawer
         binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 24, iconTint))
         binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 24, iconTint))
 
@@ -82,69 +75,22 @@ class MainActivity : AppCompatActivity() {
             binding.drawerLayout.closeDrawer(GravityCompat.START)
         }
 
-        // SearchView — ao submeter navega para BrowserResponseActivity
-        binding.searchView.editText.setOnEditorActionListener { textView, _, _ ->
-            val query = textView.text.toString().trim()
-            if (query.isNotEmpty()) {
-                binding.searchView.hide()
-                startActivity(
-                    Intent(this, BrowserResponseActivity::class.java)
-                        .putExtra("query", query)
-                )
-            }
-            false
-        }
-
-        // Bloquear/desbloquear drawer conforme SearchView
-        binding.searchView.addTransitionListener { _, _, newState ->
-            if (newState == SearchView.TransitionState.SHOWING ||
-                newState == SearchView.TransitionState.SHOWN) {
-                binding.drawerLayout.setDrawerLockMode(
-                    androidx.drawerlayout.widget.DrawerLayout.LOCK_MODE_LOCKED_CLOSED
-                )
-            } else {
-                if (currentTab != R.id.tabSearch) {
-                    binding.drawerLayout.setDrawerLockMode(
-                        androidx.drawerlayout.widget.DrawerLayout.LOCK_MODE_UNLOCKED
-                    )
-                }
-            }
-        }
-
-        val iconActive   = ContextCompat.getColor(this, R.color.icon_tint)
-        val iconInactive = ContextCompat.getColor(this, R.color.icon_tint_secondary)
-
         fun setIcons(activeTab: Int) {
             binding.tabHomeIcon.setImageDrawable(
                 svgDrawable("icons/svg/home_${if (activeTab == R.id.tabHome) "filled" else "outline"}.svg",
-                    24, if (activeTab == R.id.tabHome) iconActive else iconInactive))
+                    24, if (activeTab == R.id.tabHome) iconTint else iconTintSecondary))
             binding.tabSearchIcon.setImageDrawable(
                 svgDrawable("icons/svg/magnifying_glass_${if (activeTab == R.id.tabSearch) "filled" else "outline"}.svg",
-                    24, if (activeTab == R.id.tabSearch) iconActive else iconInactive))
+                    24, if (activeTab == R.id.tabSearch) iconTint else iconTintSecondary))
             binding.tabGamesIcon.setImageDrawable(
                 svgDrawable("icons/svg/game_${if (activeTab == R.id.tabGames) "filled" else "outline"}.svg",
-                    24, if (activeTab == R.id.tabGames) iconActive else iconInactive))
+                    24, if (activeTab == R.id.tabGames) iconTint else iconTintSecondary))
         }
 
         fun selectTab(tabId: Int) {
             if (currentTab == tabId) return
             currentTab = tabId
             setIcons(tabId)
-
-            if (tabId == R.id.tabSearch) {
-                binding.appBarLayout.visibility = View.GONE
-                binding.searchBar.visibility = View.VISIBLE
-                binding.drawerLayout.setDrawerLockMode(
-                    androidx.drawerlayout.widget.DrawerLayout.LOCK_MODE_LOCKED_CLOSED
-                )
-            } else {
-                binding.appBarLayout.visibility = View.VISIBLE
-                binding.searchBar.visibility = View.GONE
-                binding.drawerLayout.setDrawerLockMode(
-                    androidx.drawerlayout.widget.DrawerLayout.LOCK_MODE_UNLOCKED
-                )
-            }
-
             when (tabId) {
                 R.id.tabHome   -> showFragment(homeFragment)
                 R.id.tabSearch -> showFragment(searchFragment)
@@ -167,11 +113,19 @@ class MainActivity : AppCompatActivity() {
         setIcons(R.id.tabHome)
     }
 
-    override fun onBackPressed() {
-        if (binding.searchView.isShowing) {
-            binding.searchView.hide()
-            return
+    override fun onResume() {
+        super.onResume()
+        applyStatusBarTheme()
+    }
+
+    private fun applyStatusBarTheme() {
+        val isLight = !resources.configuration.isNightModeActive
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            isAppearanceLightStatusBars = isLight
         }
+    }
+
+    override fun onBackPressed() {
         if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
             binding.drawerLayout.closeDrawer(GravityCompat.START)
             return
@@ -180,10 +134,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
-        val px = (sizeDp * resources.displayMetrics.density).toInt()
+        val px  = (sizeDp * resources.displayMetrics.density).toInt()
         val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
         val svg = SVG.getFromAsset(assets, path)
-        svg.documentWidth = px.toFloat()
+        svg.documentWidth  = px.toFloat()
         svg.documentHeight = px.toFloat()
         svg.renderToCanvas(Canvas(bmp))
         val drawable = BitmapDrawable(resources, bmp)
