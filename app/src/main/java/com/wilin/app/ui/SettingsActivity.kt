@@ -54,7 +54,18 @@ class SettingsActivity : AppCompatActivity() {
         "Bahasa Indonesia" to "id",
         "Bahasa Melayu" to "ms",
         "ภาษาไทย" to "th",
-        "Tiếng Việt" to "vi"
+        "Tiếng Việt" to "vi",
+        "Български" to "bg",
+        "বাংলা" to "bn",
+        "Hrvatski" to "hr",
+        "Eesti" to "et",
+        "فارسی" to "fa",
+        "Galego" to "gl",
+        "Latviešu" to "lv",
+        "Lietuvių" to "lt",
+        "Српски" to "sr",
+        "Slovenščina" to "sl",
+        "اردو" to "ur"
     )
 
     private val themeOptions = arrayOf("Sistema", "Claro", "Escuro")

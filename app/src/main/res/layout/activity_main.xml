@@ -74,7 +74,8 @@
                     android:paddingEnd="10dp"
                     android:visibility="gone"
                     android:clickable="true"
-                    android:focusable="true">
+                    android:focusable="true"
+                    android:elevation="1dp">
 
                     <ImageView
                         android:id="@+id/searchPillIcon"

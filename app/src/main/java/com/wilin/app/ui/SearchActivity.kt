@@ -1,7 +1,6 @@
 package com.wilin.app.ui
 
 import android.content.Context
-import android.content.res.Configuration
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -114,6 +113,11 @@ class SearchActivity : AppCompatActivity() {
 
         binding.btnMore.setOnClickListener { showMorePopup() }
 
+        binding.searchInput.requestFocus()
+        binding.searchInput.post {
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(binding.searchInput, InputMethodManager.SHOW_IMPLICIT)
+        }
     }
 
     override fun onResume() {
@@ -122,9 +126,8 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun applyStatusBarTheme() {
-        val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
-        insetsController.isAppearanceLightStatusBars = !isDark
+        val isLight = !resources.configuration.isNightModeActive
+        insetsController.isAppearanceLightStatusBars = isLight
     }
 
     private fun navigate(input: String) {
