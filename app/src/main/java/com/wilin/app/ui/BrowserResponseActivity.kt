@@ -207,7 +207,7 @@ class BrowserResponseActivity : AppCompatActivity() {
                     isLoading = true
                     binding.progressBar.visibility = View.VISIBLE
                     val sec = ContextCompat.getColor(this@BrowserResponseActivity, R.color.icon_tint_secondary)
-                    binding.btnReload.setImageDrawable(svgDrawable("icons/svg/close.svg", 20, sec))
+                    binding.btnReload.setImageDrawable(svgDrawable("icons/svg/close_mini.svg", 20, sec))
                     updateUrlBar(url ?: "")
                     updateNavButtons()
                 }
