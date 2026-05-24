@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
   <string name="app_name">wilin</string>
   <string name="settings">การตั้งค่า</string>
@@ -18,4 +18,35 @@
   <string name="drawer_about">เกี่ยวกับ</string>
   <string name="select_language">เลือกภาษา</string>
   <string name="language_applied">เปลี่ยนภาษาแล้ว</string>
+  <string name="recent">Recente</string>
+  <string name="bookmarks">Favoritos</string>
+  <string name="history">Histórico</string>
+  <string name="new_tab">Nova tab</string>
+  <string name="new_incognito_tab">Nova aba privada</string>
+  <string name="tabs">Tabs</string>
+  <string name="copy_url">Copiar URL</string>
+  <string name="open_in_browser">Abrir no browser</string>
+  <string name="find_in_page">Encontrar na página</string>
+  <string name="desktop_mode">Modo desktop</string>
+  <string name="share">Partilhar</string>
+  <string name="add_bookmark">Adicionar favorito</string>
+  <string name="remove_bookmark">Remover favorito</string>
+  <string name="bookmark_added">Adicionado aos favoritos</string>
+  <string name="bookmark_removed">Removido dos favoritos</string>
+  <string name="url_copied">URL copiado</string>
+  <string name="clear_history">Limpar histórico</string>
+  <string name="no_bookmarks">Nenhum favorito ainda</string>
+  <string name="no_history">Nenhum histórico ainda</string>
+  <string name="incognito">Privado</string>
+  <string name="incognito_desc">A navegação privada não guarda histórico nem cookies</string>
+  <string name="search_engine">Motor de pesquisa</string>
+  <string name="ai_search">IA</string>
+  <string name="download_image">Guardar imagem</string>
+  <string name="open_image_new_tab">Abrir imagem em nova tab</string>
+  <string name="copy_image_url">Copiar URL da imagem</string>
+  <string name="close_all_tabs">Fechar todas</string>
+  <string name="private_tabs">Tabs privadas</string>
+  <string name="normal_tabs">Tabs normais</string>
+  <string name="done">Concluído</string>
+  <string name="search_container_transition">search_container_transition</string>
 </resources>
