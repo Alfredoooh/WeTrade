@@ -66,8 +66,11 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
-        val isLight = !resources.configuration.isNightModeActive
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
+        val insetsController = WindowInsetsControllerCompat(window, window.decorView)
+        window.decorView.post {
+            val isLight = !resources.configuration.isNightModeActive
+            insetsController.isAppearanceLightStatusBars = isLight
+        }
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
@@ -101,6 +104,15 @@ class SettingsActivity : AppCompatActivity() {
         }
         binding.itemPrivacy.setOnClickListener {
             startActivity(Intent(this, PrivacyActivity::class.java))
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            val insetsController = WindowInsetsControllerCompat(window, window.decorView)
+            val isLight = !resources.configuration.isNightModeActive
+            insetsController.isAppearanceLightStatusBars = isLight
         }
     }
 

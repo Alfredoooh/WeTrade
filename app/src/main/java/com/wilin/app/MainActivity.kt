@@ -1,47 +1,52 @@
-package com.wilin.app.ui
+package com.wilin.app
 
-import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
-import android.view.Gravity
 import android.view.View
 import android.view.animation.DecelerateInterpolator
-import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputMethodManager
-import android.widget.LinearLayout
-import android.widget.PopupWindow
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.GravityCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.fragment.app.Fragment
 import com.caverock.androidsvg.SVG
-import com.wilin.app.R
-import com.wilin.app.databinding.ActivitySearchBinding
+import com.wilin.app.databinding.ActivityMainBinding
+import com.wilin.app.ui.GamesFragment
+import com.wilin.app.ui.HomeFragment
+import com.wilin.app.ui.SearchActivity
+import com.wilin.app.ui.SearchFragment
+import com.wilin.app.ui.SettingsActivity
 
-class SearchActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivitySearchBinding
+    lateinit var binding: ActivityMainBinding
     private lateinit var insetsController: WindowInsetsControllerCompat
-    private val searchHistory = mutableListOf<String>()
-    private var historyAdapter: SearchSuggestAdapter? = null
 
-    companion object {
-        private const val PREFS_HISTORY = "wilin_search_history"
-        private const val KEY_HISTORY   = "history"
-    }
+    private val homeFragment   = HomeFragment()
+    private val searchFragment = SearchFragment()
+    private val gamesFragment  = GamesFragment()
+
+    private var currentTab = R.id.tabHome
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+
+        val prefs = getSharedPreferences("wilin_prefs", MODE_PRIVATE)
+        when (prefs.getString("theme", "system")) {
+            "light" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+            "dark"  -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            else    -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        }
+
         super.onCreate(savedInstanceState)
-        binding = ActivitySearchBinding.inflate(layoutInflater)
+        binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
@@ -51,57 +56,85 @@ class SearchActivity : AppCompatActivity() {
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
-        binding.btnBack.setImageDrawable(svgDrawable("icons/svg/back_arrow.svg", 24, iconTint))
-        binding.btnBack.setOnClickListener { finishWithAnim() }
-        binding.searchIcon.setImageDrawable(svgDrawable("icons/svg/magnifying_glass_outline.svg", 20, iconSec))
-        binding.btnClear.setImageDrawable(svgDrawable("icons/svg/close.svg", 16, iconSec))
-        binding.btnMore.setImageDrawable(svgDrawable("icons/svg/more_vertical.svg", 20, iconTint))
-
-        loadHistory()
-
-        historyAdapter = SearchSuggestAdapter(searchHistory.take(10)) { query ->
-            navigate(query)
-        }
-        binding.suggestionsList.apply {
-            layoutManager = LinearLayoutManager(this@SearchActivity)
-            adapter = historyAdapter
+        binding.btnMenu.setImageDrawable(svgDrawable("icons/svg/menu.svg", 24, iconTint))
+        binding.btnMenu.setOnClickListener {
+            if (binding.drawerLayout.isDrawerOpen(GravityCompat.START))
+                binding.drawerLayout.closeDrawer(GravityCompat.START)
+            else
+                binding.drawerLayout.openDrawer(GravityCompat.START)
         }
 
-        // Animação entrada: vem de cima como o input a expandir
-        binding.searchCard.translationY = -40f
-        binding.searchCard.alpha = 0f
-        binding.searchCard.animate()
-            .translationY(0f).alpha(1f)
-            .setDuration(240).setInterpolator(DecelerateInterpolator(2f))
-            .start()
+        binding.searchPillIcon.setImageDrawable(
+            svgDrawable("icons/svg/magnifying_glass_outline.svg", 18, iconSec))
+        binding.searchPillMore.setImageDrawable(
+            svgDrawable("icons/svg/more_vertical.svg", 18, iconSec))
 
-        binding.searchInput.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
-            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {
-                val text = s?.toString() ?: ""
-                binding.btnClear.visibility = if (text.isEmpty()) View.GONE else View.VISIBLE
-                filterSuggestions(text)
+        binding.searchPill.setOnClickListener { launchSearchWithAnim() }
+        binding.searchPillMore.setOnClickListener { launchSearchWithAnim() }
+
+        binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 18, iconTint))
+        binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 18, iconTint))
+        binding.drawerChevronSettings.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 16, iconSec))
+        binding.drawerChevronAbout.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 16, iconSec))
+
+        binding.drawerItemSettings.setOnClickListener {
+            binding.drawerLayout.closeDrawer(GravityCompat.START)
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+        binding.drawerItemAbout.setOnClickListener {
+            binding.drawerLayout.closeDrawer(GravityCompat.START)
+        }
+
+        fun setIcons(activeTab: Int) {
+            binding.tabHomeIcon.setImageDrawable(
+                svgDrawable("icons/svg/home_${if (activeTab == R.id.tabHome) "filled" else "outline"}.svg",
+                    24, if (activeTab == R.id.tabHome) iconTint else iconSec))
+            binding.tabSearchIcon.setImageDrawable(
+                svgDrawable("icons/svg/magnifying_glass_${if (activeTab == R.id.tabSearch) "filled" else "outline"}.svg",
+                    24, if (activeTab == R.id.tabSearch) iconTint else iconSec))
+            binding.tabGamesIcon.setImageDrawable(
+                svgDrawable("icons/svg/game_${if (activeTab == R.id.tabGames) "filled" else "outline"}.svg",
+                    24, if (activeTab == R.id.tabGames) iconTint else iconSec))
+        }
+
+        fun updateAppBar(tabId: Int) {
+            if (tabId == R.id.tabSearch) {
+                binding.toolbarTitle.visibility = View.GONE
+                binding.btnMenu.visibility      = View.GONE
+                binding.searchPill.visibility   = View.VISIBLE
+            } else {
+                binding.searchPill.visibility   = View.GONE
+                binding.toolbarTitle.visibility = View.VISIBLE
+                binding.btnMenu.visibility      = View.VISIBLE
             }
-            override fun afterTextChanged(s: Editable?) {}
-        })
-
-        binding.btnClear.setOnClickListener { binding.searchInput.setText("") }
-
-        binding.searchInput.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                val q = binding.searchInput.text.toString().trim()
-                if (q.isNotEmpty()) navigate(q)
-                true
-            } else false
         }
 
-        binding.btnMore.setOnClickListener { showMorePopup() }
-
-        binding.searchInput.requestFocus()
-        binding.searchInput.post {
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.showSoftInput(binding.searchInput, InputMethodManager.SHOW_IMPLICIT)
+        fun selectTab(tabId: Int) {
+            if (currentTab == tabId) return
+            currentTab = tabId
+            setIcons(tabId)
+            updateAppBar(tabId)
+            when (tabId) {
+                R.id.tabHome   -> showFragment(homeFragment)
+                R.id.tabSearch -> showFragment(searchFragment)
+                R.id.tabGames  -> showFragment(gamesFragment)
+            }
         }
+
+        binding.tabHome.setOnClickListener   { selectTab(R.id.tabHome) }
+        binding.tabSearch.setOnClickListener { selectTab(R.id.tabSearch) }
+        binding.tabGames.setOnClickListener  { selectTab(R.id.tabGames) }
+
+        supportFragmentManager.beginTransaction()
+            .add(R.id.container, homeFragment, "home")
+            .add(R.id.container, searchFragment, "search")
+            .add(R.id.container, gamesFragment, "games")
+            .hide(searchFragment)
+            .hide(gamesFragment)
+            .commit()
+
+        setIcons(R.id.tabHome)
+        updateAppBar(R.id.tabHome)
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -109,144 +142,39 @@ class SearchActivity : AppCompatActivity() {
         if (hasFocus) applyStatusBarTheme()
     }
 
+    override fun onBackPressed() {
+        if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            binding.drawerLayout.closeDrawer(GravityCompat.START)
+            return
+        }
+        super.onBackPressed()
+    }
+
     private fun applyStatusBarTheme() {
         val isLight = !resources.configuration.isNightModeActive
         insetsController.isAppearanceLightStatusBars = isLight
     }
 
-    private fun navigate(input: String) {
-        addToHistory(input)
-        startActivity(
-            Intent(this, BrowserResponseActivity::class.java).apply {
-                putExtra(BrowserResponseActivity.EXTRA_QUERY, input)
-            }
-        )
-        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+    private fun launchSearchWithAnim() {
+        binding.searchPill.animate()
+            .scaleX(1.04f).scaleY(1.08f)
+            .setDuration(110)
+            .setInterpolator(DecelerateInterpolator())
+            .withEndAction {
+                binding.searchPill.animate()
+                    .scaleX(1f).scaleY(1f)
+                    .setDuration(60)
+                    .withEndAction {
+                        startActivity(Intent(this, SearchActivity::class.java))
+                        overridePendingTransition(
+                            android.R.anim.fade_in,
+                            android.R.anim.fade_out
+                        )
+                    }.start()
+            }.start()
     }
 
-    private fun finishWithAnim() {
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.hideSoftInputFromWindow(binding.searchInput.windowToken, 0)
-        finish()
-        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-    }
-
-    private fun filterSuggestions(query: String) {
-        val filtered = if (query.isEmpty()) searchHistory.take(10)
-        else searchHistory.filter { it.contains(query, ignoreCase = true) }.take(10)
-        historyAdapter?.updateList(filtered)
-        binding.recentLabel.visibility = if (filtered.isEmpty()) View.GONE else View.VISIBLE
-    }
-
-    private fun showMorePopup() {
-        val textColor = ContextCompat.getColor(this, R.color.text_primary)
-        val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
-
-        data class Item(val icon: String, val label: String, val action: () -> Unit)
-
-        val items = listOf(
-            Item("icons/svg/ai.svg", getString(R.string.ai_search)) {
-                navigate("https://chat.openai.com")
-            },
-            Item("icons/svg/search_engine.svg", getString(R.string.search_engine)) {
-                showEngineSelector()
-            },
-            Item("icons/svg/incognito.svg", getString(R.string.incognito)) {
-                startActivity(Intent(this, IncognitoActivity::class.java))
-                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-            },
-            Item("icons/svg/history.svg", getString(R.string.history)) {
-                startActivity(Intent(this, HistoryActivity::class.java))
-            },
-        )
-
-        val menuView = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            background  = ContextCompat.getDrawable(this@SearchActivity, R.drawable.popup_bg)
-            val pad = (8 * resources.displayMetrics.density).toInt()
-            setPadding(0, pad, 0, pad)
-            elevation = 12f
-        }
-
-        items.forEach { item ->
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity     = Gravity.CENTER_VERTICAL
-                val h = (16 * resources.displayMetrics.density).toInt()
-                val v = (13 * resources.displayMetrics.density).toInt()
-                setPadding(h, v, h, v)
-                isClickable = true
-                isFocusable = true
-                background  = ContextCompat.getDrawable(this@SearchActivity, R.drawable.ripple_item)
-            }
-            val iv = android.widget.ImageView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    (20 * resources.displayMetrics.density).toInt(),
-                    (20 * resources.displayMetrics.density).toInt()
-                ).also { it.marginEnd = (12 * resources.displayMetrics.density).toInt() }
-                setImageDrawable(svgDrawable(item.icon, 20, iconTint))
-            }
-            val tv = TextView(this).apply {
-                text = item.label
-                setTextColor(textColor)
-                textSize = 14f
-            }
-            row.addView(iv)
-            row.addView(tv)
-            menuView.addView(row)
-            row.setOnClickListener { item.action() }
-        }
-
-        val pop = PopupWindow(
-            menuView,
-            (200 * resources.displayMetrics.density).toInt(),
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-            true
-        )
-        pop.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
-        pop.elevation = 12f
-        pop.animationStyle = android.R.style.Animation_Dialog
-        pop.showAtLocation(
-            binding.root, Gravity.TOP or Gravity.END,
-            (12 * resources.displayMetrics.density).toInt(),
-            (56 * resources.displayMetrics.density).toInt()
-        )
-    }
-
-    private fun showEngineSelector() {
-        val engines = arrayOf("DuckDuckGo", "Google", "Bing", "Brave")
-        val prefs   = getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
-        val current = prefs.getString("search_engine", "duckduckgo") ?: "duckduckgo"
-        val idx = when (current) { "google" -> 1; "bing" -> 2; "brave" -> 3; else -> 0 }
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle(getString(R.string.search_engine))
-            .setSingleChoiceItems(engines, idx) { dialog, which ->
-                val v = when (which) { 1 -> "google"; 2 -> "bing"; 3 -> "brave"; else -> "duckduckgo" }
-                prefs.edit().putString("search_engine", v).apply()
-                dialog.dismiss()
-            }.show()
-    }
-
-    private fun addToHistory(query: String) {
-        searchHistory.remove(query)
-        searchHistory.add(0, query)
-        if (searchHistory.size > 50) searchHistory.removeLast()
-        getSharedPreferences(PREFS_HISTORY, Context.MODE_PRIVATE)
-            .edit().putString(KEY_HISTORY, searchHistory.joinToString("|||")).apply()
-    }
-
-    private fun loadHistory() {
-        val raw = getSharedPreferences(PREFS_HISTORY, Context.MODE_PRIVATE)
-            .getString(KEY_HISTORY, "") ?: ""
-        searchHistory.clear()
-        if (raw.isNotEmpty()) searchHistory.addAll(raw.split("|||").filter { it.isNotEmpty() })
-    }
-
-    override fun onBackPressed() {
-        finishWithAnim()
-    }
-
-    private fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
+    fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
         val px  = (sizeDp * resources.displayMetrics.density).toInt()
         val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
         val svg = SVG.getFromAsset(assets, path)
@@ -256,5 +184,11 @@ class SearchActivity : AppCompatActivity() {
         val drawable = BitmapDrawable(resources, bmp)
         drawable.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
         return drawable
+    }
+
+    private fun showFragment(fragment: Fragment) {
+        supportFragmentManager.beginTransaction()
+            .hide(homeFragment).hide(searchFragment).hide(gamesFragment)
+            .show(fragment).commit()
     }
 }
