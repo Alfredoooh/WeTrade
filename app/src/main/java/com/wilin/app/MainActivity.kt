@@ -6,6 +6,8 @@ import android.graphics.Canvas
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import androidx.appcompat.app.AppCompatActivity
@@ -35,6 +37,9 @@ class MainActivity : AppCompatActivity() {
 
     private var currentTab = R.id.tabHome
 
+    // Garante que o flash só acontece UMA VEZ ao abrir o app
+    private var statusBarFixDone = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
 
@@ -52,9 +57,8 @@ class MainActivity : AppCompatActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, true)
         insetsController = WindowInsetsControllerCompat(window, window.decorView)
 
-        // Flash trick: força o sistema a re-renderizar os ícones da status bar
-        // correctamente ao aplicar o oposto por ~50ms e voltar ao estado certo
-        applyStatusBarFlashFix()
+        // Aplica o estado correcto imediatamente (sem flash ainda — janela não visível)
+        applyStatusBarTheme()
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
@@ -140,9 +144,36 @@ class MainActivity : AppCompatActivity() {
         updateAppBar(R.id.tabHome)
     }
 
+    // onWindowFocusChanged é o único momento em que a janela está
+    // de facto visível e o sistema renderiza mudanças na status bar.
+    // É aqui que o flash tem efeito real.
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus && !statusBarFixDone) {
+            statusBarFixDone = true
+            triggerStatusBarFix()
+        }
+    }
+
+    // Flash: alterna para o oposto e volta ao correcto em 120ms.
+    // Isto força o sistema a re-renderizar os ícones da status bar
+    // com o tint correcto — resolve o bug de adaptação de tema.
+    private fun triggerStatusBarFix() {
+        val isLight = !resources.configuration.isNightModeActive
+
+        // Passo 1: aplica o OPOSTO — já com a janela visível, o sistema renderiza
+        insetsController.isAppearanceLightStatusBars = !isLight
+
+        // Passo 2: volta ao CORRECTO após 120ms (imperceptível — < 8 frames a 60fps)
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (!isDestroyed) {
+                insetsController.isAppearanceLightStatusBars = isLight
+            }
+        }, 120L)
+    }
+
     override fun onResume() {
         super.onResume()
-        // onResume: aplica directamente sem flash (o flash só é necessário no onCreate)
         applyStatusBarTheme()
     }
 
@@ -154,25 +185,9 @@ class MainActivity : AppCompatActivity() {
         super.onBackPressed()
     }
 
-    // Aplica o tema correcto da status bar
     private fun applyStatusBarTheme() {
         val isLight = !resources.configuration.isNightModeActive
         insetsController.isAppearanceLightStatusBars = isLight
-    }
-
-    // Flash trick: inverte os ícones da status bar por 50ms e volta ao correcto.
-    // Força o sistema a re-renderizar e corrige o bug em que os ícones ficam
-    // com a cor errada ao abrir o app.
-    private fun applyStatusBarFlashFix() {
-        val isLight = !resources.configuration.isNightModeActive
-        // Aplica o oposto imediatamente (imperceptível — acontece antes do primeiro frame)
-        insetsController.isAppearanceLightStatusBars = !isLight
-        // Volta ao estado correcto em 50ms (< 3 frames a 60fps — invisível ao utilizador)
-        window.decorView.postDelayed({
-            if (!isDestroyed) {
-                insetsController.isAppearanceLightStatusBars = isLight
-            }
-        }, 50L)
     }
 
     private fun launchSearchWithAnim() {
