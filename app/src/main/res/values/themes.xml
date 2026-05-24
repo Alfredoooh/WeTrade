@@ -7,7 +7,6 @@
         <item name="colorOnSurface">@color/text_primary</item>
         <item name="colorSurfaceVariant">@color/card_background</item>
         <item name="colorOnSurfaceVariant">@color/text_secondary</item>
-        <!-- colorSurfaceContainerLow/High controlam BottomSheet e Dialogs no M3 -->
         <item name="colorSurfaceContainerLow">@color/dialog_background</item>
         <item name="colorSurfaceContainerHigh">@color/dialog_background</item>
         <item name="colorSurfaceContainer">@color/dialog_background</item>

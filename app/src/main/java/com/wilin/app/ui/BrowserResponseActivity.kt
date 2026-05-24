@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
@@ -18,7 +17,6 @@ import android.text.TextWatcher
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
-import android.view.animation.AnimationUtils
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.webkit.WebChromeClient
@@ -67,10 +65,9 @@ class BrowserResponseActivity : AppCompatActivity() {
         TabManager.init(this)
         loadHistory()
 
-        val iconTint     = ContextCompat.getColor(this, R.color.icon_tint)
+        val iconTint      = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSecondary = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
-        // Ícones bottom bar
         binding.btnBack.setImageDrawable(svgDrawable("icons/svg/arrow_left.svg", 24, iconSecondary))
         binding.btnForward.setImageDrawable(svgDrawable("icons/svg/arrow_right.svg", 24, iconSecondary))
         binding.btnReload.setImageDrawable(svgDrawable("icons/svg/refresh.svg", 20, iconSecondary))
@@ -79,7 +76,6 @@ class BrowserResponseActivity : AppCompatActivity() {
         binding.modalSearchIcon.setImageDrawable(svgDrawable("icons/svg/magnifying_glass_outline.svg", 20, iconSecondary))
         binding.modalClearBtn.setImageDrawable(svgDrawable("icons/svg/close.svg", 16, iconSecondary))
 
-        // Determinar tab e URL inicial
         val tabId = intent.getStringExtra(EXTRA_TAB_ID)
         val query = intent.getStringExtra(EXTRA_QUERY) ?: ""
 
@@ -92,8 +88,6 @@ class BrowserResponseActivity : AppCompatActivity() {
         }
 
         updateTabsCount()
-
-        // WebView
         setupWebView()
 
         val tab = TabManager.getCurrent()
@@ -108,7 +102,6 @@ class BrowserResponseActivity : AppCompatActivity() {
         }
         binding.webView.loadUrl(loadUrl)
 
-        // Botões navegação
         binding.btnBack.setOnClickListener {
             if (binding.webView.canGoBack()) binding.webView.goBack()
         }
@@ -124,32 +117,23 @@ class BrowserResponseActivity : AppCompatActivity() {
             startActivity(Intent(this, TabsActivity::class.java))
         }
         binding.btnMore.setOnClickListener { showMoreMenu() }
-
-        // URL bar clicável → abre modal
         binding.urlBar.setOnClickListener { showSearchModal() }
-
-        // Modal
         binding.searchModal.setOnClickListener { hideSearchModal() }
         setupModalInput()
 
-        // RecyclerView histórico no modal
-        historyAdapter = HistoryModalAdapter(searchHistory) { query ->
+        historyAdapter = HistoryModalAdapter(searchHistory) { q ->
             hideSearchModal()
-            navigateTo(query)
+            navigateTo(q)
         }
         binding.modalHistoryList.apply {
             layoutManager = LinearLayoutManager(this@BrowserResponseActivity)
             adapter = historyAdapter
         }
 
-        // Scroll para esconder/mostrar bottom bar
         binding.webView.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
             val dy = scrollY - oldScrollY
-            if (dy > 8 && bottomBarVisible && scrollY > 100) {
-                hideBottomBar()
-            } else if (dy < -8 && !bottomBarVisible) {
-                showBottomBar()
-            }
+            if (dy > 8 && bottomBarVisible && scrollY > 100) hideBottomBar()
+            else if (dy < -8 && !bottomBarVisible) showBottomBar()
             lastScrollY = scrollY
         }
     }
@@ -157,13 +141,13 @@ class BrowserResponseActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
         binding.webView.apply {
-            settings.javaScriptEnabled  = true
-            settings.domStorageEnabled  = true
+            settings.javaScriptEnabled   = true
+            settings.domStorageEnabled   = true
             settings.setSupportZoom(true)
             settings.builtInZoomControls = true
             settings.displayZoomControls = false
             settings.loadWithOverviewMode = true
-            settings.useWideViewPort     = true
+            settings.useWideViewPort      = true
 
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -174,8 +158,8 @@ class BrowserResponseActivity : AppCompatActivity() {
                     super.onPageStarted(view, url, favicon)
                     isLoading = true
                     binding.progressBar.visibility = View.VISIBLE
-                    val iconTintSecondary = ContextCompat.getColor(this@BrowserResponseActivity, R.color.icon_tint_secondary)
-                    binding.btnReload.setImageDrawable(svgDrawable("icons/svg/close.svg", 20, iconTintSecondary))
+                    val sec = ContextCompat.getColor(this@BrowserResponseActivity, R.color.icon_tint_secondary)
+                    binding.btnReload.setImageDrawable(svgDrawable("icons/svg/close.svg", 20, sec))
                     updateUrlBar(url ?: "")
                     updateNavButtons()
                 }
@@ -183,13 +167,12 @@ class BrowserResponseActivity : AppCompatActivity() {
                     super.onPageFinished(view, url)
                     isLoading = false
                     binding.progressBar.visibility = View.GONE
-                    val iconTintSecondary = ContextCompat.getColor(this@BrowserResponseActivity, R.color.icon_tint_secondary)
-                    binding.btnReload.setImageDrawable(svgDrawable("icons/svg/refresh.svg", 20, iconTintSecondary))
+                    val sec = ContextCompat.getColor(this@BrowserResponseActivity, R.color.icon_tint_secondary)
+                    binding.btnReload.setImageDrawable(svgDrawable("icons/svg/refresh.svg", 20, sec))
                     updateUrlBar(url ?: "")
                     updateNavButtons()
                     TabManager.updateTab(currentTabId, url = url ?: "")
                     TabManager.save(this@BrowserResponseActivity)
-                    // Injectar JS para apanhar favicon
                     loadFaviconViaJs(url ?: "")
                 }
             }
@@ -204,9 +187,7 @@ class BrowserResponseActivity : AppCompatActivity() {
                     super.onProgressChanged(view, newProgress)
                     val w = (binding.progressBar.parent as View).width
                     binding.progressBar.layoutParams =
-                        (binding.progressBar.layoutParams).also {
-                            it.width = (w * newProgress / 100)
-                        }
+                        binding.progressBar.layoutParams.also { it.width = (w * newProgress / 100) }
                     binding.progressBar.requestLayout()
                 }
                 override fun onReceivedIcon(view: WebView?, icon: Bitmap?) {
@@ -221,23 +202,19 @@ class BrowserResponseActivity : AppCompatActivity() {
     }
 
     private fun loadFaviconViaJs(pageUrl: String) {
-        // Apanhar favicon via Google favicon service como fallback
         runCatching {
             val host = Uri.parse(pageUrl).host ?: return
             val faviconUrl = "https://www.google.com/s2/favicons?domain=$host&sz=32"
-            val thread = Thread {
+            Thread {
                 runCatching {
                     val conn = java.net.URL(faviconUrl).openConnection() as java.net.HttpURLConnection
                     conn.connectTimeout = 3000
                     conn.readTimeout    = 3000
                     val bmp = android.graphics.BitmapFactory.decodeStream(conn.inputStream)
-                    if (bmp != null) {
-                        runOnUiThread { binding.faviconImg.setImageBitmap(bmp) }
-                    }
+                    if (bmp != null) runOnUiThread { binding.faviconImg.setImageBitmap(bmp) }
                     conn.disconnect()
                 }
-            }
-            thread.start()
+            }.start()
         }
     }
 
@@ -279,27 +256,17 @@ class BrowserResponseActivity : AppCompatActivity() {
         }
     }
 
-    // ── Bottom bar animação ──────────────────────────────────────────────────
-
     private fun hideBottomBar() {
         if (!bottomBarVisible) return
         bottomBarVisible = false
-        binding.bottomBar.animate()
-            .translationY(binding.bottomBar.height.toFloat())
-            .setDuration(200)
-            .start()
+        binding.bottomBar.animate().translationY(binding.bottomBar.height.toFloat()).setDuration(200).start()
     }
 
     private fun showBottomBar() {
         if (bottomBarVisible) return
         bottomBarVisible = true
-        binding.bottomBar.animate()
-            .translationY(0f)
-            .setDuration(200)
-            .start()
+        binding.bottomBar.animate().translationY(0f).setDuration(200).start()
     }
-
-    // ── Modal de pesquisa ────────────────────────────────────────────────────
 
     private fun showSearchModal() {
         binding.searchModal.visibility = View.VISIBLE
@@ -327,9 +294,7 @@ class BrowserResponseActivity : AppCompatActivity() {
             }
             override fun afterTextChanged(s: Editable?) {}
         })
-        binding.modalClearBtn.setOnClickListener {
-            binding.modalSearchInput.setText("")
-        }
+        binding.modalClearBtn.setOnClickListener { binding.modalSearchInput.setText("") }
         binding.modalSearchInput.setOnEditorActionListener { v, actionId, event ->
             if (actionId == EditorInfo.IME_ACTION_GO ||
                 (event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)) {
@@ -367,8 +332,6 @@ class BrowserResponseActivity : AppCompatActivity() {
         historyAdapter?.updateList(filtered)
     }
 
-    // ── Histórico ────────────────────────────────────────────────────────────
-
     private fun addToHistory(query: String) {
         searchHistory.remove(query)
         searchHistory.add(0, query)
@@ -379,33 +342,26 @@ class BrowserResponseActivity : AppCompatActivity() {
     private fun loadHistory() {
         val prefs = getSharedPreferences(PREFS_HISTORY, Context.MODE_PRIVATE)
         val raw = prefs.getString(KEY_HISTORY, "") ?: ""
-        if (raw.isNotEmpty()) {
-            searchHistory.addAll(raw.split("|||").filter { it.isNotEmpty() })
-        }
+        if (raw.isNotEmpty()) searchHistory.addAll(raw.split("|||").filter { it.isNotEmpty() })
     }
 
     private fun saveHistory() {
         getSharedPreferences(PREFS_HISTORY, Context.MODE_PRIVATE)
-            .edit()
-            .putString(KEY_HISTORY, searchHistory.joinToString("|||"))
-            .apply()
+            .edit().putString(KEY_HISTORY, searchHistory.joinToString("|||")).apply()
     }
 
-    // ── Menu mais opções ─────────────────────────────────────────────────────
-
     private fun showMoreMenu() {
-        val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
-        val bgColor  = ContextCompat.getColor(this, R.color.card_background)
+        val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
+        val bgColor   = ContextCompat.getColor(this, R.color.card_background)
         val textColor = ContextCompat.getColor(this, R.color.text_primary)
+        val ripple    = ContextCompat.getDrawable(this, R.drawable.ripple_item)
 
         data class MenuItem(val icon: String, val label: String, val action: () -> Unit)
 
         val isBookmarked = isCurrentBookmarked()
         val items = listOf(
             MenuItem("icons/svg/bookmark${if (isBookmarked) "_filled" else ""}.svg",
-                getString(if (isBookmarked) R.string.remove_bookmark else R.string.add_bookmark)) {
-                toggleBookmark()
-            },
+                getString(if (isBookmarked) R.string.remove_bookmark else R.string.add_bookmark)) { toggleBookmark() },
             MenuItem("icons/svg/share.svg", getString(R.string.share)) { shareUrl() },
             MenuItem("icons/svg/copy.svg", getString(R.string.copy_url)) { copyUrl() },
             MenuItem("icons/svg/find.svg", getString(R.string.find_in_page)) { findInPage() },
@@ -432,8 +388,7 @@ class BrowserResponseActivity : AppCompatActivity() {
                 setPadding(hPad, vPad, hPad, vPad)
                 isClickable = true
                 isFocusable = true
-                background = ContextCompat.getDrawable(context,
-                    android.R.drawable.list_selector_background)
+                background = ripple?.constantState?.newDrawable()?.mutate()
             }
             val iv = ImageView(this).apply {
                 layoutParams = LinearLayout.LayoutParams(
@@ -450,7 +405,7 @@ class BrowserResponseActivity : AppCompatActivity() {
             row.addView(iv)
             row.addView(tv)
             menuView.addView(row)
-            row.setOnClickListener { item.action(); }
+            row.setOnClickListener { item.action() }
         }
 
         val pop = PopupWindow(
@@ -465,8 +420,6 @@ class BrowserResponseActivity : AppCompatActivity() {
             (12 * resources.displayMetrics.density).toInt(),
             (56 * resources.displayMetrics.density).toInt())
     }
-
-    // ── Funcionalidades ──────────────────────────────────────────────────────
 
     private fun shareUrl() {
         val url = binding.webView.url ?: return
@@ -492,8 +445,7 @@ class BrowserResponseActivity : AppCompatActivity() {
 
     private fun toggleDesktopMode() {
         isDesktopMode = !isDesktopMode
-        binding.webView.settings.userAgentString =
-            if (isDesktopMode) DESKTOP_UA else null
+        binding.webView.settings.userAgentString = if (isDesktopMode) DESKTOP_UA else null
         binding.webView.reload()
     }
 
@@ -501,8 +453,6 @@ class BrowserResponseActivity : AppCompatActivity() {
         binding.webView.findAllAsync("")
         binding.webView.showFindDialog(null, true)
     }
-
-    // ── Favoritos ─────────────────────────────────────────────────────────────
 
     private fun isCurrentBookmarked(): Boolean {
         val url = binding.webView.url ?: return false
@@ -531,8 +481,6 @@ class BrowserResponseActivity : AppCompatActivity() {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
 
-    // ── Back press ───────────────────────────────────────────────────────────
-
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         when {
@@ -547,8 +495,6 @@ class BrowserResponseActivity : AppCompatActivity() {
         TabManager.save(this)
     }
 
-    // ── Util ──────────────────────────────────────────────────────────────────
-
     private fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
         val px  = (sizeDp * resources.displayMetrics.density).toInt()
         val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
@@ -562,8 +508,6 @@ class BrowserResponseActivity : AppCompatActivity() {
     }
 }
 
-// ── Adapter para o modal de histórico ────────────────────────────────────────
-
 class HistoryModalAdapter(
     private var items: List<String>,
     private val onClick: (String) -> Unit
@@ -572,7 +516,8 @@ class HistoryModalAdapter(
     inner class VH(val tv: TextView) : RecyclerView.ViewHolder(tv)
 
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): VH {
-        val tv = TextView(parent.context).apply {
+        val ctx = parent.context
+        val tv = TextView(ctx).apply {
             layoutParams = RecyclerView.LayoutParams(
                 RecyclerView.LayoutParams.MATCH_PARENT,
                 RecyclerView.LayoutParams.WRAP_CONTENT
@@ -583,11 +528,10 @@ class HistoryModalAdapter(
             textSize = 14f
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
-            setTextColor(ContextCompat.getColor(context, R.color.text_primary))
+            setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
             isClickable = true
             isFocusable = true
-            background = ContextCompat.getDrawable(context,
-                android.R.drawable.list_selector_background)
+            background = ContextCompat.getDrawable(ctx, R.drawable.ripple_item)
         }
         return VH(tv)
     }

@@ -12,9 +12,9 @@
   <color name="splash_background_light">#FFFFFF</color>
   <color name="splash_background_dark">#121212</color>
   
-  <!-- AppBar / Toolbar / BottomNav — igual ao corpo escuro -->
-  <color name="appbar_background">#121212</color>
-  <color name="bottom_nav_background">#121212</color>
+  <!-- AppBar / Toolbar / BottomNav -->
+  <color name="appbar_background">#1F1F1F</color>
+  <color name="bottom_nav_background">#1F1F1F</color>
   <color name="bottom_nav_text_color">#007AFF</color>
   
   <!-- Texto -->
@@ -23,19 +23,21 @@
   <color name="text_hint">#666666</color>
   <color name="text_link">#007AFF</color>
   
-  <!-- Drawer — mantém tom ligeiramente elevado -->
+  <!-- Drawer -->
   <color name="drawer_background">#1F1F1F</color>
   <color name="drawer_text">#FFFFFF</color>
   
-  <!-- Superfícies / Cards / Modals / Dialogs -->
+  <!-- Superfícies / Cards -->
   <color name="surface">#121212</color>
   <color name="card_background">#2B2B2B</color>
+  
+  <!-- Dialogs / Modals / BottomSheets -->
   <color name="dialog_background">#2B2B2B</color>
   
   <!-- Separadores -->
   <color name="divider">#2C2C2C</color>
   
-  <!-- Settings — sem azul -->
+  <!-- Settings -->
   <color name="settings_section_label">#ABABAB</color>
   
   <!-- Ícones -->
@@ -48,6 +50,6 @@
   <color name="input_hint">#666666</color>
   <color name="cursor_color">#007AFF</color>
   
-  <!-- Ripple / selectable -->
+  <!-- Ripple -->
   <color name="ripple_color">#1AFFFFFF</color>
 </resources>
