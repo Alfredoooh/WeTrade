@@ -45,28 +45,38 @@
                     android:textStyle="bold"
                     android:textColor="@color/text_primary" />
 
-                <!-- Search pill centralizada e curta — só na aba search -->
+                <!--
+                    Search input real — aparece só na aba search.
+                    Margens laterais de 16dp: não toca nas bordas.
+                    background=search_pill_bg já tem cornerRadius 999dp = totalmente oval.
+                    Clickable no container todo → lança SearchActivity com animação.
+                    O input em si é não-focusável aqui (isFocusable=false) para que o
+                    toque vá sempre para o container e lance a SearchActivity.
+                -->
                 <LinearLayout
                     android:id="@+id/searchPill"
-                    android:layout_width="0dp"
-                    android:layout_height="42dp"
-                    android:layout_gravity="center"
-                    android:layout_marginStart="48dp"
-                    android:layout_marginEnd="48dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
                     android:background="@drawable/search_pill_bg"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="10dp"
                     android:visibility="gone"
                     android:clickable="true"
-                    android:focusable="true">
+                    android:focusable="true"
+                    android:elevation="1dp">
 
                     <ImageView
                         android:id="@+id/searchPillIcon"
                         android:layout_width="18dp"
                         android:layout_height="18dp"
-                        android:layout_marginEnd="8dp" />
+                        android:layout_marginEnd="8dp"
+                        android:clickable="false"
+                        android:focusable="false" />
 
                     <TextView
                         android:id="@+id/searchPillHint"
@@ -77,13 +87,15 @@
                         android:textSize="14sp"
                         android:textColor="@color/text_hint"
                         android:maxLines="1"
-                        android:ellipsize="end" />
+                        android:ellipsize="end"
+                        android:clickable="false"
+                        android:focusable="false" />
 
-                    <!-- More options na aba search -->
                     <ImageView
                         android:id="@+id/searchPillMore"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="34dp"
+                        android:layout_height="34dp"
+                        android:padding="7dp"
                         android:layout_marginStart="4dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:clickable="true"
@@ -162,7 +174,7 @@
 
     </LinearLayout>
 
-    <!-- Drawer branco puro -->
+    <!-- Drawer -->
     <LinearLayout
         android:id="@+id/drawerContainer"
         android:layout_width="280dp"

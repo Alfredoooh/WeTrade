@@ -8,9 +8,6 @@ import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.view.View
 import android.view.animation.DecelerateInterpolator
-import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputMethodManager
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
@@ -21,7 +18,6 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import com.caverock.androidsvg.SVG
 import com.wilin.app.databinding.ActivityMainBinding
-import com.wilin.app.ui.BrowserResponseActivity
 import com.wilin.app.ui.GamesFragment
 import com.wilin.app.ui.HomeFragment
 import com.wilin.app.ui.SearchActivity
@@ -38,6 +34,9 @@ class MainActivity : AppCompatActivity() {
 
     private var currentTab = R.id.tabHome
 
+    // Guarda referência ao controller para reutilizar no onWindowFocusChanged
+    private lateinit var insetsController: WindowInsetsControllerCompat
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
 
@@ -53,8 +52,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
-        val isLight = !resources.configuration.isNightModeActive
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
+        insetsController = WindowInsetsControllerCompat(window, window.decorView)
+        applyStatusBarTheme()
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
@@ -67,18 +66,20 @@ class MainActivity : AppCompatActivity() {
                 binding.drawerLayout.openDrawer(GravityCompat.START)
         }
 
+        // Search input no appBar — ao clicar lança SearchActivity com animação expand
         binding.searchPillIcon.setImageDrawable(
             svgDrawable("icons/svg/magnifying_glass_outline.svg", 18, iconSec))
+
         binding.searchPill.setOnClickListener {
-            binding.searchPill.animate()
-                .scaleX(1.03f).scaleY(1.03f)
-                .setDuration(120)
-                .setInterpolator(DecelerateInterpolator())
-                .withEndAction {
-                    binding.searchPill.animate().scaleX(1f).scaleY(1f).setDuration(80).start()
-                    startActivity(Intent(this, SearchActivity::class.java))
-                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                }.start()
+            launchSearchWithAnim()
+        }
+
+        // More button na search pill (fica junto ao ícone da lupa no lado direito)
+        binding.searchPillMore.setImageDrawable(
+            svgDrawable("icons/svg/more_vertical.svg", 18, iconSec))
+        binding.searchPillMore.setOnClickListener {
+            // Abre SearchActivity directamente — o popup de more está lá dentro
+            launchSearchWithAnim()
         }
 
         binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 18, iconTint))
@@ -146,10 +147,16 @@ class MainActivity : AppCompatActivity() {
         updateAppBar(R.id.tabHome)
     }
 
-    override fun onResume() {
-        super.onResume()
-        val isLight = !resources.configuration.isNightModeActive
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
+    /**
+     * onWindowFocusChanged é o lugar certo para repor o statusBar.
+     * Chama quando a janela ganha foco de volta (após voltar de outra Activity),
+     * ao contrário de onResume que corre antes do sistema ter restaurado a window.
+     */
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            applyStatusBarTheme()
+        }
     }
 
     override fun onBackPressed() {
@@ -158,6 +165,32 @@ class MainActivity : AppCompatActivity() {
             return
         }
         super.onBackPressed()
+    }
+
+    private fun applyStatusBarTheme() {
+        val isLight = !resources.configuration.isNightModeActive
+        insetsController.isAppearanceLightStatusBars = isLight
+    }
+
+    private fun launchSearchWithAnim() {
+        // Animação: pill cresce ligeiramente e expande para a tela de search
+        binding.searchPill.animate()
+            .scaleX(1.04f).scaleY(1.08f)
+            .setDuration(110)
+            .setInterpolator(DecelerateInterpolator())
+            .withEndAction {
+                binding.searchPill.animate()
+                    .scaleX(1f).scaleY(1f)
+                    .setDuration(60)
+                    .withEndAction {
+                        startActivity(Intent(this, SearchActivity::class.java))
+                        // Transição custom: a SearchActivity entra a expandir de cima (como o input cresce)
+                        overridePendingTransition(
+                            android.R.anim.fade_in,
+                            android.R.anim.fade_out
+                        )
+                    }.start()
+            }.start()
     }
 
     fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {

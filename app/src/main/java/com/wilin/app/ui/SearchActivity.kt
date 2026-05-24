@@ -30,6 +30,7 @@ import com.wilin.app.databinding.ActivitySearchBinding
 class SearchActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySearchBinding
+    private lateinit var insetsController: WindowInsetsControllerCompat
     private val searchHistory = mutableListOf<String>()
     private var historyAdapter: SearchSuggestAdapter? = null
 
@@ -44,8 +45,8 @@ class SearchActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
-        val isLight = !resources.configuration.isNightModeActive
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
+        insetsController = WindowInsetsControllerCompat(window, window.decorView)
+        applyStatusBarTheme()
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
@@ -66,12 +67,12 @@ class SearchActivity : AppCompatActivity() {
             adapter = historyAdapter
         }
 
-        // Animação entrada: container sobe do bottom
-        binding.searchCard.translationY = 60f
+        // Animação entrada: vem de cima, expande como o input a crescer
+        binding.searchCard.translationY = -40f
         binding.searchCard.alpha = 0f
         binding.searchCard.animate()
             .translationY(0f).alpha(1f)
-            .setDuration(260).setInterpolator(DecelerateInterpolator(2f))
+            .setDuration(240).setInterpolator(DecelerateInterpolator(2f))
             .start()
 
         binding.searchInput.addTextChangedListener(object : TextWatcher {
@@ -96,12 +97,21 @@ class SearchActivity : AppCompatActivity() {
 
         binding.btnMore.setOnClickListener { showMorePopup() }
 
-        // Foco automático
         binding.searchInput.requestFocus()
         binding.searchInput.post {
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.showSoftInput(binding.searchInput, InputMethodManager.SHOW_IMPLICIT)
         }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) applyStatusBarTheme()
+    }
+
+    private fun applyStatusBarTheme() {
+        val isLight = !resources.configuration.isNightModeActive
+        insetsController.isAppearanceLightStatusBars = isLight
     }
 
     private fun navigate(input: String) {
