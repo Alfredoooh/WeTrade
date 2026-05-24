@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.PorterDuff
+import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
@@ -20,10 +21,12 @@ import android.widget.PopupWindow
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.doOnPreDraw
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.caverock.androidsvg.SVG
+import com.google.android.material.transition.platform.MaterialContainerTransform
 import com.wilin.app.R
 import com.wilin.app.databinding.ActivitySearchBinding
 
@@ -40,6 +43,7 @@ class SearchActivity : AppCompatActivity() {
     companion object {
         private const val PREFS_HISTORY = "wilin_search_history"
         private const val KEY_HISTORY   = "history"
+        private const val SEARCH_TRANSITION_NAME = "search_container_transition"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +51,20 @@ class SearchActivity : AppCompatActivity() {
         binding = ActivitySearchBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        binding.searchInputContainer.transitionName = SEARCH_TRANSITION_NAME
+
         WindowCompat.setDecorFitsSystemWindows(window, true)
+        window.sharedElementEnterTransition = MaterialContainerTransform().apply {
+            drawingViewId = android.R.id.content
+            scrimColor = Color.TRANSPARENT
+            duration = 300L
+        }
+        window.sharedElementReturnTransition = MaterialContainerTransform().apply {
+            drawingViewId = android.R.id.content
+            scrimColor = Color.TRANSPARENT
+            duration = 220L
+        }
+
         insetsController = WindowInsetsControllerCompat(window, window.decorView)
         applyStatusBarTheme()
 
@@ -62,6 +79,9 @@ class SearchActivity : AppCompatActivity() {
 
         loadHistory()
 
+        postponeEnterTransition()
+        binding.searchInputContainer.doOnPreDraw { startPostponedEnterTransition() }
+
         historyAdapter = SearchSuggestAdapter(searchHistory.take(10)) { query ->
             navigate(query)
         }
@@ -70,12 +90,6 @@ class SearchActivity : AppCompatActivity() {
             adapter = historyAdapter
         }
 
-        binding.searchCard.translationY = -40f
-        binding.searchCard.alpha = 0f
-        binding.searchCard.animate()
-            .translationY(0f).alpha(1f)
-            .setDuration(240).setInterpolator(DecelerateInterpolator(2f))
-            .start()
 
         binding.searchInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
@@ -112,7 +126,6 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun applyStatusBarTheme() {
-        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         val isLight = !resources.configuration.isNightModeActive
         insetsController.isAppearanceLightStatusBars = isLight
     }

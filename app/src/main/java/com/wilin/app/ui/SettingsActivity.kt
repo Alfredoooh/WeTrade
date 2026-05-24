@@ -66,7 +66,6 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
-        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         val insetsController = WindowInsetsControllerCompat(window, window.decorView)
         window.decorView.post {
             val isLight = !resources.configuration.isNightModeActive

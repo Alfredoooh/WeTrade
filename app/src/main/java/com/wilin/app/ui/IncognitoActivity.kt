@@ -48,7 +48,6 @@ class IncognitoActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
-        window.statusBarColor = ContextCompat.getColor(this, R.color.incognito_surface)
         // Modo incógnito sempre escuro na statusbar
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = false
 

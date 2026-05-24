@@ -41,10 +41,14 @@
                     android:focusable="true" />
 
                 <LinearLayout
+                    android:id="@+id/searchInputContainer"
                     android:layout_width="0dp"
                     android:layout_height="44dp"
                     android:layout_weight="1"
                     android:background="@drawable/search_pill_bg"
+                    android:transitionName="@string/search_container_transition"
+                    android:stateListAnimator="@null"
+                    android:elevation="0dp"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
                     android:paddingStart="14dp"

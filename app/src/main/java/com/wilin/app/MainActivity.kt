@@ -12,6 +12,7 @@ import android.view.View
 import android.view.animation.DecelerateInterpolator
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.GravityCompat
@@ -27,6 +28,10 @@ import com.wilin.app.ui.SearchFragment
 import com.wilin.app.ui.SettingsActivity
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        private const val SEARCH_TRANSITION_NAME = "search_container_transition"
+    }
 
     lateinit var binding: ActivityMainBinding
     private lateinit var insetsController: WindowInsetsControllerCompat
@@ -76,6 +81,7 @@ class MainActivity : AppCompatActivity() {
         binding.searchPillMore.setImageDrawable(
             svgDrawable("icons/svg/more_vertical.svg", 18, iconSec))
 
+        binding.searchPill.transitionName = SEARCH_TRANSITION_NAME
         binding.searchPill.setOnClickListener { launchSearchWithAnim() }
         binding.searchPillMore.setOnClickListener { launchSearchWithAnim() }
 
@@ -186,25 +192,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyStatusBarTheme() {
-        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         val isLight = !resources.configuration.isNightModeActive
         insetsController.isAppearanceLightStatusBars = isLight
     }
 
     private fun launchSearchWithAnim() {
-        binding.searchPill.animate()
-            .scaleX(1.04f).scaleY(1.08f)
-            .setDuration(110)
-            .setInterpolator(DecelerateInterpolator())
-            .withEndAction {
-                binding.searchPill.animate()
-                    .scaleX(1f).scaleY(1f)
-                    .setDuration(60)
-                    .withEndAction {
-                        startActivity(Intent(this, SearchActivity::class.java))
-                        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                    }.start()
-            }.start()
+        val intent = Intent(this, SearchActivity::class.java)
+        val options = ActivityOptionsCompat.makeSceneTransitionAnimation(
+            this,
+            binding.searchPill,
+            SEARCH_TRANSITION_NAME
+        )
+        startActivity(intent, options.toBundle())
     }
 
     fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {

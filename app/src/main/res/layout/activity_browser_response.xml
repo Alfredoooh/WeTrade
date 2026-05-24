@@ -232,13 +232,26 @@
     </FrameLayout>
 
     <!-- Blur overlay para popup — visível quando popup está aberto -->
-    <View
+    <FrameLayout
         android:id="@+id/popupBlurOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#99000000"
         android:visibility="gone"
         android:clickable="true"
-        android:focusable="true" />
+        android:focusable="true">
+
+        <ImageView
+            android:id="@+id/popupBlurImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop" />
+
+        <ImageView
+            android:id="@+id/popupMoreOverlay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:scaleType="centerCrop" />
+
+    </FrameLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

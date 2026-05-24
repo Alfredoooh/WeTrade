@@ -48,4 +48,5 @@
     <string name="private_tabs">Tabs privadas</string>
     <string name="normal_tabs">Tabs normais</string>
     <string name="done">Concluído</string>
+    <string name="search_container_transition">search_container_transition</string>
 </resources>

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
@@ -36,11 +37,11 @@ class TabsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
-        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         val isLight = !resources.configuration.isNightModeActive
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLight
 
         TabManager.init(this)
+        TabScreenshots.init(this)
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
 
@@ -54,24 +55,6 @@ class TabsActivity : AppCompatActivity() {
             openCurrentTab()
         }
 
-        // Selector Tabs | Favoritos
-        binding.tabModeNormal.setOnClickListener {
-            if (showBookmarks) {
-                showBookmarks = false
-                updateSelectorUI()
-                binding.tabsRecycler.adapter = tabsAdapter
-                tabsAdapter.updateTabs(TabManager.getTabs().toMutableList(), TabManager.getCurrentId())
-            }
-        }
-        binding.tabModeBookmarks.setOnClickListener {
-            if (!showBookmarks) {
-                showBookmarks = true
-                updateSelectorUI()
-                binding.tabsRecycler.adapter = bookmarksAdapter
-                bookmarksAdapter.reload(loadBookmarks())
-            }
-        }
-
         tabsAdapter = TabsAdapter(
             tabs      = TabManager.getTabs().toMutableList(),
             currentId = TabManager.getCurrentId(),
@@ -81,6 +64,7 @@ class TabsActivity : AppCompatActivity() {
                 openCurrentTab()
             },
             onClose = { tab ->
+                TabScreenshots.remove(this, tab.id)
                 TabManager.closeTab(tab.id)
                 TabManager.save(this)
                 tabsAdapter.updateTabs(TabManager.getTabs().toMutableList(), TabManager.getCurrentId())
@@ -112,6 +96,23 @@ class TabsActivity : AppCompatActivity() {
 
         binding.btnDone.setOnClickListener { finish() }
 
+        binding.tabModeNormal.setOnClickListener {
+            if (showBookmarks) {
+                showBookmarks = false
+                updateSelectorUI()
+                binding.tabsRecycler.adapter = tabsAdapter
+                tabsAdapter.updateTabs(TabManager.getTabs().toMutableList(), TabManager.getCurrentId())
+            }
+        }
+        binding.tabModeBookmarks.setOnClickListener {
+            if (!showBookmarks) {
+                showBookmarks = true
+                updateSelectorUI()
+                binding.tabsRecycler.adapter = bookmarksAdapter
+                bookmarksAdapter.reload(loadBookmarks())
+            }
+        }
+
         updateTabCountLabel()
         updateSelectorUI()
     }
@@ -119,21 +120,22 @@ class TabsActivity : AppCompatActivity() {
     private fun updateSelectorUI() {
         val primary = ContextCompat.getColor(this, R.color.text_primary)
         val secondary = ContextCompat.getColor(this, R.color.text_secondary)
-        if (!showBookmarks) {
-            binding.tabModeNormalText.setTextColor(primary)
-            binding.tabModeBookmarksText.setTextColor(secondary)
-            binding.tabIndicatorNormal.visibility = View.VISIBLE
-            binding.tabIndicatorBookmarks.visibility = View.INVISIBLE
-        } else {
-            binding.tabModeBookmarksText.setTextColor(primary)
-            binding.tabModeNormalText.setTextColor(secondary)
-            binding.tabIndicatorBookmarks.visibility = View.VISIBLE
-            binding.tabIndicatorNormal.visibility = View.INVISIBLE
-        }
+
+        val normalBg = if (!showBookmarks) ContextCompat.getDrawable(this, R.drawable.apple_segment_selected_left_bg)
+        else android.graphics.drawable.ColorDrawable(Color.TRANSPARENT)
+        val bookmarksBg = if (showBookmarks) ContextCompat.getDrawable(this, R.drawable.apple_segment_selected_right_bg)
+        else android.graphics.drawable.ColorDrawable(Color.TRANSPARENT)
+
+        binding.tabModeNormal.background = normalBg
+        binding.tabModeBookmarks.background = bookmarksBg
+
+        binding.tabModeNormalText.setTextColor(if (!showBookmarks) primary else secondary)
+        binding.tabModeBookmarksText.setTextColor(if (showBookmarks) primary else secondary)
     }
 
     private fun updateTabCountLabel() {
-        binding.tabModeNormalText.text = TabManager.count().toString()
+        val count = TabManager.count()
+        binding.tabModeNormalText.text = if (count == 1) "1 Tab" else "$count Tabs"
     }
 
     private fun openCurrentTab() {
@@ -170,8 +172,7 @@ class TabsActivity : AppCompatActivity() {
     }
 }
 
-// Tabs mostrados como screenshot estático (Bitmap capturado do WebView em BrowserResponseActivity)
-// Para gerar screenshots guardamos no TabManager via updateTab — aqui usamos cor de fundo + favicon
+// Tabs mostrados como screenshot estático (Bitmap capturado do WebView em BrowserResponseActivity).
 class TabsAdapter(
     private var tabs: MutableList<BrowserTab>,
     private var currentId: String,
@@ -206,7 +207,6 @@ class TabsAdapter(
             clipToOutline = true
         }
 
-        // Preview: ImageView que mostrará screenshot guardado — fallback cor sólida
         val preview = ImageView(ctx).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -216,7 +216,6 @@ class TabsAdapter(
             setBackgroundColor(bg)
         }
 
-        // Barra inferior com favicon + título
         val titleBar = LinearLayout(ctx).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -244,7 +243,6 @@ class TabsAdapter(
         titleBar.addView(faviconIv)
         titleBar.addView(titleTv)
 
-        // Borda azul no topo quando activo
         val activeBorder = View(ctx).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, (3 * dp).toInt()
@@ -253,7 +251,6 @@ class TabsAdapter(
             visibility = View.GONE
         }
 
-        // Botão fechar
         val closeBtn = ImageView(ctx).apply {
             layoutParams = FrameLayout.LayoutParams(
                 (32 * dp).toInt(), (32 * dp).toInt()
@@ -277,15 +274,13 @@ class TabsAdapter(
         holder.title.text = tab.title.ifEmpty { tab.url }
         holder.activeBorder.visibility = if (tab.id == currentId) View.VISIBLE else View.GONE
 
-        // Screenshot guardado em TabScreenshots
-        val bmp = TabScreenshots.get(tab.id)
+        val bmp = TabScreenshots.get(holder.root.context, tab.id)
         if (bmp != null) {
             holder.preview.setImageBitmap(bmp)
         } else {
             holder.preview.setImageDrawable(null)
         }
 
-        // Favicon via Google S2
         if (tab.url.isNotEmpty()) {
             val host = runCatching { android.net.Uri.parse(tab.url).host ?: "" }.getOrDefault("")
             if (host.isNotEmpty()) {
@@ -324,7 +319,6 @@ class TabsAdapter(
     }
 }
 
-// Adapter para favoritos no mesmo estilo de grid
 class BookmarksTabAdapter(
     private var items: List<Pair<String, String>>,
     private val onSelect: (String) -> Unit,
@@ -341,7 +335,6 @@ class BookmarksTabAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val ctx  = parent.context
         val dp   = ctx.resources.displayMetrics.density
-        val bg   = ContextCompat.getColor(ctx, R.color.card_background)
         val textC = ContextCompat.getColor(ctx, R.color.text_primary)
         val textS = ContextCompat.getColor(ctx, R.color.text_secondary)
 

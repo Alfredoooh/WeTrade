@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.Rect
 import android.graphics.drawable.BitmapDrawable
@@ -95,6 +96,7 @@ class BrowserResponseActivity : AppCompatActivity() {
         applyStatusBarTheme()
 
         TabManager.init(this)
+        TabScreenshots.init(this)
         loadHistory()
         buildFindBar()
 
@@ -172,7 +174,6 @@ class BrowserResponseActivity : AppCompatActivity() {
     }
 
     private fun applyStatusBarTheme() {
-        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         val isLight = !resources.configuration.isNightModeActive
         insetsController.isAppearanceLightStatusBars = isLight
     }
@@ -200,7 +201,7 @@ class BrowserResponseActivity : AppCompatActivity() {
                 if (result == PixelCopy.SUCCESS) {
                     val scaled = Bitmap.createScaledBitmap(bitmap, 400, 300, true)
                     bitmap.recycle()
-                    TabScreenshots.save(currentTabId, scaled)
+                    TabScreenshots.save(this@BrowserResponseActivity, currentTabId, scaled)
                 } else {
                     bitmap.recycle()
                 }
@@ -217,7 +218,7 @@ class BrowserResponseActivity : AppCompatActivity() {
                 binding.webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
                 val scaled = Bitmap.createScaledBitmap(bmp, 400, 300, true)
                 bmp.recycle()
-                TabScreenshots.save(currentTabId, scaled)
+                TabScreenshots.save(this@BrowserResponseActivity, currentTabId, scaled)
             }.onFailure {
                 binding.webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
             }
@@ -654,11 +655,70 @@ class BrowserResponseActivity : AppCompatActivity() {
         showAnimatedPopup(items, iconTint, bgColor, textColor, Gravity.BOTTOM or Gravity.END)
     }
 
+    private fun showPopupScrim() {
+        val root = binding.root
+        if (root.width <= 0 || root.height <= 0) return
+
+        val source = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
+        root.draw(Canvas(source))
+
+        val blurred = createSoftBlurBitmap(source)
+
+        binding.popupBlurImage.setImageBitmap(blurred)
+        binding.popupBlurImage.alpha = 0.92f
+
+        val rootLoc = IntArray(2)
+        val moreLoc = IntArray(2)
+        root.getLocationInWindow(rootLoc)
+        binding.btnMore.getLocationInWindow(moreLoc)
+
+        val left = (moreLoc[0] - rootLoc[0]).coerceAtLeast(0)
+        val top = (moreLoc[1] - rootLoc[1]).coerceAtLeast(0)
+        val width = binding.btnMore.width.coerceAtLeast(1)
+        val height = binding.btnMore.height.coerceAtLeast(1)
+
+        val safeWidth = minOf(width, source.width - left)
+        val safeHeight = minOf(height, source.height - top)
+
+        if (safeWidth > 0 && safeHeight > 0) {
+            val moreBitmap = Bitmap.createBitmap(source, left, top, safeWidth, safeHeight)
+            (binding.popupMoreOverlay.layoutParams as? FrameLayout.LayoutParams)?.let { params ->
+                params.leftMargin = left
+                params.topMargin = top
+                params.width = safeWidth
+                params.height = safeHeight
+                binding.popupMoreOverlay.layoutParams = params
+            }
+            binding.popupMoreOverlay.setImageBitmap(moreBitmap)
+        }
+
+        source.recycle()
+        binding.popupBlurOverlay.visibility = View.VISIBLE
+        binding.popupBlurOverlay.bringToFront()
+    }
+
+    private fun hidePopupScrim() {
+        binding.popupBlurOverlay.visibility = View.GONE
+        binding.popupBlurImage.setImageDrawable(null)
+        binding.popupMoreOverlay.setImageDrawable(null)
+    }
+
+    private fun createSoftBlurBitmap(source: Bitmap): Bitmap {
+        val scale = 0.12f
+        val smallWidth = maxOf(1, (source.width * scale).toInt())
+        val smallHeight = maxOf(1, (source.height * scale).toInt())
+        val small = Bitmap.createScaledBitmap(source, smallWidth, smallHeight, true)
+        val blurred = Bitmap.createScaledBitmap(small, source.width, source.height, true)
+        if (small != source) small.recycle()
+        return blurred
+    }
+
     private fun showAnimatedPopup(
         items: List<PopupItem>,
         iconTint: Int, bgColor: Int, textColor: Int, gravity: Int
     ) {
-        // FIX: declarar pop antes do forEach para poder referenciá-lo nos listeners
+        showPopupScrim()
+
         var pop: PopupWindow? = null
 
         val menuView = LinearLayout(this).apply {
@@ -689,16 +749,17 @@ class BrowserResponseActivity : AppCompatActivity() {
             row.addView(iv); row.addView(tv)
             menuView.addView(row)
 
-            // FIX: fechar popup antes de executar ação
             row.setOnClickListener {
                 pop?.dismiss()
                 item.action()
             }
         }
 
-        menuView.scaleX = 0.85f; menuView.scaleY = 0.85f; menuView.alpha = 0f
+        menuView.scaleX = 0.95f
+        menuView.scaleY = 0.95f
+        menuView.alpha = 0f
         menuView.animate().scaleX(1f).scaleY(1f).alpha(1f)
-            .setDuration(220).setInterpolator(OvershootInterpolator(1.2f)).start()
+            .setDuration(180).setInterpolator(OvershootInterpolator(1.05f)).start()
 
         pop = PopupWindow(
             menuView,
@@ -706,10 +767,10 @@ class BrowserResponseActivity : AppCompatActivity() {
             LinearLayout.LayoutParams.WRAP_CONTENT,
             true
         )
-        pop.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
-        pop.elevation = 12f
+        pop.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        pop.elevation = 18f
+        pop.setOnDismissListener { hidePopupScrim() }
 
-        // FIX: xOffset negativo para alinhar correctamente ao Gravity.END
         val xOff = -(12 * resources.displayMetrics.density).toInt()
         val yOff =  (60 * resources.displayMetrics.density).toInt()
         pop.showAtLocation(binding.root, gravity, xOff, yOff)
