@@ -29,7 +29,7 @@
                 app:contentInsetStart="0dp"
                 app:contentInsetEnd="0dp">
 
-                <!-- Logo maior -->
+                <!-- Logo -->
                 <ImageView
                     android:id="@+id/toolbarAppIcon"
                     android:layout_width="52dp"
@@ -38,7 +38,40 @@
                     android:layout_marginStart="12dp"
                     android:scaleType="fitCenter" />
 
-                <!-- Search pill (tab de pesquisa) -->
+                <!-- Ask AI — imediatamente à direita do logo -->
+                <LinearLayout
+                    android:id="@+id/btnAskAi"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/ask_ai_pill_bg"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:layout_gravity="start|center_vertical"
+                    android:layout_marginStart="8dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ask AI"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="4dp" />
+
+                    <ImageView
+                        android:id="@+id/btnAskAiIcon"
+                        android:layout_width="13dp"
+                        android:layout_height="13dp"
+                        android:clickable="false"
+                        android:focusable="false" />
+
+                </LinearLayout>
+
+                <!-- Search pill (tab pesquisa) -->
                 <LinearLayout
                     android:id="@+id/searchPill"
                     android:layout_width="match_parent"
@@ -80,40 +113,7 @@
 
                 </LinearLayout>
 
-                <!-- Ask AI — à esquerda do btnMenu, cinzento -->
-                <LinearLayout
-                    android:id="@+id/btnAskAi"
-                    android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:background="@drawable/ask_ai_pill_bg"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp"
-                    android:layout_gravity="end|center_vertical"
-                    android:layout_marginEnd="4dp"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Ask AI"
-                        android:textSize="12sp"
-                        android:textColor="@color/text_secondary"
-                        android:textStyle="bold"
-                        android:layout_marginEnd="5dp" />
-
-                    <ImageView
-                        android:id="@+id/btnAskAiIcon"
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:clickable="false"
-                        android:focusable="false" />
-
-                </LinearLayout>
-
-                <!-- Botão menu -->
+                <!-- Botão menu — extremo direito -->
                 <ImageView
                     android:id="@+id/btnMenu"
                     android:layout_width="48dp"
@@ -139,6 +139,7 @@
             android:layout_height="0.5dp"
             android:background="@color/divider" />
 
+        <!-- Bottom Nav: Home | Search | Hub | Abas -->
         <LinearLayout
             android:id="@+id/bottomNav"
             android:layout_width="match_parent"
@@ -177,7 +178,7 @@
             </FrameLayout>
 
             <FrameLayout
-                android:id="@+id/tabGames"
+                android:id="@+id/tabHub"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
@@ -185,10 +186,42 @@
                 android:clickable="true"
                 android:focusable="true">
                 <ImageView
-                    android:id="@+id/tabGamesIcon"
+                    android:id="@+id/tabHubIcon"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_gravity="center" />
+            </FrameLayout>
+
+            <!-- Tab Abas: mostra contagem -->
+            <FrameLayout
+                android:id="@+id/tabTabs"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true">
+
+                <!-- Borda quadrada com número -->
+                <FrameLayout
+                    android:id="@+id/tabTabsBadgeFrame"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/tabs_badge_bg">
+
+                    <TextView
+                        android:id="@+id/tabTabsCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="1"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/icon_tint" />
+
+                </FrameLayout>
+
             </FrameLayout>
 
         </LinearLayout>
@@ -234,7 +267,7 @@
         <LinearLayout
             android:id="@+id/drawerItemSettings"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="52dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingStart="24dp"
@@ -242,14 +275,14 @@
             android:background="?attr/selectableItemBackground">
 
             <FrameLayout
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:background="@drawable/drawer_icon_bg"
                 android:layout_marginEnd="16dp">
                 <ImageView
                     android:id="@+id/drawerIconSettings"
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
                     android:layout_gravity="center" />
             </FrameLayout>
 
@@ -263,15 +296,15 @@
 
             <ImageView
                 android:id="@+id/drawerChevronSettings"
-                android:layout_width="16dp"
-                android:layout_height="16dp" />
+                android:layout_width="14dp"
+                android:layout_height="14dp" />
 
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/drawerItemAbout"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="52dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingStart="24dp"
@@ -279,14 +312,14 @@
             android:background="?attr/selectableItemBackground">
 
             <FrameLayout
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:background="@drawable/drawer_icon_bg"
                 android:layout_marginEnd="16dp">
                 <ImageView
                     android:id="@+id/drawerIconAbout"
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
                     android:layout_gravity="center" />
             </FrameLayout>
 
@@ -300,8 +333,8 @@
 
             <ImageView
                 android:id="@+id/drawerChevronAbout"
-                android:layout_width="16dp"
-                android:layout_height="16dp" />
+                android:layout_width="14dp"
+                android:layout_height="14dp" />
 
         </LinearLayout>
 

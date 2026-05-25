@@ -26,6 +26,8 @@
     <color name="surface">#FFFFFF</color>
     <color name="card_background">#F2F2F7</color>
     
+    <color name="apps_section_background">#FFFFFF</color>
+    
     <color name="popup_background">#FFFFFF</color>
     <color name="popup_shadow">#14000000</color>
     

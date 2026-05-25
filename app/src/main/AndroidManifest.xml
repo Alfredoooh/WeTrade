@@ -93,6 +93,18 @@
             android:exported="false"
             android:theme="@style/Theme.wilin"
             android:windowSoftInputMode="adjustResize" />
+            
+       <activity
+    android:name=".ui.GamesActivity"
+    android:exported="false"
+    android:theme="@style/Theme.wilin"
+    android:windowSoftInputMode="adjustResize" />
+
+    <activity
+    android:name=".ui.AiSearchActivity"
+    android:exported="false"
+    android:theme="@style/Theme.wilin"
+    android:windowSoftInputMode="adjustResize" />
 
     </application>
 </manifest>

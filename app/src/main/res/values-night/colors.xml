@@ -6,13 +6,14 @@
   <color name="blue_apple">#007AFF</color>
   <color name="red_badge">#FF453A</color>
   
-  <color name="background">#121212</color>
-  <color name="background_dark">#121212</color>
+  <color name="background">#111111</color>
+  <color name="background_dark">#111111</color>
   <color name="splash_background_light">#FFFFFF</color>
-  <color name="splash_background_dark">#121212</color>
+  <color name="splash_background_dark">#111111</color>
   
-  <color name="appbar_background">#121212</color>
-  <color name="bottom_nav_background">#121212</color>
+  <!-- AppBar e BottomBar: tom mais claro que o body -->
+  <color name="appbar_background">#1C1C1E</color>
+  <color name="bottom_nav_background">#1C1C1E</color>
   <color name="bottom_nav_text_color">#007AFF</color>
   
   <color name="text_primary">#FFFFFF</color>
@@ -20,30 +21,33 @@
   <color name="text_hint">#666666</color>
   <color name="text_link">#007AFF</color>
   
-  <color name="drawer_background">#121212</color>
+  <color name="drawer_background">#1C1C1E</color>
   <color name="drawer_text">#FFFFFF</color>
   
-  <color name="surface">#1E1E1E</color>
-  <color name="card_background">#2B2B2B</color>
+  <color name="surface">#1C1C1E</color>
+  <color name="card_background">#2C2C2E</color>
   
-  <color name="popup_background">#2B2B2B</color>
+  <!-- Secção de apps mesmo tom do appbar -->
+  <color name="apps_section_background">#1C1C1E</color>
+  
+  <color name="popup_background">#2C2C2E</color>
   <color name="popup_shadow">#28FFFFFF</color>
   
-  <color name="dialog_background">#2B2B2B</color>
+  <color name="dialog_background">#2C2C2E</color>
   
-  <color name="divider">#2C2C2C</color>
+  <color name="divider">#2C2C2E</color>
   
   <color name="settings_section_label">#ABABAB</color>
   
   <color name="icon_tint">#FFFFFF</color>
   <color name="icon_tint_secondary">#ABABAB</color>
   
-  <color name="input_background">#2B2B2B</color>
+  <color name="input_background">#2C2C2E</color>
   <color name="input_text">#FFFFFF</color>
   <color name="input_hint">#666666</color>
   <color name="cursor_color">#007AFF</color>
   
-  <color name="search_input_fill">#3A3A3A</color>
+  <color name="search_input_fill">#3A3A3C</color>
   
   <color name="ripple_color">#1AFFFFFF</color>
   

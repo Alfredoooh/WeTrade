@@ -4,7 +4,11 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Paint
 import android.graphics.PorterDuff
+import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.view.View
@@ -19,11 +23,13 @@ import androidx.fragment.app.Fragment
 import com.caverock.androidsvg.SVG
 import com.wilin.app.databinding.ActivityMainBinding
 import com.wilin.app.ui.AiSearchActivity
-import com.wilin.app.ui.GamesFragment
 import com.wilin.app.ui.HomeFragment
+import com.wilin.app.ui.HubFragment
 import com.wilin.app.ui.SearchActivity
 import com.wilin.app.ui.SearchFragment
 import com.wilin.app.ui.SettingsActivity
+import com.wilin.app.ui.TabManager
+import com.wilin.app.ui.TabsActivity
 
 class MainActivity : AppCompatActivity() {
 
@@ -32,7 +38,7 @@ class MainActivity : AppCompatActivity() {
 
     private val homeFragment   = HomeFragment()
     private val searchFragment = SearchFragment()
-    private val gamesFragment  = GamesFragment()
+    private val hubFragment    = HubFragment()
 
     private var currentTab = R.id.tabHome
 
@@ -55,9 +61,12 @@ class MainActivity : AppCompatActivity() {
         window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         applyStatusBarTheme()
 
+        TabManager.init(this)
+
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
+        // Logo
         try {
             val stream = assets.open("icons/app/app_icon.png")
             val bmp = BitmapFactory.decodeStream(stream)
@@ -65,11 +74,13 @@ class MainActivity : AppCompatActivity() {
             binding.toolbarAppIcon.setImageBitmap(bmp)
         } catch (_: Exception) {}
 
-        binding.btnAskAiIcon.setImageDrawable(svgDrawable("icons/svg/ai.svg", 14, iconSec))
+        // Ask AI — cinzento, à esquerda (imediatamente a seguir ao logo)
+        binding.btnAskAiIcon.setImageDrawable(svgDrawable("icons/svg/ai.svg", 13, iconSec))
         binding.btnAskAi.setOnClickListener {
             startActivity(Intent(this, AiSearchActivity::class.java))
         }
 
+        // Botão menu
         binding.btnMenu.setImageDrawable(svgDrawable("icons/svg/menu.svg", 24, iconTint))
         binding.btnMenu.setOnClickListener {
             if (binding.drawerLayout.isDrawerOpen(GravityCompat.END))
@@ -78,14 +89,18 @@ class MainActivity : AppCompatActivity() {
                 binding.drawerLayout.openDrawer(GravityCompat.END)
         }
 
+        // Search pill
         binding.searchPillIcon.setImageDrawable(
             svgDrawable("icons/svg/magnifying_glass_outline.svg", 18, iconSec))
-        binding.searchPill.setOnClickListener { launchSearch() }
+        binding.searchPill.setOnClickListener {
+            startActivity(Intent(this, SearchActivity::class.java))
+        }
 
-        binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 18, iconTint))
-        binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 18, iconTint))
-        binding.drawerChevronSettings.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 16, iconSec))
-        binding.drawerChevronAbout.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 16, iconSec))
+        // Drawer
+        binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 16, iconTint))
+        binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 16, iconTint))
+        binding.drawerChevronSettings.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 14, iconSec))
+        binding.drawerChevronAbout.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 14, iconSec))
 
         binding.drawerItemSettings.setOnClickListener {
             binding.drawerLayout.closeDrawer(GravityCompat.END)
@@ -95,16 +110,31 @@ class MainActivity : AppCompatActivity() {
             binding.drawerLayout.closeDrawer(GravityCompat.END)
         }
 
+        // Contador de abas
+        updateTabsBadge()
+
         fun setIcons(activeTab: Int) {
+            // Home
             binding.tabHomeIcon.setImageDrawable(
-                svgDrawable("icons/svg/home_${if (activeTab == R.id.tabHome) "filled" else "outline"}.svg",
-                    24, if (activeTab == R.id.tabHome) iconTint else iconSec))
+                if (activeTab == R.id.tabHome)
+                    svgDrawableGradient("icons/svg/home_filled.svg", 24)
+                else
+                    svgDrawable("icons/svg/home_outline.svg", 24, iconSec)
+            )
+            // Search
             binding.tabSearchIcon.setImageDrawable(
-                svgDrawable("icons/svg/magnifying_glass_${if (activeTab == R.id.tabSearch) "filled" else "outline"}.svg",
-                    24, if (activeTab == R.id.tabSearch) iconTint else iconSec))
-            binding.tabGamesIcon.setImageDrawable(
-                svgDrawable("icons/svg/game_${if (activeTab == R.id.tabGames) "filled" else "outline"}.svg",
-                    24, if (activeTab == R.id.tabGames) iconTint else iconSec))
+                if (activeTab == R.id.tabSearch)
+                    svgDrawableGradient("icons/svg/magnifying_glass_filled.svg", 24)
+                else
+                    svgDrawable("icons/svg/magnifying_glass_outline.svg", 24, iconSec)
+            )
+            // Hub
+            binding.tabHubIcon.setImageDrawable(
+                if (activeTab == R.id.tabHub)
+                    svgDrawableGradient("icons/svg/hub.svg", 24)
+                else
+                    svgDrawable("icons/svg/hub.svg", 24, iconSec)
+            )
         }
 
         fun updateAppBar(tabId: Int) {
@@ -129,20 +159,25 @@ class MainActivity : AppCompatActivity() {
             when (tabId) {
                 R.id.tabHome   -> showFragment(homeFragment)
                 R.id.tabSearch -> showFragment(searchFragment)
-                R.id.tabGames  -> showFragment(gamesFragment)
+                R.id.tabHub    -> showFragment(hubFragment)
             }
         }
 
         binding.tabHome.setOnClickListener   { selectTab(R.id.tabHome) }
         binding.tabSearch.setOnClickListener { selectTab(R.id.tabSearch) }
-        binding.tabGames.setOnClickListener  { selectTab(R.id.tabGames) }
+        binding.tabHub.setOnClickListener    { selectTab(R.id.tabHub) }
+
+        // Tab Abas — container transform: a janela atual encolhe e abre TabsActivity
+        binding.tabTabs.setOnClickListener {
+            openTabsWithTransform()
+        }
 
         supportFragmentManager.beginTransaction()
             .add(R.id.container, homeFragment, "home")
             .add(R.id.container, searchFragment, "search")
-            .add(R.id.container, gamesFragment, "games")
+            .add(R.id.container, hubFragment, "hub")
             .hide(searchFragment)
-            .hide(gamesFragment)
+            .hide(hubFragment)
             .commit()
 
         setIcons(R.id.tabHome)
@@ -152,6 +187,29 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         applyStatusBarTheme()
+        updateTabsBadge()
+    }
+
+    private fun openTabsWithTransform() {
+        // Anima o container a encolher — simula "a tela vira card"
+        val container = binding.container
+        container.animate()
+            .scaleX(0.88f).scaleY(0.88f)
+            .alpha(0.7f)
+            .setDuration(250)
+            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .withEndAction {
+                startActivity(Intent(this, TabsActivity::class.java))
+                // Restaurar após lançar
+                container.animate()
+                    .scaleX(1f).scaleY(1f).alpha(1f)
+                    .setDuration(0).start()
+            }.start()
+    }
+
+    private fun updateTabsBadge() {
+        val count = TabManager.count()
+        binding.tabTabsCount.text = if (count > 99) "99" else count.toString()
     }
 
     override fun onBackPressed() {
@@ -168,8 +226,33 @@ class MainActivity : AppCompatActivity() {
         insetsController.isAppearanceLightStatusBars = isLight
     }
 
-    private fun launchSearch() {
-        startActivity(Intent(this, SearchActivity::class.java))
+    /** Ícone SVG pintado com gradiente azul #007AFF → #00C6FF de cima para baixo */
+    fun svgDrawableGradient(path: String, sizeDp: Int): BitmapDrawable {
+        val px  = (sizeDp * resources.displayMetrics.density).toInt()
+        val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
+        val svg = SVG.getFromAsset(assets, path)
+        svg.documentWidth  = px.toFloat()
+        svg.documentHeight = px.toFloat()
+        svg.renderToCanvas(Canvas(bmp))
+
+        // Aplica gradiente usando Porter-Duff SRC_IN
+        val gradientBmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
+        val gradCanvas  = Canvas(gradientBmp)
+        val gradPaint   = Paint()
+        gradPaint.shader = LinearGradient(
+            0f, 0f, 0f, px.toFloat(),
+            Color.parseColor("#007AFF"),
+            Color.parseColor("#00C6FF"),
+            Shader.TileMode.CLAMP
+        )
+        gradCanvas.drawRect(0f, 0f, px.toFloat(), px.toFloat(), gradPaint)
+
+        // Mask: usa o SVG como máscara
+        val maskPaint = Paint()
+        maskPaint.xfermode = android.graphics.PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+        gradCanvas.drawBitmap(bmp, 0f, 0f, maskPaint)
+
+        return BitmapDrawable(resources, gradientBmp)
     }
 
     fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
@@ -186,7 +269,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
-            .hide(homeFragment).hide(searchFragment).hide(gamesFragment)
+            .hide(homeFragment).hide(searchFragment).hide(hubFragment)
             .show(fragment).commit()
     }
 }
