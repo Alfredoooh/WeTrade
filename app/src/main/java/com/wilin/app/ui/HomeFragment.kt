@@ -3,9 +3,11 @@ package com.wilin.app.ui
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Shader
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -31,7 +33,6 @@ data class SiteItem(
     val label: String,
     val url: String,
     val faviconUrl: String,
-    val bgColor: String,
     val isMore: Boolean = false
 )
 
@@ -41,16 +42,16 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val sites = mutableListOf(
-        SiteItem("Google",     "https://google.com",      "https://www.google.com/favicon.ico",          "#FFFFFF"),
-        SiteItem("YouTube",    "https://youtube.com",     "https://www.youtube.com/favicon.ico",          "#FF0000"),
-        SiteItem("Facebook",   "https://facebook.com",    "https://www.facebook.com/favicon.ico",         "#1877F2"),
-        SiteItem("WeScore",    "https://wescore.com",     "https://wescore.com/favicon.ico",              "#2ECC40"),
-        SiteItem("X",          "https://x.com",           "https://abs.twimg.com/favicons/twitter.3.ico", "#000000"),
-        SiteItem("BantuBet",   "https://bantubet.com",    "https://bantubet.com/favicon.ico",             "#E8521A"),
-        SiteItem("PremierBet", "https://premierbet.co.mz","https://premierbet.co.mz/favicon.ico",         "#1B5E20"),
-        SiteItem("Instagram",  "https://instagram.com",   "https://www.instagram.com/favicon.ico",        "#C13584"),
-        SiteItem("WhatsApp",   "https://web.whatsapp.com","https://web.whatsapp.com/favicon.ico",         "#25D366"),
-        SiteItem("Mais",       "",                        "",                                             "#888888", isMore = true)
+        SiteItem("Google",     "https://google.com",       "https://www.google.com/favicon.ico"),
+        SiteItem("YouTube",    "https://youtube.com",      "https://www.youtube.com/favicon.ico"),
+        SiteItem("Facebook",   "https://facebook.com",     "https://www.facebook.com/favicon.ico"),
+        SiteItem("WeScore",    "https://wescore.com",      "https://wescore.com/favicon.ico"),
+        SiteItem("X",          "https://x.com",            "https://abs.twimg.com/favicons/twitter.3.ico"),
+        SiteItem("BantuBet",   "https://bantubet.com",     "https://bantubet.com/favicon.ico"),
+        SiteItem("PremierBet", "https://premierbet.co.mz", "https://premierbet.co.mz/favicon.ico"),
+        SiteItem("Instagram",  "https://instagram.com",    "https://www.instagram.com/favicon.ico"),
+        SiteItem("WhatsApp",   "https://web.whatsapp.com", "https://web.whatsapp.com/favicon.ico"),
+        SiteItem("Mais",       "",                         "", isMore = true)
     )
 
     override fun onCreateView(
@@ -81,9 +82,7 @@ class HomeFragment : Fragment() {
         binding.sitesGrid.adapter = adapter
     }
 
-    private fun showMoreSites() {
-        // Pode ser expandido para mostrar mais sites num bottom sheet futuramente
-    }
+    private fun showMoreSites() {}
 
     override fun onDestroyView() {
         super.onDestroyView()
@@ -150,7 +149,11 @@ class SitesAdapter(
 
         holder.label.text = item.label
 
+        // Placeholder: círculo cinza claro vazio
+        holder.icon.setImageBitmap(makeCirclePlaceholder(iconSize))
+
         if (item.isMore) {
+            // Círculo cinza com 4 dots
             val bmp = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bmp)
             val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -165,45 +168,50 @@ class SitesAdapter(
                 canvas.drawCircle(cx - off + col * off * 2, cy - off + row * off * 2, dotR, paint)
             }
             holder.icon.setImageBitmap(bmp)
-        } else {
-            val bgColor = try { Color.parseColor(item.bgColor) } catch (e: Exception) { Color.LTGRAY }
+        } else if (item.faviconUrl.isNotEmpty()) {
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val request = Request.Builder().url(item.faviconUrl).build()
+                    val response = httpClient.newCall(request).execute()
+                    val bytes = response.body?.bytes() ?: return@launch
+                    val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        ?: return@launch
 
-            // Placeeholder: círculo de fundo
-            val circleBmp = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888)
-            val circleCanvas = Canvas(circleBmp)
-            val circlePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-            circlePaint.color = bgColor
-            circleCanvas.drawCircle(iconSize / 2f, iconSize / 2f, iconSize / 2f, circlePaint)
-            holder.icon.setImageBitmap(circleBmp)
+                    // Escala o favicon para caber bem dentro do círculo
+                    val faviconSize = (iconSize * 0.65f).toInt()
+                    val scaled = Bitmap.createScaledBitmap(decoded, faviconSize, faviconSize, true)
 
-            // Carrega favicon via OkHttp
-            if (item.faviconUrl.isNotEmpty()) {
-                val faviconSize = (iconSize * 0.55f).toInt()
-                scope.launch(Dispatchers.IO) {
-                    try {
-                        val request = Request.Builder().url(item.faviconUrl).build()
-                        val response = httpClient.newCall(request).execute()
-                        val bytes = response.body?.bytes() ?: return@launch
-                        val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                            ?: return@launch
-                        val scaled = Bitmap.createScaledBitmap(decoded, faviconSize, faviconSize, true)
-                        val final = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888)
-                        val c = Canvas(final)
-                        val p = Paint(Paint.ANTI_ALIAS_FLAG)
-                        p.color = bgColor
-                        c.drawCircle(iconSize / 2f, iconSize / 2f, iconSize / 2f, p)
-                        val left = (iconSize - scaled.width) / 2f
-                        val top  = (iconSize - scaled.height) / 2f
-                        c.drawBitmap(scaled, left, top, null)
-                        withContext(Dispatchers.Main) {
-                            holder.icon.setImageBitmap(final)
-                        }
-                    } catch (_: Exception) {}
-                }
+                    // Compõe: círculo branco + favicon centrado com clip circular
+                    val final = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888)
+                    val c = Canvas(final)
+                    val p = Paint(Paint.ANTI_ALIAS_FLAG)
+
+                    // Fundo do círculo: branco puro (aparece bem em ambos os temas)
+                    p.color = Color.parseColor("#F2F2F7")
+                    c.drawCircle(iconSize / 2f, iconSize / 2f, iconSize / 2f, p)
+
+                    // Favicon centrado sem distorção
+                    val left = (iconSize - scaled.width) / 2f
+                    val top  = (iconSize - scaled.height) / 2f
+                    c.drawBitmap(scaled, left, top, null)
+
+                    withContext(Dispatchers.Main) {
+                        holder.icon.setImageBitmap(final)
+                    }
+                } catch (_: Exception) {}
             }
         }
 
         holder.root.setOnClickListener { onClick(item) }
+    }
+
+    private fun makeCirclePlaceholder(size: Int): Bitmap {
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bmp)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.color = Color.parseColor("#E5E5EA")
+        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
+        return bmp
     }
 
     override fun getItemCount() = items.size

@@ -58,10 +58,10 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnMenu.setImageDrawable(svgDrawable("icons/svg/menu.svg", 24, iconTint))
         binding.btnMenu.setOnClickListener {
-            if (binding.drawerLayout.isDrawerOpen(GravityCompat.START))
-                binding.drawerLayout.closeDrawer(GravityCompat.START)
+            if (binding.drawerLayout.isDrawerOpen(GravityCompat.END))
+                binding.drawerLayout.closeDrawer(GravityCompat.END)
             else
-                binding.drawerLayout.openDrawer(GravityCompat.START)
+                binding.drawerLayout.openDrawer(GravityCompat.END)
         }
 
         binding.searchPillIcon.setImageDrawable(
@@ -78,11 +78,11 @@ class MainActivity : AppCompatActivity() {
         binding.drawerChevronAbout.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 16, iconSec))
 
         binding.drawerItemSettings.setOnClickListener {
-            binding.drawerLayout.closeDrawer(GravityCompat.START)
+            binding.drawerLayout.closeDrawer(GravityCompat.END)
             startActivity(Intent(this, SettingsActivity::class.java))
         }
         binding.drawerItemAbout.setOnClickListener {
-            binding.drawerLayout.closeDrawer(GravityCompat.START)
+            binding.drawerLayout.closeDrawer(GravityCompat.END)
         }
 
         fun setIcons(activeTab: Int) {
@@ -100,7 +100,7 @@ class MainActivity : AppCompatActivity() {
         fun updateAppBar(tabId: Int) {
             if (tabId == R.id.tabSearch) {
                 binding.toolbarTitle.visibility = View.GONE
-                binding.btnMenu.visibility      = View.GONE
+                binding.btnMenu.visibility      = View.VISIBLE
                 binding.searchPill.visibility   = View.VISIBLE
             } else {
                 binding.searchPill.visibility   = View.GONE
@@ -143,8 +143,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            binding.drawerLayout.closeDrawer(GravityCompat.START)
+        if (binding.drawerLayout.isDrawerOpen(GravityCompat.END)) {
+            binding.drawerLayout.closeDrawer(GravityCompat.END)
             return
         }
         super.onBackPressed()
