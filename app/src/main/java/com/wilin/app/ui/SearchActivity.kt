@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.PorterDuff
 import android.graphics.Color
+import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
@@ -13,7 +13,6 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
-import android.view.animation.DecelerateInterpolator
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.LinearLayout
@@ -21,12 +20,10 @@ import android.widget.PopupWindow
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.view.doOnPreDraw
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.caverock.androidsvg.SVG
-import com.google.android.material.transition.platform.MaterialContainerTransform
 import com.wilin.app.R
 import com.wilin.app.databinding.ActivitySearchBinding
 
@@ -42,27 +39,12 @@ class SearchActivity : AppCompatActivity() {
     companion object {
         private const val PREFS_HISTORY = "wilin_search_history"
         private const val KEY_HISTORY   = "history"
-        private const val SEARCH_TRANSITION_NAME = "search_container_transition"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // CRÍTICO: as transitions do platform TÊM de ser definidas ANTES do setContentView
-        window.sharedElementEnterTransition = MaterialContainerTransform().apply {
-            drawingViewId = android.R.id.content
-            scrimColor    = Color.TRANSPARENT
-            duration      = 300L
-        }
-        window.sharedElementReturnTransition = MaterialContainerTransform().apply {
-            drawingViewId = android.R.id.content
-            scrimColor    = Color.TRANSPARENT
-            duration      = 220L
-        }
-
         super.onCreate(savedInstanceState)
         binding = ActivitySearchBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        binding.searchInputContainer.transitionName = SEARCH_TRANSITION_NAME
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
 
@@ -80,9 +62,6 @@ class SearchActivity : AppCompatActivity() {
         binding.btnMore.setImageDrawable(svgDrawable("icons/svg/more_vertical.svg", 20, iconTint))
 
         loadHistory()
-
-        postponeEnterTransition()
-        binding.searchInputContainer.doOnPreDraw { startPostponedEnterTransition() }
 
         historyAdapter = SearchSuggestAdapter(searchHistory.take(10)) { query ->
             navigate(query)
@@ -114,21 +93,12 @@ class SearchActivity : AppCompatActivity() {
 
         binding.btnMore.setOnClickListener { showMorePopup() }
 
-        // Abre o teclado apenas após a transição terminar para evitar conflito com o IME
-        window.sharedElementEnterTransition.addListener(object :
-            android.transition.Transition.TransitionListener {
-            override fun onTransitionStart(t: android.transition.Transition) {}
-            override fun onTransitionCancel(t: android.transition.Transition) {}
-            override fun onTransitionPause(t: android.transition.Transition) {}
-            override fun onTransitionResume(t: android.transition.Transition) {}
-            override fun onTransitionEnd(t: android.transition.Transition) {
-                binding.searchInput.post {
-                    binding.searchInput.requestFocus()
-                    val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                    imm.showSoftInput(binding.searchInput, InputMethodManager.SHOW_IMPLICIT)
-                }
-            }
-        })
+        // Abre o teclado imediatamente ao entrar na tela
+        binding.searchInput.requestFocus()
+        binding.searchInput.post {
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(binding.searchInput, InputMethodManager.SHOW_IMPLICIT)
+        }
     }
 
     override fun onResume() {
@@ -166,7 +136,6 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun showMorePopup() {
-        val bgColor   = ContextCompat.getColor(this, R.color.popup_background)
         val textColor = ContextCompat.getColor(this, R.color.text_primary)
         val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
 

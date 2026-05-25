@@ -9,7 +9,6 @@ import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.GravityCompat
@@ -26,10 +25,6 @@ import com.wilin.app.ui.SettingsActivity
 
 class MainActivity : AppCompatActivity() {
 
-    companion object {
-        private const val SEARCH_TRANSITION_NAME = "search_container_transition"
-    }
-
     lateinit var binding: ActivityMainBinding
     private lateinit var insetsController: WindowInsetsControllerCompat
 
@@ -38,7 +33,6 @@ class MainActivity : AppCompatActivity() {
     private val gamesFragment  = GamesFragment()
 
     private var currentTab = R.id.tabHome
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -57,8 +51,6 @@ class MainActivity : AppCompatActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, true)
         insetsController = WindowInsetsControllerCompat(window, window.decorView)
         window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
-
-        // Aplica o estado correcto imediatamente
         applyStatusBarTheme()
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
@@ -77,9 +69,8 @@ class MainActivity : AppCompatActivity() {
         binding.searchPillMore.setImageDrawable(
             svgDrawable("icons/svg/more_vertical.svg", 18, iconSec))
 
-        binding.searchPill.transitionName = SEARCH_TRANSITION_NAME
-        binding.searchPill.setOnClickListener { launchSearchWithAnim() }
-        binding.searchPillMore.setOnClickListener { launchSearchWithAnim() }
+        binding.searchPill.setOnClickListener { launchSearch() }
+        binding.searchPillMore.setOnClickListener { launchSearch() }
 
         binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 18, iconTint))
         binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 18, iconTint))
@@ -165,18 +156,9 @@ class MainActivity : AppCompatActivity() {
         insetsController.isAppearanceLightStatusBars = isLight
     }
 
-    private fun launchSearchWithAnim() {
-        val intent = Intent(this, SearchActivity::class.java)
-        runCatching {
-            val options = ActivityOptionsCompat.makeSceneTransitionAnimation(
-                this,
-                binding.searchPill,
-                SEARCH_TRANSITION_NAME
-            )
-            startActivity(intent, options.toBundle())
-        }.getOrElse {
-            startActivity(intent)
-        }
+    private fun launchSearch() {
+        startActivity(Intent(this, SearchActivity::class.java))
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }
 
     fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
