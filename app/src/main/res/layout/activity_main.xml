@@ -29,19 +29,16 @@
                 app:contentInsetStart="0dp"
                 app:contentInsetEnd="0dp">
 
-                <!-- Texto Globe à esquerda com cor primária -->
-                <TextView
-                    android:id="@+id/toolbarTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                <!-- Ícone do app à esquerda -->
+                <ImageView
+                    android:id="@+id/toolbarAppIcon"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:layout_gravity="start|center_vertical"
                     android:layout_marginStart="16dp"
-                    android:text="Globe"
-                    android:textSize="22sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/colorPrimary" />
+                    android:scaleType="fitCenter" />
 
-                <!-- Search pill (tab pesquisa) -->
+                <!-- Search pill (visível na tab de pesquisa) -->
                 <LinearLayout
                     android:id="@+id/searchPill"
                     android:layout_width="match_parent"
@@ -93,7 +90,7 @@
 
                 </LinearLayout>
 
-                <!-- Botão menu à direita -->
+                <!-- Botão menu à direita, oculto na tab de pesquisa -->
                 <ImageView
                     android:id="@+id/btnMenu"
                     android:layout_width="48dp"
@@ -175,7 +172,7 @@
 
     </LinearLayout>
 
-    <!-- Drawer no lado DIREITO (END) -->
+    <!-- Drawer lado DIREITO -->
     <LinearLayout
         android:id="@+id/drawerContainer"
         android:layout_width="280dp"
@@ -197,10 +194,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Globe"
+                android:text="globe.com"
                 android:textSize="26sp"
                 android:textStyle="bold"
-                android:textColor="@color/colorPrimary" />
+                android:textColor="@color/drawer_text" />
 
         </LinearLayout>
 

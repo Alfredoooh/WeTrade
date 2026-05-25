@@ -2,6 +2,7 @@ package com.wilin.app
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
@@ -56,6 +57,14 @@ class MainActivity : AppCompatActivity() {
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
+        // Ícone do app na toolbar carregado de assets/app/app_icon.png
+        try {
+            val stream = assets.open("app/app_icon.png")
+            val bmp = BitmapFactory.decodeStream(stream)
+            stream.close()
+            binding.toolbarAppIcon.setImageBitmap(bmp)
+        } catch (_: Exception) {}
+
         binding.btnMenu.setImageDrawable(svgDrawable("icons/svg/menu.svg", 24, iconTint))
         binding.btnMenu.setOnClickListener {
             if (binding.drawerLayout.isDrawerOpen(GravityCompat.END))
@@ -99,13 +108,13 @@ class MainActivity : AppCompatActivity() {
 
         fun updateAppBar(tabId: Int) {
             if (tabId == R.id.tabSearch) {
-                binding.toolbarTitle.visibility = View.GONE
-                binding.btnMenu.visibility      = View.VISIBLE
-                binding.searchPill.visibility   = View.VISIBLE
+                binding.toolbarAppIcon.visibility = View.GONE
+                binding.btnMenu.visibility        = View.GONE
+                binding.searchPill.visibility     = View.VISIBLE
             } else {
-                binding.searchPill.visibility   = View.GONE
-                binding.toolbarTitle.visibility = View.VISIBLE
-                binding.btnMenu.visibility      = View.VISIBLE
+                binding.searchPill.visibility     = View.GONE
+                binding.toolbarAppIcon.visibility = View.VISIBLE
+                binding.btnMenu.visibility        = View.VISIBLE
             }
         }
 
