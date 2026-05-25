@@ -10,6 +10,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.Rect
 import android.graphics.drawable.BitmapDrawable
@@ -65,7 +66,6 @@ class BrowserResponseActivity : AppCompatActivity() {
     private var bottomBarVisible = true
     private var lastScrollY = 0
 
-    // Find-in-page
     private var findBarVisible = false
     private lateinit var findBar: LinearLayout
     private lateinit var findInput: EditText
@@ -140,7 +140,6 @@ class BrowserResponseActivity : AppCompatActivity() {
             if (isLoading) binding.webView.stopLoading() else binding.webView.reload()
         }
 
-        // FIX: screenshot via PixelCopy (API 26+) ou software layer — nunca crashes
         binding.btnTabs.setOnClickListener {
             TabManager.save(this)
             captureAndOpenTabs()
@@ -180,20 +179,16 @@ class BrowserResponseActivity : AppCompatActivity() {
         insetsController.isAppearanceLightStatusBars = isLight
     }
 
-    // ── Screenshot segura (fix crash de bitmap vazio no WebView) ────────────
-
     private fun captureAndOpenTabs() {
         val w = binding.webView.width
         val h = binding.webView.height
 
-        // Sem dimensões válidas — abre directamente sem screenshot
         if (w <= 0 || h <= 0) {
             startActivity(Intent(this, TabsActivity::class.java))
             return
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // PixelCopy: única forma fiável de capturar WebView com HW acceleration
             val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             val location = IntArray(2)
             binding.webView.getLocationInWindow(location)
@@ -207,12 +202,10 @@ class BrowserResponseActivity : AppCompatActivity() {
                 } else {
                     bitmap.recycle()
                 }
-                // Callback já corre na main thread (Handler passado abaixo)
                 startActivity(Intent(this, TabsActivity::class.java))
             }, Handler(Looper.getMainLooper()))
 
         } else {
-            // API < 26: forçar software layer temporariamente
             runCatching {
                 binding.webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
                 val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
@@ -227,8 +220,6 @@ class BrowserResponseActivity : AppCompatActivity() {
             startActivity(Intent(this, TabsActivity::class.java))
         }
     }
-
-    // ── Find-in-Page (substitui showFindDialog removido no API 33) ──────────
 
     private fun buildFindBar() {
         val dp       = resources.displayMetrics.density
@@ -346,8 +337,6 @@ class BrowserResponseActivity : AppCompatActivity() {
             findBar.visibility = View.GONE
         }.start()
     }
-
-    // ────────────────────────────────────────────────────────────────────────
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
@@ -665,9 +654,8 @@ class BrowserResponseActivity : AppCompatActivity() {
         root.draw(Canvas(source))
 
         val blurred = createSoftBlurBitmap(source)
-
         binding.popupBlurImage.setImageBitmap(blurred)
-        binding.popupBlurImage.alpha = 0.92f
+        binding.popupBlurImage.alpha = 1f
 
         val rootLoc = IntArray(2)
         val moreLoc = IntArray(2)
@@ -675,20 +663,20 @@ class BrowserResponseActivity : AppCompatActivity() {
         binding.btnMore.getLocationInWindow(moreLoc)
 
         val left = (moreLoc[0] - rootLoc[0]).coerceAtLeast(0)
-        val top = (moreLoc[1] - rootLoc[1]).coerceAtLeast(0)
-        val width = binding.btnMore.width.coerceAtLeast(1)
+        val top  = (moreLoc[1] - rootLoc[1]).coerceAtLeast(0)
+        val width  = binding.btnMore.width.coerceAtLeast(1)
         val height = binding.btnMore.height.coerceAtLeast(1)
 
-        val safeWidth = minOf(width, source.width - left)
+        val safeWidth  = minOf(width,  source.width  - left)
         val safeHeight = minOf(height, source.height - top)
 
         if (safeWidth > 0 && safeHeight > 0) {
             val moreBitmap = Bitmap.createBitmap(source, left, top, safeWidth, safeHeight)
             (binding.popupMoreOverlay.layoutParams as? FrameLayout.LayoutParams)?.let { params ->
                 params.leftMargin = left
-                params.topMargin = top
-                params.width = safeWidth
-                params.height = safeHeight
+                params.topMargin  = top
+                params.width      = safeWidth
+                params.height     = safeHeight
                 binding.popupMoreOverlay.layoutParams = params
             }
             binding.popupMoreOverlay.setImageBitmap(moreBitmap)
@@ -706,13 +694,27 @@ class BrowserResponseActivity : AppCompatActivity() {
     }
 
     private fun createSoftBlurBitmap(source: Bitmap): Bitmap {
-        val scale = 0.12f
-        val smallWidth = maxOf(1, (source.width * scale).toInt())
-        val smallHeight = maxOf(1, (source.height * scale).toInt())
-        val small = Bitmap.createScaledBitmap(source, smallWidth, smallHeight, true)
-        val blurred = Bitmap.createScaledBitmap(small, source.width, source.height, true)
-        if (small != source) small.recycle()
-        return blurred
+        val w = source.width
+        val h = source.height
+
+        // Downsample agressivo — factor 0.05 dá blur forte e suave
+        val scale = 0.05f
+        val sw = maxOf(1, (w * scale).toInt())
+        val sh = maxOf(1, (h * scale).toInt())
+        val small = Bitmap.createScaledBitmap(source, sw, sh, true)
+        val blurred = Bitmap.createScaledBitmap(small, w, h, true)
+        small.recycle()
+
+        // Overlay escuro permanente por cima do blur
+        val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+        canvas.drawBitmap(blurred, 0f, 0f, null)
+        blurred.recycle()
+
+        val dimPaint = Paint().apply { color = Color.argb(120, 0, 0, 0) }
+        canvas.drawRect(0f, 0f, w.toFloat(), h.toFloat(), dimPaint)
+
+        return result
     }
 
     private fun showAnimatedPopup(

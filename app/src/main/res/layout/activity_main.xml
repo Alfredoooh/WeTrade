@@ -29,7 +29,6 @@
                 app:contentInsetStart="0dp"
                 app:contentInsetEnd="0dp">
 
-                <!-- Menu button — visível só fora da aba search -->
                 <ImageView
                     android:id="@+id/btnMenu"
                     android:layout_width="48dp"
@@ -40,23 +39,17 @@
                     android:clickable="true"
                     android:focusable="true" />
 
-                <!-- Título normal -->
                 <TextView
                     android:id="@+id/toolbarTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="start|center_vertical"
-                    android:layout_marginStart="56dp"
-                    android:text="@string/app_name"
+                    android:layout_marginStart="4dp"
+                    android:text="Início"
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary" />
 
-                <!--
-                    Search pill — aparece só na aba search.
-                    Clickable no container todo → lança SearchActivity.
-                    EditText isFocusable=false para forçar o toque ao container.
-                -->
                 <LinearLayout
                     android:id="@+id/searchPill"
                     android:layout_width="match_parent"
@@ -65,7 +58,6 @@
                     android:layout_marginStart="16dp"
                     android:layout_marginEnd="16dp"
                     android:background="@drawable/search_pill_bg"
-                    android:transitionName="@string/search_container_transition"
                     android:stateListAnimator="@null"
                     android:elevation="0dp"
                     android:orientation="horizontal"
@@ -180,7 +172,6 @@
 
     </LinearLayout>
 
-    <!-- Drawer -->
     <LinearLayout
         android:id="@+id/drawerContainer"
         android:layout_width="280dp"
