@@ -2,36 +2,36 @@ package com.wilin.app.ui
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.RectF
-import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
 import com.wilin.app.R
 import com.wilin.app.databinding.FragmentHomeBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 data class SiteItem(
     val label: String,
     val url: String,
     val faviconUrl: String,
-    val bgColor: String,   // cor hex do círculo
+    val bgColor: String,
     val isMore: Boolean = false
 )
 
@@ -41,16 +41,16 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val sites = mutableListOf(
-        SiteItem("Google",     "https://google.com",     "https://www.google.com/favicon.ico",         "#FFFFFF"),
-        SiteItem("YouTube",    "https://youtube.com",    "https://www.youtube.com/favicon.ico",         "#FF0000"),
-        SiteItem("Facebook",   "https://facebook.com",   "https://www.facebook.com/favicon.ico",        "#1877F2"),
-        SiteItem("WeScore",    "https://wescore.com",    "https://wescore.com/favicon.ico",             "#2ECC40"),
-        SiteItem("X",          "https://x.com",          "https://abs.twimg.com/favicons/twitter.3.ico","#000000"),
-        SiteItem("BantuBet",   "https://bantubet.com",   "https://bantubet.com/favicon.ico",            "#E8521A"),
-        SiteItem("PremierBet", "https://premierbet.co.mz","https://premierbet.co.mz/favicon.ico",      "#1B5E20"),
-        SiteItem("Instagram",  "https://instagram.com",  "https://www.instagram.com/favicon.ico",       "#C13584"),
-        SiteItem("WhatsApp",   "https://web.whatsapp.com","https://web.whatsapp.com/favicon.ico",       "#25D366"),
-        SiteItem("Mais",       "",                       "",                                            "#888888", isMore = true)
+        SiteItem("Google",     "https://google.com",      "https://www.google.com/favicon.ico",          "#FFFFFF"),
+        SiteItem("YouTube",    "https://youtube.com",     "https://www.youtube.com/favicon.ico",          "#FF0000"),
+        SiteItem("Facebook",   "https://facebook.com",    "https://www.facebook.com/favicon.ico",         "#1877F2"),
+        SiteItem("WeScore",    "https://wescore.com",     "https://wescore.com/favicon.ico",              "#2ECC40"),
+        SiteItem("X",          "https://x.com",           "https://abs.twimg.com/favicons/twitter.3.ico", "#000000"),
+        SiteItem("BantuBet",   "https://bantubet.com",    "https://bantubet.com/favicon.ico",             "#E8521A"),
+        SiteItem("PremierBet", "https://premierbet.co.mz","https://premierbet.co.mz/favicon.ico",         "#1B5E20"),
+        SiteItem("Instagram",  "https://instagram.com",   "https://www.instagram.com/favicon.ico",        "#C13584"),
+        SiteItem("WhatsApp",   "https://web.whatsapp.com","https://web.whatsapp.com/favicon.ico",         "#25D366"),
+        SiteItem("Mais",       "",                        "",                                             "#888888", isMore = true)
     )
 
     override fun onCreateView(
@@ -66,7 +66,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupGrid() {
-        val adapter = SitesAdapter(sites) { item ->
+        val adapter = SitesAdapter(sites, viewLifecycleOwner.lifecycleScope) { item ->
             if (item.isMore) {
                 showMoreSites()
             } else {
@@ -93,8 +93,11 @@ class HomeFragment : Fragment() {
 
 class SitesAdapter(
     private val items: List<SiteItem>,
+    private val scope: kotlinx.coroutines.CoroutineScope,
     private val onClick: (SiteItem) -> Unit
 ) : RecyclerView.Adapter<SitesAdapter.VH>() {
+
+    private val httpClient = OkHttpClient()
 
     inner class VH(val root: LinearLayout, val icon: ImageView, val label: TextView) :
         RecyclerView.ViewHolder(root)
@@ -148,7 +151,6 @@ class SitesAdapter(
         holder.label.text = item.label
 
         if (item.isMore) {
-            // Círculo cinza com grade de 4 ícones pequenos (dots)
             val bmp = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bmp)
             val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -166,7 +168,7 @@ class SitesAdapter(
         } else {
             val bgColor = try { Color.parseColor(item.bgColor) } catch (e: Exception) { Color.LTGRAY }
 
-            // Círculo de fundo com a cor da marca
+            // Placeeholder: círculo de fundo
             val circleBmp = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888)
             val circleCanvas = Canvas(circleBmp)
             val circlePaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -174,28 +176,30 @@ class SitesAdapter(
             circleCanvas.drawCircle(iconSize / 2f, iconSize / 2f, iconSize / 2f, circlePaint)
             holder.icon.setImageBitmap(circleBmp)
 
-            // Carrega o favicon por cima
+            // Carrega favicon via OkHttp
             if (item.faviconUrl.isNotEmpty()) {
                 val faviconSize = (iconSize * 0.55f).toInt()
-                Glide.with(ctx)
-                    .asBitmap()
-                    .load(item.faviconUrl)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .into(object : CustomTarget<Bitmap>(faviconSize, faviconSize) {
-                        override fun onResourceReady(resource: Bitmap, t: Transition<in Bitmap>?) {
-                            // Compõe: círculo de fundo + favicon centrado
-                            val final = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888)
-                            val c = Canvas(final)
-                            val p = Paint(Paint.ANTI_ALIAS_FLAG)
-                            p.color = bgColor
-                            c.drawCircle(iconSize / 2f, iconSize / 2f, iconSize / 2f, p)
-                            val left = (iconSize - resource.width) / 2f
-                            val top  = (iconSize - resource.height) / 2f
-                            c.drawBitmap(resource, left, top, null)
+                scope.launch(Dispatchers.IO) {
+                    try {
+                        val request = Request.Builder().url(item.faviconUrl).build()
+                        val response = httpClient.newCall(request).execute()
+                        val bytes = response.body?.bytes() ?: return@launch
+                        val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                            ?: return@launch
+                        val scaled = Bitmap.createScaledBitmap(decoded, faviconSize, faviconSize, true)
+                        val final = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888)
+                        val c = Canvas(final)
+                        val p = Paint(Paint.ANTI_ALIAS_FLAG)
+                        p.color = bgColor
+                        c.drawCircle(iconSize / 2f, iconSize / 2f, iconSize / 2f, p)
+                        val left = (iconSize - scaled.width) / 2f
+                        val top  = (iconSize - scaled.height) / 2f
+                        c.drawBitmap(scaled, left, top, null)
+                        withContext(Dispatchers.Main) {
                             holder.icon.setImageBitmap(final)
                         }
-                        override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {}
-                    })
+                    } catch (_: Exception) {}
+                }
             }
         }
 

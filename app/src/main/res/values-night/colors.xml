@@ -43,6 +43,8 @@
   <color name="input_hint">#666666</color>
   <color name="cursor_color">#007AFF</color>
   
+  <color name="search_input_fill">#3A3A3A</color>
+  
   <color name="ripple_color">#1AFFFFFF</color>
   
   <color name="incognito_bg">#0D0D1A</color>
