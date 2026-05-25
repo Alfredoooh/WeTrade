@@ -18,6 +18,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import com.caverock.androidsvg.SVG
 import com.wilin.app.databinding.ActivityMainBinding
+import com.wilin.app.ui.AiSearchActivity
 import com.wilin.app.ui.GamesFragment
 import com.wilin.app.ui.HomeFragment
 import com.wilin.app.ui.SearchActivity
@@ -56,14 +57,29 @@ class MainActivity : AppCompatActivity() {
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
+        val blue     = ContextCompat.getColor(this, R.color.colorPrimary)
 
-        // Ícone do app na toolbar carregado de assets/icons/app/app_icon.png
+        // Logo — agora 44dp no layout, carrega de assets
         try {
             val stream = assets.open("icons/app/app_icon.png")
             val bmp = BitmapFactory.decodeStream(stream)
             stream.close()
             binding.toolbarAppIcon.setImageBitmap(bmp)
         } catch (_: Exception) {}
+
+        // Botão Ask AI (nas tabs normais, toolbar)
+        binding.btnAskAiIcon.setImageDrawable(svgDrawable("icons/svg/ai.svg", 15, blue))
+        binding.btnAskAi.setOnClickListener {
+            startActivity(Intent(this, AiSearchActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
+
+        // Ask AI dentro do search pill
+        binding.searchPillAiIcon.setImageDrawable(svgDrawable("icons/svg/ai.svg", 14, blue))
+        binding.searchPillAskAi.setOnClickListener {
+            startActivity(Intent(this, AiSearchActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
 
         binding.btnMenu.setImageDrawable(svgDrawable("icons/svg/menu.svg", 24, iconTint))
         binding.btnMenu.setOnClickListener {
@@ -75,11 +91,8 @@ class MainActivity : AppCompatActivity() {
 
         binding.searchPillIcon.setImageDrawable(
             svgDrawable("icons/svg/magnifying_glass_outline.svg", 18, iconSec))
-        binding.searchPillMore.setImageDrawable(
-            svgDrawable("icons/svg/more_vertical.svg", 18, iconSec))
 
         binding.searchPill.setOnClickListener { launchSearch() }
-        binding.searchPillMore.setOnClickListener { launchSearch() }
 
         binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 18, iconTint))
         binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 18, iconTint))
@@ -110,11 +123,13 @@ class MainActivity : AppCompatActivity() {
             if (tabId == R.id.tabSearch) {
                 binding.toolbarAppIcon.visibility = View.GONE
                 binding.btnMenu.visibility        = View.GONE
+                binding.btnAskAi.visibility       = View.GONE
                 binding.searchPill.visibility     = View.VISIBLE
             } else {
                 binding.searchPill.visibility     = View.GONE
                 binding.toolbarAppIcon.visibility = View.VISIBLE
                 binding.btnMenu.visibility        = View.VISIBLE
+                binding.btnAskAi.visibility       = View.VISIBLE
             }
         }
 

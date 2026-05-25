@@ -4,20 +4,14 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.Gravity
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
-import android.widget.LinearLayout
-import android.widget.PopupWindow
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
@@ -26,8 +20,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.caverock.androidsvg.SVG
 import com.wilin.app.R
 import com.wilin.app.databinding.ActivitySearchBinding
-
-private data class SearchPopupItem(val icon: String, val label: String, val action: () -> Unit)
 
 class SearchActivity : AppCompatActivity() {
 
@@ -52,12 +44,18 @@ class SearchActivity : AppCompatActivity() {
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
+        val blue     = ContextCompat.getColor(this, R.color.colorPrimary)
 
         binding.btnBack.setImageDrawable(svgDrawable("icons/svg/back_arrow.svg", 24, iconTint))
         binding.btnBack.setOnClickListener { finishWithAnim() }
         binding.searchIcon.setImageDrawable(svgDrawable("icons/svg/magnifying_glass_outline.svg", 20, iconSec))
         binding.btnClear.setImageDrawable(svgDrawable("icons/svg/close.svg", 16, iconSec))
-        binding.btnMore.setImageDrawable(svgDrawable("icons/svg/more_vertical.svg", 20, iconTint))
+        binding.askAiIcon.setImageDrawable(svgDrawable("icons/svg/ai.svg", 15, blue))
+
+        binding.btnAskAi.setOnClickListener {
+            startActivity(Intent(this, AiSearchActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
 
         loadHistory()
 
@@ -88,8 +86,6 @@ class SearchActivity : AppCompatActivity() {
                 true
             } else false
         }
-
-        binding.btnMore.setOnClickListener { showMorePopup() }
 
         binding.searchInput.requestFocus()
         binding.searchInput.post {
@@ -129,91 +125,6 @@ class SearchActivity : AppCompatActivity() {
         else searchHistory.filter { it.contains(query, ignoreCase = true) }.take(10)
         historyAdapter?.updateList(filtered)
         binding.recentLabel.visibility = if (filtered.isEmpty()) View.GONE else View.VISIBLE
-    }
-
-    private fun showMorePopup() {
-        val textColor = ContextCompat.getColor(this, R.color.text_primary)
-        val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
-
-        val items = listOf(
-            SearchPopupItem("icons/svg/ai.svg", getString(R.string.ai_search)) {
-                navigate("https://chat.openai.com")
-            },
-            SearchPopupItem("icons/svg/search_engine.svg", getString(R.string.search_engine)) {
-                showEngineSelector()
-            },
-            SearchPopupItem("icons/svg/incognito.svg", getString(R.string.incognito)) {
-                startActivity(Intent(this, IncognitoActivity::class.java))
-                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-            },
-            SearchPopupItem("icons/svg/history.svg", getString(R.string.history)) {
-                startActivity(Intent(this, HistoryActivity::class.java))
-            },
-        )
-
-        val menuView = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            background  = ContextCompat.getDrawable(this@SearchActivity, R.drawable.popup_bg)
-            val pad = (8 * resources.displayMetrics.density).toInt()
-            setPadding(0, pad, 0, pad)
-            elevation = 12f
-        }
-
-        items.forEach { item ->
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity     = Gravity.CENTER_VERTICAL
-                val h = (16 * resources.displayMetrics.density).toInt()
-                val v = (13 * resources.displayMetrics.density).toInt()
-                setPadding(h, v, h, v)
-                isClickable = true
-                isFocusable = true
-                background  = ContextCompat.getDrawable(this@SearchActivity, R.drawable.ripple_item)
-            }
-            val iv = android.widget.ImageView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    (20 * resources.displayMetrics.density).toInt(),
-                    (20 * resources.displayMetrics.density).toInt()
-                ).also { it.marginEnd = (12 * resources.displayMetrics.density).toInt() }
-                setImageDrawable(svgDrawable(item.icon, 20, iconTint))
-            }
-            val tv = TextView(this).apply {
-                text = item.label
-                setTextColor(textColor)
-                textSize = 14f
-            }
-            row.addView(iv)
-            row.addView(tv)
-            menuView.addView(row)
-            row.setOnClickListener { item.action() }
-        }
-
-        val pop = PopupWindow(
-            menuView,
-            (200 * resources.displayMetrics.density).toInt(),
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-            true
-        )
-        pop.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        pop.elevation = 12f
-        pop.animationStyle = android.R.style.Animation_Dialog
-        pop.showAtLocation(binding.root, Gravity.TOP or Gravity.END,
-            (12 * resources.displayMetrics.density).toInt(),
-            (56 * resources.displayMetrics.density).toInt())
-    }
-
-    private fun showEngineSelector() {
-        val engines = arrayOf("DuckDuckGo", "Google", "Bing", "Brave")
-        val prefs   = getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
-        val current = prefs.getString("search_engine", "duckduckgo") ?: "duckduckgo"
-        val idx = when (current) { "google" -> 1; "bing" -> 2; "brave" -> 3; else -> 0 }
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle(getString(R.string.search_engine))
-            .setSingleChoiceItems(engines, idx) { dialog, which ->
-                val v = when (which) { 1 -> "google"; 2 -> "bing"; 3 -> "brave"; else -> "duckduckgo" }
-                prefs.edit().putString("search_engine", v).apply()
-                dialog.dismiss()
-            }.show()
     }
 
     private fun addToHistory(query: String) {

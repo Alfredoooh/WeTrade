@@ -29,23 +29,24 @@
                 app:contentInsetStart="0dp"
                 app:contentInsetEnd="0dp">
 
-                <!-- Ícone do app à esquerda -->
+                <!-- Logo maior à esquerda -->
                 <ImageView
                     android:id="@+id/toolbarAppIcon"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
                     android:layout_gravity="start|center_vertical"
-                    android:layout_marginStart="16dp"
+                    android:layout_marginStart="12dp"
                     android:scaleType="fitCenter" />
 
                 <!-- Search pill (visível na tab de pesquisa) -->
                 <LinearLayout
                     android:id="@+id/searchPill"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="36dp"
+                    android:layout_weight="1"
                     android:layout_gravity="center_vertical"
                     android:layout_marginStart="8dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_marginEnd="4dp"
                     android:background="@drawable/search_input_bg"
                     android:stateListAnimator="@null"
                     android:elevation="0dp"
@@ -78,24 +79,80 @@
                         android:clickable="false"
                         android:focusable="false" />
 
-                    <ImageView
-                        android:id="@+id/searchPillMore"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:padding="7dp"
+                    <!-- Ask AI à direita dentro do pill -->
+                    <LinearLayout
+                        android:id="@+id/searchPillAskAi"
+                        android:layout_width="wrap_content"
+                        android:layout_height="28dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/ask_ai_pill_bg"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
                         android:layout_marginStart="4dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
                         android:clickable="true"
-                        android:focusable="true" />
+                        android:focusable="true">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Ask AI"
+                            android:textSize="11sp"
+                            android:textColor="@color/colorPrimary"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="4dp" />
+
+                        <ImageView
+                            android:id="@+id/searchPillAiIcon"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:clickable="false"
+                            android:focusable="false" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 
-                <!-- Botão menu à direita, oculto na tab de pesquisa -->
+                <!-- Ask AI à esquerda do menu (tabs normais) -->
+                <LinearLayout
+                    android:id="@+id/btnAskAi"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/ask_ai_pill_bg"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:layout_gravity="end|center_vertical"
+                    android:layout_marginEnd="4dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:visibility="visible">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ask AI"
+                        android:textSize="12sp"
+                        android:textColor="@color/colorPrimary"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="5dp" />
+
+                    <ImageView
+                        android:id="@+id/btnAskAiIcon"
+                        android:layout_width="15dp"
+                        android:layout_height="15dp"
+                        android:clickable="false"
+                        android:focusable="false" />
+
+                </LinearLayout>
+
+                <!-- Botão menu à direita -->
                 <ImageView
                     android:id="@+id/btnMenu"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:padding="12dp"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:padding="10dp"
                     android:layout_gravity="end|center_vertical"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
