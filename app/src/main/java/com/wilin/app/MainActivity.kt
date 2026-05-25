@@ -57,9 +57,9 @@ class MainActivity : AppCompatActivity() {
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
-        // Ícone do app na toolbar carregado de assets/app/app_icon.png
+        // Ícone do app na toolbar carregado de assets/icons/app/app_icon.png
         try {
-            val stream = assets.open("app/app_icon.png")
+            val stream = assets.open("icons/app/app_icon.png")
             val bmp = BitmapFactory.decodeStream(stream)
             stream.close()
             binding.toolbarAppIcon.setImageBitmap(bmp)
