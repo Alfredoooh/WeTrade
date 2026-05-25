@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
@@ -57,9 +58,8 @@ class MainActivity : AppCompatActivity() {
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
-        val blue     = ContextCompat.getColor(this, R.color.colorPrimary)
 
-        // Logo — agora 44dp no layout, carrega de assets
+        // Logo
         try {
             val stream = assets.open("icons/app/app_icon.png")
             val bmp = BitmapFactory.decodeStream(stream)
@@ -67,20 +67,14 @@ class MainActivity : AppCompatActivity() {
             binding.toolbarAppIcon.setImageBitmap(bmp)
         } catch (_: Exception) {}
 
-        // Botão Ask AI (nas tabs normais, toolbar)
-        binding.btnAskAiIcon.setImageDrawable(svgDrawable("icons/svg/ai.svg", 15, blue))
+        // Ask AI — ícone cinzento
+        binding.btnAskAiIcon.setImageDrawable(svgDrawable("icons/svg/ai.svg", 14, iconSec))
         binding.btnAskAi.setOnClickListener {
             startActivity(Intent(this, AiSearchActivity::class.java))
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
 
-        // Ask AI dentro do search pill
-        binding.searchPillAiIcon.setImageDrawable(svgDrawable("icons/svg/ai.svg", 14, blue))
-        binding.searchPillAskAi.setOnClickListener {
-            startActivity(Intent(this, AiSearchActivity::class.java))
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-        }
-
+        // Botão menu
         binding.btnMenu.setImageDrawable(svgDrawable("icons/svg/menu.svg", 24, iconTint))
         binding.btnMenu.setOnClickListener {
             if (binding.drawerLayout.isDrawerOpen(GravityCompat.END))
@@ -89,11 +83,12 @@ class MainActivity : AppCompatActivity() {
                 binding.drawerLayout.openDrawer(GravityCompat.END)
         }
 
+        // Search pill (sem more)
         binding.searchPillIcon.setImageDrawable(
             svgDrawable("icons/svg/magnifying_glass_outline.svg", 18, iconSec))
-
         binding.searchPill.setOnClickListener { launchSearch() }
 
+        // Drawer
         binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 18, iconTint))
         binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 18, iconTint))
         binding.drawerChevronSettings.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 16, iconSec))
@@ -102,6 +97,7 @@ class MainActivity : AppCompatActivity() {
         binding.drawerItemSettings.setOnClickListener {
             binding.drawerLayout.closeDrawer(GravityCompat.END)
             startActivity(Intent(this, SettingsActivity::class.java))
+            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
         binding.drawerItemAbout.setOnClickListener {
             binding.drawerLayout.closeDrawer(GravityCompat.END)
@@ -182,7 +178,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun launchSearch() {
         startActivity(Intent(this, SearchActivity::class.java))
-        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
     }
 
     fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
