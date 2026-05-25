@@ -93,6 +93,7 @@ class BrowserResponseActivity : AppCompatActivity() {
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
         insetsController = WindowInsetsControllerCompat(window, window.decorView)
+        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         applyStatusBarTheme()
 
         TabManager.init(this)
@@ -175,6 +176,7 @@ class BrowserResponseActivity : AppCompatActivity() {
 
     private fun applyStatusBarTheme() {
         val isLight = !resources.configuration.isNightModeActive
+        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         insetsController.isAppearanceLightStatusBars = isLight
     }
 

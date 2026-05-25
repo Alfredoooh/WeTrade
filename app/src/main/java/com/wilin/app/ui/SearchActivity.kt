@@ -66,6 +66,7 @@ class SearchActivity : AppCompatActivity() {
         }
 
         insetsController = WindowInsetsControllerCompat(window, window.decorView)
+        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         applyStatusBarTheme()
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
@@ -113,11 +114,7 @@ class SearchActivity : AppCompatActivity() {
 
         binding.btnMore.setOnClickListener { showMorePopup() }
 
-        binding.searchInput.requestFocus()
-        binding.searchInput.post {
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.showSoftInput(binding.searchInput, InputMethodManager.SHOW_IMPLICIT)
-        }
+        // Mantém a transição estável; o foco/teclado podem ser ativados manualmente ao tocar no input.
     }
 
     override fun onResume() {
@@ -127,6 +124,7 @@ class SearchActivity : AppCompatActivity() {
 
     private fun applyStatusBarTheme() {
         val isLight = !resources.configuration.isNightModeActive
+        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         insetsController.isAppearanceLightStatusBars = isLight
     }
 
