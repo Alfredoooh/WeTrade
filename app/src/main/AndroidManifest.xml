@@ -36,7 +36,7 @@
             android:name=".ui.SearchActivity"
             android:exported="false"
             android:theme="@style/Theme.wilin.Search"
-            android:windowSoftInputMode="adjustResize|stateVisible" />
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".ui.SettingsActivity"

@@ -30,7 +30,6 @@ import com.google.android.material.transition.platform.MaterialContainerTransfor
 import com.wilin.app.R
 import com.wilin.app.databinding.ActivitySearchBinding
 
-// Data class ao nível do ficheiro — sem data class local dentro de funções
 private data class SearchPopupItem(val icon: String, val label: String, val action: () -> Unit)
 
 class SearchActivity : AppCompatActivity() {
@@ -47,6 +46,18 @@ class SearchActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // CRÍTICO: as transitions do platform TÊM de ser definidas ANTES do setContentView
+        window.sharedElementEnterTransition = MaterialContainerTransform().apply {
+            drawingViewId = android.R.id.content
+            scrimColor    = Color.TRANSPARENT
+            duration      = 300L
+        }
+        window.sharedElementReturnTransition = MaterialContainerTransform().apply {
+            drawingViewId = android.R.id.content
+            scrimColor    = Color.TRANSPARENT
+            duration      = 220L
+        }
+
         super.onCreate(savedInstanceState)
         binding = ActivitySearchBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -54,16 +65,6 @@ class SearchActivity : AppCompatActivity() {
         binding.searchInputContainer.transitionName = SEARCH_TRANSITION_NAME
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
-        window.sharedElementEnterTransition = MaterialContainerTransform().apply {
-            drawingViewId = android.R.id.content
-            scrimColor = Color.TRANSPARENT
-            duration = 300L
-        }
-        window.sharedElementReturnTransition = MaterialContainerTransform().apply {
-            drawingViewId = android.R.id.content
-            scrimColor = Color.TRANSPARENT
-            duration = 220L
-        }
 
         insetsController = WindowInsetsControllerCompat(window, window.decorView)
         window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
@@ -91,7 +92,6 @@ class SearchActivity : AppCompatActivity() {
             adapter = historyAdapter
         }
 
-
         binding.searchInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
             override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {
@@ -114,7 +114,21 @@ class SearchActivity : AppCompatActivity() {
 
         binding.btnMore.setOnClickListener { showMorePopup() }
 
-        // Mantém a transição estável; o foco/teclado podem ser ativados manualmente ao tocar no input.
+        // Abre o teclado apenas após a transição terminar para evitar conflito com o IME
+        window.sharedElementEnterTransition.addListener(object :
+            android.transition.Transition.TransitionListener {
+            override fun onTransitionStart(t: android.transition.Transition) {}
+            override fun onTransitionCancel(t: android.transition.Transition) {}
+            override fun onTransitionPause(t: android.transition.Transition) {}
+            override fun onTransitionResume(t: android.transition.Transition) {}
+            override fun onTransitionEnd(t: android.transition.Transition) {
+                binding.searchInput.post {
+                    binding.searchInput.requestFocus()
+                    val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                    imm.showSoftInput(binding.searchInput, InputMethodManager.SHOW_IMPLICIT)
+                }
+            }
+        })
     }
 
     override fun onResume() {
@@ -215,7 +229,7 @@ class SearchActivity : AppCompatActivity() {
             LinearLayout.LayoutParams.WRAP_CONTENT,
             true
         )
-        pop.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
+        pop.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         pop.elevation = 12f
         pop.animationStyle = android.R.style.Animation_Dialog
         pop.showAtLocation(binding.root, Gravity.TOP or Gravity.END,
