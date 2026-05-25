@@ -47,9 +47,7 @@ class SearchActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
-
         insetsController = WindowInsetsControllerCompat(window, window.decorView)
-        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         applyStatusBarTheme()
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
@@ -93,7 +91,6 @@ class SearchActivity : AppCompatActivity() {
 
         binding.btnMore.setOnClickListener { showMorePopup() }
 
-        // Abre o teclado imediatamente ao entrar na tela
         binding.searchInput.requestFocus()
         binding.searchInput.post {
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
@@ -108,7 +105,6 @@ class SearchActivity : AppCompatActivity() {
 
     private fun applyStatusBarTheme() {
         val isLight = !resources.configuration.isNightModeActive
-        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         insetsController.isAppearanceLightStatusBars = isLight
     }
 
