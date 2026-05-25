@@ -32,11 +32,10 @@
             </intent-filter>
         </activity>
 
-        <!-- CORRECÇÃO: SearchActivity estava em falta → crash ao clicar no search -->
         <activity
             android:name=".ui.SearchActivity"
             android:exported="false"
-            android:theme="@style/Theme.wilin"
+            android:theme="@style/Theme.wilin.Search"
             android:windowSoftInputMode="adjustResize|stateVisible" />
 
         <activity
