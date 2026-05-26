@@ -24,12 +24,13 @@ import com.caverock.androidsvg.SVG
 import com.wilin.app.databinding.ActivityMainBinding
 import com.wilin.app.ui.AiSearchActivity
 import com.wilin.app.ui.HomeFragment
-import com.wilin.app.ui.HubFragment
 import com.wilin.app.ui.SearchActivity
 import com.wilin.app.ui.SearchFragment
 import com.wilin.app.ui.SettingsActivity
 import com.wilin.app.ui.TabManager
 import com.wilin.app.ui.TabsActivity
+import java.io.File
+import java.io.FileOutputStream
 
 class MainActivity : AppCompatActivity() {
 
@@ -38,7 +39,6 @@ class MainActivity : AppCompatActivity() {
 
     private val homeFragment   = HomeFragment()
     private val searchFragment = SearchFragment()
-    private val hubFragment    = HubFragment()
 
     private var currentTab = R.id.tabHome
 
@@ -128,13 +128,6 @@ class MainActivity : AppCompatActivity() {
                 else
                     svgDrawable("icons/svg/magnifying_glass_outline.svg", 24, iconSec)
             )
-            // Hub
-            binding.tabHubIcon.setImageDrawable(
-                if (activeTab == R.id.tabHub)
-                    svgDrawableGradient("icons/svg/hub.svg", 24)
-                else
-                    svgDrawable("icons/svg/hub.svg", 24, iconSec)
-            )
         }
 
         fun updateAppBar(tabId: Int) {
@@ -159,13 +152,11 @@ class MainActivity : AppCompatActivity() {
             when (tabId) {
                 R.id.tabHome   -> showFragment(homeFragment)
                 R.id.tabSearch -> showFragment(searchFragment)
-                R.id.tabHub    -> showFragment(hubFragment)
             }
         }
 
         binding.tabHome.setOnClickListener   { selectTab(R.id.tabHome) }
         binding.tabSearch.setOnClickListener { selectTab(R.id.tabSearch) }
-        binding.tabHub.setOnClickListener    { selectTab(R.id.tabHub) }
 
         // Tab Abas — container transform: a janela atual encolhe e abre TabsActivity
         binding.tabTabs.setOnClickListener {
@@ -175,9 +166,7 @@ class MainActivity : AppCompatActivity() {
         supportFragmentManager.beginTransaction()
             .add(R.id.container, homeFragment, "home")
             .add(R.id.container, searchFragment, "search")
-            .add(R.id.container, hubFragment, "hub")
             .hide(searchFragment)
-            .hide(hubFragment)
             .commit()
 
         setIcons(R.id.tabHome)
@@ -191,7 +180,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openTabsWithTransform() {
-        // Anima o container a encolher — simula "a tela vira card"
+        val snapshotPath = captureScreenSnapshot("tabs_transition_main.png")
+
+        // Anima o container a encolher — simula que a tela vira um card de recentes
         val container = binding.container
         container.animate()
             .scaleX(0.88f).scaleY(0.88f)
@@ -199,12 +190,32 @@ class MainActivity : AppCompatActivity() {
             .setDuration(250)
             .setInterpolator(android.view.animation.DecelerateInterpolator())
             .withEndAction {
-                startActivity(Intent(this, TabsActivity::class.java))
-                // Restaurar após lançar
+                startActivity(Intent(this, TabsActivity::class.java).apply {
+                    snapshotPath?.let { putExtra(TabsActivity.EXTRA_TRANSITION_SCREENSHOT_PATH, it) }
+                })
                 container.animate()
                     .scaleX(1f).scaleY(1f).alpha(1f)
                     .setDuration(0).start()
             }.start()
+    }
+
+    private fun captureScreenSnapshot(fileName: String): String? {
+        val root = binding.root
+        if (root.width <= 0 || root.height <= 0) return null
+
+        val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        root.draw(canvas)
+
+        val file = File(cacheDir, fileName)
+        runCatching {
+            FileOutputStream(file).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                out.flush()
+            }
+        }
+        bitmap.recycle()
+        return if (file.exists()) file.absolutePath else null
     }
 
     private fun updateTabsBadge() {
@@ -269,7 +280,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
-            .hide(homeFragment).hide(searchFragment).hide(hubFragment)
+            .hide(homeFragment).hide(searchFragment)
             .show(fragment).commit()
     }
 }

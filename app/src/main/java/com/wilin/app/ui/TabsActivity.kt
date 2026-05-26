@@ -2,6 +2,7 @@ package com.wilin.app.ui
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
@@ -22,6 +23,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import java.io.File
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
@@ -43,8 +45,11 @@ class TabsActivity : AppCompatActivity() {
     private var velocityY     = 0f
     private var lastEventTime = 0L
     private val flingHandler  = Handler(Looper.getMainLooper())
+    private var transitionPreview: Bitmap? = null
 
     companion object {
+        const val EXTRA_TRANSITION_SCREENSHOT_PATH = "transition_screenshot_path"
+
         // Altura visível do topo de cada card atrás do da frente (como na imagem)
         private const val CARD_PEEK_DP   = 64f   // quanto de cada card fica visível
         private const val CARD_HEIGHT_DP = 220f   // altura total de cada card
@@ -60,6 +65,8 @@ class TabsActivity : AppCompatActivity() {
 
         TabManager.init(this)
         TabScreenshots.init(this)
+        transitionPreview = intent.getStringExtra(EXTRA_TRANSITION_SCREENSHOT_PATH)
+            ?.let { path -> runCatching { BitmapFactory.decodeFile(File(path).absolutePath) }.getOrNull() }
 
         val dp       = resources.displayMetrics.density
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
@@ -185,6 +192,15 @@ class TabsActivity : AppCompatActivity() {
         scrollContainer.removeAllViews()
         tabCardViews.clear()
 
+        data class StackItem(
+            val key: String,
+            val title: String,
+            val url: String,
+            val favicon: String,
+            val preview: Bitmap?,
+            val synthetic: Boolean = false
+        )
+
         val tabs      = TabManager.getTabs()
         val currentId = TabManager.getCurrentId()
         val screenW   = stackRoot.width.toFloat()
@@ -196,17 +212,34 @@ class TabsActivity : AppCompatActivity() {
         val cardX     = (16 * dp).toInt()
         val peekH     = (CARD_PEEK_DP * dp).toInt()   // altura visível do cabeçalho de cada card
 
-        // O primeiro card começa logo abaixo da toolbar
-        // Cada card subsequente fica peekH abaixo do anterior
-        // Assim o stack ocupa: toolbarH + peekH * (n-1) + cardH
-        tabs.forEachIndexed { index, tab ->
-            val isActive = tab.id == currentId
+        val items = mutableListOf<StackItem>()
+        transitionPreview?.let { preview ->
+            items.add(
+                StackItem(
+                    key = "__current_screen__",
+                    title = "Início",
+                    url = "",
+                    favicon = "",
+                    preview = preview,
+                    synthetic = true
+                )
+            )
+        }
+        tabs.forEach { tab ->
+            items.add(
+                StackItem(
+                    key = tab.id,
+                    title = tab.title,
+                    url = tab.url,
+                    favicon = tab.favicon,
+                    preview = TabScreenshots.get(this, tab.id)
+                )
+            )
+        }
 
-            // Posição Y: o card de índice 0 fica em baixo (atrás), o último fica em cima (frente)
-            // Na imagem os mais recentes estão em cima
-            // cardY = toolbarH + (tabs.size - 1 - index) * peekH
-            // Mas como o scroll vai deslocar tudo para baixo, mantemos posições absolutas
-            val stackIndex = tabs.size - 1 - index  // 0 = topo (mais recente)
+        items.forEachIndexed { index, item ->
+            val isActive = item.synthetic || item.key == currentId
+            val stackIndex = items.size - 1 - index  // 0 = topo (mais recente)
             val cardY = (toolbarH + stackIndex * peekH).toInt()
 
             val card = FrameLayout(this).apply {
@@ -221,10 +254,9 @@ class TabsActivity : AppCompatActivity() {
                     if (isActive) setStroke((2 * dp).toInt(), blue)
                 }
                 clipToOutline = true
-                elevation     = (tabs.size - stackIndex).toFloat() * dp + if (isActive) 8 * dp else 0f
+                elevation     = (items.size - stackIndex).toFloat() * dp + if (isActive) 8 * dp else 0f
             }
 
-            // Preview do conteúdo (abaixo do header)
             val previewIv = ImageView(this).apply {
                 layoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
@@ -233,10 +265,8 @@ class TabsActivity : AppCompatActivity() {
                 scaleType = ImageView.ScaleType.CENTER_CROP
                 setBackgroundColor(Color.parseColor("#1A1A1A"))
             }
-            val bmp = TabScreenshots.get(this, tab.id)
-            if (bmp != null) previewIv.setImageBitmap(bmp)
+            item.preview?.let { previewIv.setImageBitmap(it) }
 
-            // Header — sempre visível mesmo quando coberto pelos outros cards
             val header = LinearLayout(this).apply {
                 layoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
@@ -249,18 +279,26 @@ class TabsActivity : AppCompatActivity() {
                     R.color.card_background))
             }
 
-            // Favicon ou ícone do site
             val faviconIv = ImageView(this).apply {
                 layoutParams = LinearLayout.LayoutParams((20 * dp).toInt(), (20 * dp).toInt())
                     .also { it.marginEnd = (10 * dp).toInt() }
-                setImageDrawable(svgDrawable("icons/svg/globe.svg", 20,
-                    ContextCompat.getColor(this@TabsActivity, R.color.icon_tint_secondary)))
+                setImageDrawable(
+                    if (item.synthetic) {
+                        svgDrawable("icons/svg/home_filled.svg", 20, blue)
+                    } else {
+                        svgDrawable("icons/svg/globe.svg", 20,
+                            ContextCompat.getColor(this@TabsActivity, R.color.icon_tint_secondary))
+                    }
+                )
             }
-            if (tab.url.isNotEmpty()) loadFavicon(tab.url, faviconIv)
+            if (!item.synthetic && item.url.isNotEmpty()) loadFavicon(item.url, faviconIv)
 
             val titleTv = TextView(this).apply {
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                text = tab.title.ifEmpty { if (tab.url.contains("duckduckgo") || tab.url.isEmpty()) "Início" else tab.url }
+                text = item.title.ifEmpty {
+                    if (item.synthetic) "Início"
+                    else if (item.url.contains("duckduckgo") || item.url.isEmpty()) "Início" else item.url
+                }
                 textSize = 14f
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
                 maxLines = 1
@@ -268,7 +306,6 @@ class TabsActivity : AppCompatActivity() {
                 setTextColor(ContextCompat.getColor(this@TabsActivity, R.color.text_primary))
             }
 
-            // Botão X fechar
             val closeBtn = ImageView(this).apply {
                 layoutParams = LinearLayout.LayoutParams((36 * dp).toInt(), (36 * dp).toInt())
                 setPadding((8 * dp).toInt(), (8 * dp).toInt(), (8 * dp).toInt(), (8 * dp).toInt())
@@ -279,8 +316,12 @@ class TabsActivity : AppCompatActivity() {
                     theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, this, true)
                     ContextCompat.getDrawable(this@TabsActivity, resourceId)
                 }
+                visibility = if (item.synthetic) View.INVISIBLE else View.VISIBLE
                 setOnClickListener {
-                    closeCard(card, tab)
+                    if (!item.synthetic) {
+                        val tab = tabs.firstOrNull { it.id == item.key } ?: return@setOnClickListener
+                        closeCard(card, tab)
+                    }
                 }
             }
 
@@ -291,19 +332,20 @@ class TabsActivity : AppCompatActivity() {
             card.addView(previewIv)
             card.addView(header)
 
-            // Clique no card — expande para ecrã cheio
             card.setOnClickListener {
-                if (tab.id != TabManager.getCurrentId() || true) {
+                if (item.synthetic) {
+                    finish()
+                } else {
+                    val tab = tabs.firstOrNull { it.id == item.key } ?: return@setOnClickListener
                     expandCard(card, tab)
                 }
             }
 
             scrollContainer.addView(card)
-            tabCardViews.add(0, card) // índice 0 = topo da lista visual
+            tabCardViews.add(0, card)
         }
 
-        // Altura total do conteúdo de scroll
-        val totalH = (toolbarH + (tabs.size - 1) * peekH + cardH + BOTTOM_PAD_DP * dp).toInt()
+        val totalH = (toolbarH + (items.size - 1) * peekH + cardH + BOTTOM_PAD_DP * dp).toInt()
         scrollContainer.layoutParams = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             totalH
