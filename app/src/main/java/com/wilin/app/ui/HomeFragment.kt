@@ -8,12 +8,13 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.HorizontalScrollView
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -30,7 +31,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.json.JSONArray
 import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
 data class SiteItem(
     val label: String,
@@ -44,7 +47,9 @@ data class NewsItem(
     val description: String,
     val imageUrl: String,
     val sourceUrl: String,
-    val sourceName: String
+    val sourceName: String,
+    val faviconUrl: String = "",
+    val category: String = ""
 )
 
 class HomeFragment : Fragment() {
@@ -65,20 +70,25 @@ class HomeFragment : Fragment() {
         SiteItem("Mais",      "",                         "", isMore = true)
     )
 
-    private val newsCategories = listOf("Mundo", "Tecnologia", "Saúde", "Desporto", "Ciência", "Entretenimento")
-    private val newsCategoryKeys = listOf("world", "technology", "health", "sports", "science", "entertainment")
+    private val newsCategories    = listOf("Mundo", "Tecnologia", "Saúde", "Desporto", "Ciência", "Entretenimento")
+    private val newsCategoryKeys  = listOf("world", "technology", "health", "sports", "science", "entertainment")
     private var selectedCategoryIndex = 0
     private val newsItems = mutableListOf<NewsItem>()
     private lateinit var newsAdapter: NewsAdapter
-    private val httpClient = OkHttpClient()
-    private val API_KEY = "pub_7d7d1ac2f86b4bc6b4662fd5d6dad47c"
 
-    // Toggle chips — lista para actualizar estado visual
+    // URL da tua API no Render — substitui pelo teu URL real
+    private val NEWS_API_BASE = "https://wetrade-news-api.onrender.com"
+    // Fallback: newsdata.io
+    private val NEWSDATA_KEY  = "pub_7d7d1ac2f86b4bc6b4662fd5d6dad47c"
+
+    private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(8, TimeUnit.SECONDS)
+        .readTimeout(8, TimeUnit.SECONDS)
+        .build()
+
     private val mainToggleChips = mutableListOf<TextView>()
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -86,7 +96,6 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Grid de sites
         binding.sitesGrid.layoutManager = GridLayoutManager(requireContext(), 5)
         binding.sitesGrid.adapter = SitesAdapter(sites) { item ->
             if (!item.isMore) {
@@ -98,10 +107,8 @@ class HomeFragment : Fragment() {
             }
         }
 
-        // Toggles de categoria
         buildCategoryToggles()
 
-        // RecyclerView de notícias
         newsAdapter = NewsAdapter(newsItems) { url ->
             val intent = Intent(requireContext(), BrowserResponseActivity::class.java).apply {
                 putExtra(BrowserResponseActivity.EXTRA_QUERY, url)
@@ -119,10 +126,8 @@ class HomeFragment : Fragment() {
     private fun buildCategoryToggles() {
         val ctx = requireContext()
         val dp  = ctx.resources.displayMetrics.density
-
         mainToggleChips.clear()
         binding.categoryToggleContainer.removeAllViews()
-
         newsCategories.forEachIndexed { i, label ->
             val chip = makeChip(label, i == selectedCategoryIndex, dp)
             chip.setOnClickListener { selectCategory(i) }
@@ -153,12 +158,8 @@ class HomeFragment : Fragment() {
         val bg = android.graphics.drawable.GradientDrawable().apply {
             shape = android.graphics.drawable.GradientDrawable.RECTANGLE
             cornerRadius = 16 * dp
-            if (selected) {
-                setColor(ContextCompat.getColor(ctx, R.color.colorPrimary))
-            } else {
-                setColor(0)
-                setStroke(1, ContextCompat.getColor(ctx, R.color.divider))
-            }
+            if (selected) setColor(ContextCompat.getColor(ctx, R.color.colorPrimary))
+            else { setColor(0); setStroke(1, ContextCompat.getColor(ctx, R.color.divider)) }
         }
         chip.background = bg
         chip.setTextColor(
@@ -180,33 +181,77 @@ class HomeFragment : Fragment() {
         fetchNews(newsCategoryKeys[index])
     }
 
+    /**
+     * Tenta primeiro a API do Render. Se falhar, cai no newsdata.io.
+     * Carrega 20 notícias por categoria.
+     */
     private fun fetchNews(category: String) {
         CoroutineScope(Dispatchers.IO).launch {
+            val fetched = mutableListOf<NewsItem>()
             try {
-                val url = "https://newsdata.io/api/1/news?apikey=$API_KEY&language=pt&category=$category&size=10"
-                val req  = Request.Builder().url(url).build()
+                // Tenta API Render
+                val renderUrl = "$NEWS_API_BASE/news?category=$category&lang=pt&limit=20"
+                val req  = Request.Builder().url(renderUrl).build()
                 val resp = httpClient.newCall(req).execute()
-                val body = resp.body?.string() ?: return@launch
-                val json = JSONObject(body)
-                val results = json.optJSONArray("results") ?: return@launch
-                val fetched = mutableListOf<NewsItem>()
-                for (i in 0 until results.length()) {
-                    val obj   = results.getJSONObject(i)
-                    val title = obj.optString("title", "")
-                    val desc  = obj.optString("description", "")
-                    val img   = obj.optString("image_url", "")
-                    val link  = obj.optString("link", "")
-                    val src   = obj.optString("source_id", "")
-                    if (title.isNotEmpty()) fetched.add(NewsItem(title, desc, img, link, src))
-                }
-                withContext(Dispatchers.Main) {
-                    newsItems.clear()
-                    newsItems.addAll(fetched)
-                    newsAdapter.notifyDataSetChanged()
+                if (resp.isSuccessful) {
+                    val body = resp.body?.string() ?: ""
+                    val arr  = JSONArray(body)
+                    for (i in 0 until arr.length()) {
+                        val obj = arr.getJSONObject(i)
+                        fetched.add(parseRenderItem(obj))
+                    }
                 }
             } catch (_: Exception) {}
+
+            // Fallback newsdata.io se não trouxe nada
+            if (fetched.isEmpty()) {
+                try {
+                    val url  = "https://newsdata.io/api/1/news?apikey=$NEWSDATA_KEY&language=pt&category=$category&size=20"
+                    val req  = Request.Builder().url(url).build()
+                    val resp = httpClient.newCall(req).execute()
+                    val body = resp.body?.string() ?: ""
+                    val json = JSONObject(body)
+                    val results = json.optJSONArray("results") ?: JSONArray()
+                    for (i in 0 until results.length()) {
+                        val obj   = results.getJSONObject(i)
+                        val title = obj.optString("title", "")
+                        val desc  = obj.optString("description", "")
+                        val img   = obj.optString("image_url", "")
+                        val link  = obj.optString("link", "")
+                        val src   = obj.optString("source_id", "")
+                        val srcUrl = obj.optString("source_url", "")
+                        val host  = extractHost(srcUrl.ifEmpty { link })
+                        val favicon = if (host.isNotEmpty()) "https://www.google.com/s2/favicons?domain=$host&sz=32" else ""
+                        if (title.isNotEmpty()) {
+                            fetched.add(NewsItem(title, desc, img, link, src, favicon, category))
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+
+            withContext(Dispatchers.Main) {
+                newsItems.clear()
+                newsItems.addAll(fetched)
+                newsAdapter.notifyDataSetChanged()
+            }
         }
     }
+
+    private fun parseRenderItem(obj: JSONObject): NewsItem {
+        val title   = obj.optString("title", "")
+        val desc    = obj.optString("description", "")
+        val img     = obj.optString("image_url", "")
+        val link    = obj.optString("url", "")
+        val src     = obj.optString("source_name", "")
+        val srcDomain = obj.optString("source_domain", "")
+        val favicon = if (srcDomain.isNotEmpty())
+            "https://www.google.com/s2/favicons?domain=$srcDomain&sz=32" else ""
+        val cat = obj.optString("category", "")
+        return NewsItem(title, desc, img, link, src, favicon, cat)
+    }
+
+    private fun extractHost(url: String): String =
+        runCatching { android.net.Uri.parse(url).host ?: "" }.getOrDefault("")
 
     override fun onDestroyView() {
         super.onDestroyView()
@@ -241,34 +286,50 @@ class SitesAdapter(
             background  = ContextCompat.getDrawable(ctx, R.drawable.ripple_item)
         }
 
-        val iconSize = (52 * dp).toInt()
+        // Ícone menor: 40dp em vez de 52dp
+        val iconSize = (40 * dp).toInt()
+        // Container circular branco com padding
+        val iconContainer = FrameLayout(ctx).apply {
+            val containerSize = (48 * dp).toInt()
+            layoutParams = LinearLayout.LayoutParams(containerSize, containerSize)
+            // Fundo branco circular
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(Color.WHITE)
+            }
+            // Sombra leve
+            elevation = 2 * dp
+        }
+
         val icon = ImageView(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
+            val padding = (4 * dp).toInt()
+            layoutParams = FrameLayout.LayoutParams(iconSize, iconSize, Gravity.CENTER)
             scaleType    = ImageView.ScaleType.FIT_CENTER
         }
+        iconContainer.addView(icon)
 
         val label = TextView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.topMargin = (6 * dp).toInt() }
-            textSize  = 11f
+            ).also { it.topMargin = (5 * dp).toInt() }
+            textSize  = 10f
             maxLines  = 1
             gravity   = Gravity.CENTER_HORIZONTAL
             ellipsize = android.text.TextUtils.TruncateAt.END
             setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
         }
 
-        root.addView(icon)
+        root.addView(iconContainer)
         root.addView(label)
         return VH(root, icon, label)
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
-        val item     = items[position]
-        val ctx      = holder.root.context
-        val dp       = ctx.resources.displayMetrics.density
-        val iconSize = (52 * dp).toInt()
+        val item = items[position]
+        val ctx  = holder.root.context
+        val dp   = ctx.resources.displayMetrics.density
+        val iconSize = (40 * dp).toInt()
 
         holder.label.text = item.label
 
@@ -280,22 +341,13 @@ class SitesAdapter(
                 val stream  = ctx.assets.open(item.iconAsset)
                 val decoded = BitmapFactory.decodeStream(stream)
                 stream.close()
-                holder.icon.setImageBitmap(toCircle(decoded, iconSize))
+                // Sem cortar em círculo — deixa o PNG original com fundo branco do container
+                val scaled = Bitmap.createScaledBitmap(decoded, iconSize, iconSize, true)
+                holder.icon.setImageBitmap(scaled)
             } catch (_: Exception) {}
         }
 
         holder.root.setOnClickListener { onClick(item) }
-    }
-
-    private fun toCircle(src: Bitmap, size: Int): Bitmap {
-        val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(output)
-        val paint  = Paint(Paint.ANTI_ALIAS_FLAG)
-        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
-        paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
-        val scaled = Bitmap.createScaledBitmap(src, size, size, true)
-        canvas.drawBitmap(scaled, 0f, 0f, paint)
-        return output
     }
 
     private fun makeCirclePlaceholder(size: Int): Bitmap {
@@ -316,8 +368,7 @@ class SitesAdapter(
         paint.color = Color.parseColor("#888888")
         val dotR = size * 0.08f
         val off  = size * 0.25f
-        val cx   = size / 2f
-        val cy   = size / 2f
+        val cx   = size / 2f; val cy = size / 2f
         for (row in 0..1) for (col in 0..1)
             canvas.drawCircle(cx - off + col * off * 2, cy - off + row * off * 2, dotR, paint)
         return bmp
@@ -333,11 +384,18 @@ class NewsAdapter(
     private val onClick: (String) -> Unit
 ) : RecyclerView.Adapter<NewsAdapter.VH>() {
 
+    private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(5, TimeUnit.SECONDS)
+        .build()
+
     inner class VH(
         val card: LinearLayout,
         val image: ImageView,
         val title: TextView,
         val desc: TextView,
+        val sourceRow: LinearLayout,
+        val faviconIv: ImageView,
         val source: TextView
     ) : RecyclerView.ViewHolder(card)
 
@@ -365,7 +423,7 @@ class NewsAdapter(
         val image = ImageView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                (160 * dp).toInt()
+                (180 * dp).toInt()
             )
             scaleType = ImageView.ScaleType.CENTER_CROP
         }
@@ -376,7 +434,7 @@ class NewsAdapter(
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
             orientation = LinearLayout.VERTICAL
-            setPadding((12 * dp).toInt(), (10 * dp).toInt(), (12 * dp).toInt(), (12 * dp).toInt())
+            setPadding((14 * dp).toInt(), (12 * dp).toInt(), (14 * dp).toInt(), (14 * dp).toInt())
         }
 
         val title = TextView(ctx).apply {
@@ -384,40 +442,61 @@ class NewsAdapter(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
-            textSize = 14f
+            textSize = 15f
             maxLines = 2
             ellipsize = android.text.TextUtils.TruncateAt.END
             setTypeface(typeface, android.graphics.Typeface.BOLD)
-            setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
+            // Texto sempre branco — estilo Perplexity
+            setTextColor(Color.WHITE)
         }
 
         val desc = TextView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.topMargin = (4 * dp).toInt() }
-            textSize = 12f
-            maxLines = 2
+            ).also { it.topMargin = (6 * dp).toInt() }
+            textSize = 13f
+            maxLines = 3
             ellipsize = android.text.TextUtils.TruncateAt.END
-            setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
+            // Descrição branca semi-transparente
+            setTextColor(Color.argb(200, 255, 255, 255))
+        }
+
+        // Linha da fonte: favicon + nome
+        val sourceRow = LinearLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).also { it.topMargin = (10 * dp).toInt() }
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        val faviconIv = ImageView(ctx).apply {
+            val sz = (14 * dp).toInt()
+            layoutParams = LinearLayout.LayoutParams(sz, sz)
+                .also { it.marginEnd = (6 * dp).toInt() }
+            scaleType = ImageView.ScaleType.FIT_CENTER
         }
 
         val source = TextView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.topMargin = (6 * dp).toInt() }
+            )
             textSize = 11f
-            setTextColor(ContextCompat.getColor(ctx, R.color.colorPrimary))
+            setTextColor(Color.argb(160, 255, 255, 255))
         }
 
+        sourceRow.addView(faviconIv)
+        sourceRow.addView(source)
         textArea.addView(title)
         textArea.addView(desc)
-        textArea.addView(source)
+        textArea.addView(sourceRow)
         card.addView(image)
         card.addView(textArea)
 
-        return VH(card, image, title, desc, source)
+        return VH(card, image, title, desc, sourceRow, faviconIv, source)
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
@@ -426,55 +505,68 @@ class NewsAdapter(
         val dp   = ctx.resources.displayMetrics.density
 
         holder.title.text  = item.title
-        holder.desc.text   = item.description
-        holder.source.text = item.sourceName
+        holder.desc.text   = item.description.ifEmpty { item.title }
+        holder.source.text = item.sourceName.replaceFirstChar { it.uppercase() }
 
-        // Reset card para estado neutro antes de carregar imagem
+        // Reset
         holder.card.background = neutralCardBg(ctx, dp)
-        holder.title.setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
-        holder.desc.setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
+        holder.title.setTextColor(Color.WHITE)
+        holder.desc.setTextColor(Color.argb(200, 255, 255, 255))
         holder.image.setImageDrawable(
-            android.graphics.drawable.ColorDrawable(Color.parseColor("#E8E8E8"))
+            android.graphics.drawable.ColorDrawable(Color.parseColor("#2C2C2E"))
         )
+        holder.faviconIv.setImageDrawable(null)
 
         holder.card.setOnClickListener { onClick(item.sourceUrl) }
 
+        // Carrega favicon da fonte
+        if (item.faviconUrl.isNotEmpty()) {
+            val faviconUrl = item.faviconUrl
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val req  = Request.Builder().url(faviconUrl).build()
+                    val resp = httpClient.newCall(req).execute()
+                    val bytes = resp.body?.bytes() ?: return@launch
+                    val bmp   = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@launch
+                    withContext(Dispatchers.Main) {
+                        if (holder.bindingAdapterPosition == position) {
+                            holder.faviconIv.setImageBitmap(bmp)
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+
+        // Carrega imagem da notícia
         if (item.imageUrl.isNotEmpty()) {
             val adapterPos = position
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val req   = Request.Builder().url(item.imageUrl).build()
-                    val resp  = OkHttpClient().newCall(req).execute()
+                    val resp  = httpClient.newCall(req).execute()
                     val bytes = resp.body?.bytes() ?: return@launch
                     val bmp   = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@launch
                     val dominant = dominantColor(bmp)
+                    val isWhitish = isVeryLight(dominant)
 
                     withContext(Dispatchers.Main) {
                         if (holder.bindingAdapterPosition != adapterPos) return@withContext
-
                         holder.image.setImageBitmap(bmp)
 
-                        // Fundo do card = cor dominante com alta opacidade
-                        val cardBg = android.graphics.drawable.GradientDrawable().apply {
+                        // Se a cor dominante for muito clara (branco/cinza claro),
+                        // força fundo escuro para não estragar o texto branco
+                        val cardColor = if (isWhitish) {
+                            Color.parseColor("#1E1E1E")
+                        } else {
+                            // Escurece a cor dominante para garantir texto legível
+                            darkenColor(dominant, 0.55f)
+                        }
+
+                        holder.card.background = android.graphics.drawable.GradientDrawable().apply {
                             shape = android.graphics.drawable.GradientDrawable.RECTANGLE
                             cornerRadius = 12 * dp
-                            setColor(withAlpha(dominant, 0.92f))
+                            setColor(withAlpha(cardColor, 0.95f))
                         }
-                        holder.card.background = cardBg
-
-                        // Texto adapta-se ao fundo
-                        val onColor = if (isDark(dominant)) Color.WHITE else Color.BLACK
-                        val onColorSec = if (isDark(dominant))
-                            Color.argb(180, 255, 255, 255)
-                        else
-                            Color.argb(160, 0, 0, 0)
-
-                        holder.title.setTextColor(onColor)
-                        holder.desc.setTextColor(onColorSec)
-                        holder.source.setTextColor(
-                            if (isDark(dominant)) Color.argb(200, 255, 255, 255) else
-                                ContextCompat.getColor(ctx, R.color.colorPrimary)
-                        )
                     }
                 } catch (_: Exception) {}
             }
@@ -485,13 +577,14 @@ class NewsAdapter(
         android.graphics.drawable.GradientDrawable().apply {
             shape = android.graphics.drawable.GradientDrawable.RECTANGLE
             cornerRadius = 12 * dp
-            setColor(ContextCompat.getColor(ctx, R.color.card_background))
+            // Card base sempre escuro para texto branco funcionar
+            setColor(Color.parseColor("#1E1E1E"))
         }
 
-    /** Média simples dos pixels num bitmap reduzido a 16×16 */
     private fun dominantColor(bmp: Bitmap): Int {
         val small = Bitmap.createScaledBitmap(bmp, 16, 16, true)
-        var r = 0L; var g = 0L; var b = 0L; val n = small.width * small.height
+        var r = 0L; var g = 0L; var b = 0L
+        val n = small.width * small.height
         for (x in 0 until small.width) for (y in 0 until small.height) {
             val c = small.getPixel(x, y)
             r += Color.red(c); g += Color.green(c); b += Color.blue(c)
@@ -499,12 +592,20 @@ class NewsAdapter(
         return Color.rgb((r / n).toInt(), (g / n).toInt(), (b / n).toInt())
     }
 
-    private fun isDark(color: Int): Boolean {
+    /** Luminância > 0.70 = muito claro (branco/bege) */
+    private fun isVeryLight(color: Int): Boolean {
         val r = Color.red(color) / 255.0
         val g = Color.green(color) / 255.0
         val b = Color.blue(color) / 255.0
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.45
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.70
     }
+
+    /** Escurece uma cor multiplicando os canais por factor (0..1) */
+    private fun darkenColor(color: Int, factor: Float): Int = Color.rgb(
+        (Color.red(color)   * factor).toInt().coerceIn(0, 255),
+        (Color.green(color) * factor).toInt().coerceIn(0, 255),
+        (Color.blue(color)  * factor).toInt().coerceIn(0, 255)
+    )
 
     private fun withAlpha(color: Int, alpha: Float): Int =
         Color.argb((alpha * 255).toInt(), Color.red(color), Color.green(color), Color.blue(color))

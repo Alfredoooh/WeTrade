@@ -16,27 +16,29 @@
             android:id="@+id/appBarLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/appbar_background"
+            android:background="@color/background"
             android:fitsSystemWindows="true"
             app:elevation="0dp"
             app:liftOnScroll="false">
 
-            <!-- Usar RelativeLayout para controlo exacto de posições -->
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:background="@color/appbar_background"
-                android:paddingStart="12dp"
+                android:background="@color/background"
+                android:paddingStart="16dp"
                 android:paddingEnd="0dp">
 
-                <!-- Logo à esquerda -->
-                <ImageView
-                    android:id="@+id/toolbarAppIcon"
-                    android:layout_width="52dp"
-                    android:layout_height="52dp"
+                <!-- Texto "Home" no lugar do ícone do app -->
+                <TextView
+                    android:id="@+id/toolbarTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
                     android:layout_alignParentStart="true"
-                    android:scaleType="fitCenter" />
+                    android:text="Home"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary" />
 
                 <!-- btnMenu no extremo direito -->
                 <ImageView
@@ -50,7 +52,7 @@
                     android:clickable="true"
                     android:focusable="true" />
 
-                <!-- btnAskAi imediatamente à esquerda do btnMenu -->
+                <!-- btnAskAi com fundo bottom_nav_background no escuro -->
                 <LinearLayout
                     android:id="@+id/btnAskAi"
                     android:layout_width="wrap_content"
@@ -206,6 +208,7 @@
 
     </LinearLayout>
 
+    <!-- Drawer lateral -->
     <LinearLayout
         android:id="@+id/drawerContainer"
         android:layout_width="280dp"

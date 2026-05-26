@@ -39,7 +39,6 @@ class MainActivity : AppCompatActivity() {
 
     private val homeFragment   = HomeFragment()
     private val searchFragment = SearchFragment()
-
     private var currentTab = R.id.tabHome
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,15 +65,11 @@ class MainActivity : AppCompatActivity() {
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
-        // Logo
-        try {
-            val stream = assets.open("icons/app/app_icon.png")
-            val bmp = BitmapFactory.decodeStream(stream)
-            stream.close()
-            binding.toolbarAppIcon.setImageBitmap(bmp)
-        } catch (_: Exception) {}
+        // ── AppBar: sem ícone do app, texto "Home" no lugar ──
+        // toolbarAppIcon agora é um TextView — ver activity_main.xml atualizado
+        // binding.toolbarTitle já definido no XML com text="Home"
 
-        // Ask AI — cinzento, à esquerda (imediatamente a seguir ao logo)
+        // Ask AI — no escuro tem fundo do bottom bar
         binding.btnAskAiIcon.setImageDrawable(svgDrawable("icons/svg/ai.svg", 13, iconSec))
         binding.btnAskAi.setOnClickListener {
             startActivity(Intent(this, AiSearchActivity::class.java))
@@ -110,18 +105,15 @@ class MainActivity : AppCompatActivity() {
             binding.drawerLayout.closeDrawer(GravityCompat.END)
         }
 
-        // Contador de abas
         updateTabsBadge()
 
         fun setIcons(activeTab: Int) {
-            // Home
             binding.tabHomeIcon.setImageDrawable(
                 if (activeTab == R.id.tabHome)
                     svgDrawableGradient("icons/svg/home_filled.svg", 24)
                 else
                     svgDrawable("icons/svg/home_outline.svg", 24, iconSec)
             )
-            // Search
             binding.tabSearchIcon.setImageDrawable(
                 if (activeTab == R.id.tabSearch)
                     svgDrawableGradient("icons/svg/magnifying_glass_filled.svg", 24)
@@ -132,15 +124,15 @@ class MainActivity : AppCompatActivity() {
 
         fun updateAppBar(tabId: Int) {
             if (tabId == R.id.tabSearch) {
-                binding.toolbarAppIcon.visibility = View.GONE
-                binding.btnMenu.visibility        = View.GONE
-                binding.btnAskAi.visibility       = View.GONE
-                binding.searchPill.visibility     = View.VISIBLE
+                binding.toolbarTitle.visibility  = View.GONE
+                binding.btnMenu.visibility       = View.GONE
+                binding.btnAskAi.visibility      = View.GONE
+                binding.searchPill.visibility    = View.VISIBLE
             } else {
-                binding.searchPill.visibility     = View.GONE
-                binding.toolbarAppIcon.visibility = View.VISIBLE
-                binding.btnMenu.visibility        = View.VISIBLE
-                binding.btnAskAi.visibility       = View.VISIBLE
+                binding.searchPill.visibility    = View.GONE
+                binding.toolbarTitle.visibility  = View.VISIBLE
+                binding.btnMenu.visibility       = View.VISIBLE
+                binding.btnAskAi.visibility      = View.VISIBLE
             }
         }
 
@@ -157,11 +149,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.tabHome.setOnClickListener   { selectTab(R.id.tabHome) }
         binding.tabSearch.setOnClickListener { selectTab(R.id.tabSearch) }
-
-        // Tab Abas — container transform: a janela atual encolhe e abre TabsActivity
-        binding.tabTabs.setOnClickListener {
-            openTabsWithTransform()
-        }
+        binding.tabTabs.setOnClickListener   { openTabsWithTransform() }
 
         supportFragmentManager.beginTransaction()
             .add(R.id.container, homeFragment, "home")
@@ -181,8 +169,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun openTabsWithTransform() {
         val snapshotPath = captureScreenSnapshot("tabs_transition_main.png")
-
-        // Anima o container a encolher — simula que a tela vira um card de recentes
         val container = binding.container
         container.animate()
             .scaleX(0.88f).scaleY(0.88f)
@@ -193,20 +179,16 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this, TabsActivity::class.java).apply {
                     snapshotPath?.let { putExtra(TabsActivity.EXTRA_TRANSITION_SCREENSHOT_PATH, it) }
                 })
-                container.animate()
-                    .scaleX(1f).scaleY(1f).alpha(1f)
-                    .setDuration(0).start()
+                container.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(0).start()
             }.start()
     }
 
     private fun captureScreenSnapshot(fileName: String): String? {
         val root = binding.root
         if (root.width <= 0 || root.height <= 0) return null
-
         val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         root.draw(canvas)
-
         val file = File(cacheDir, fileName)
         runCatching {
             FileOutputStream(file).use { out ->
@@ -237,7 +219,6 @@ class MainActivity : AppCompatActivity() {
         insetsController.isAppearanceLightStatusBars = isLight
     }
 
-    /** Ícone SVG pintado com gradiente azul #007AFF → #00C6FF de cima para baixo */
     fun svgDrawableGradient(path: String, sizeDp: Int): BitmapDrawable {
         val px  = (sizeDp * resources.displayMetrics.density).toInt()
         val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
@@ -245,8 +226,6 @@ class MainActivity : AppCompatActivity() {
         svg.documentWidth  = px.toFloat()
         svg.documentHeight = px.toFloat()
         svg.renderToCanvas(Canvas(bmp))
-
-        // Aplica gradiente usando Porter-Duff SRC_IN
         val gradientBmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
         val gradCanvas  = Canvas(gradientBmp)
         val gradPaint   = Paint()
@@ -257,12 +236,9 @@ class MainActivity : AppCompatActivity() {
             Shader.TileMode.CLAMP
         )
         gradCanvas.drawRect(0f, 0f, px.toFloat(), px.toFloat(), gradPaint)
-
-        // Mask: usa o SVG como máscara
         val maskPaint = Paint()
         maskPaint.xfermode = android.graphics.PorterDuffXfermode(PorterDuff.Mode.DST_IN)
         gradCanvas.drawBitmap(bmp, 0f, 0f, maskPaint)
-
         return BitmapDrawable(resources, gradientBmp)
     }
 

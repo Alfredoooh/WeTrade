@@ -11,8 +11,9 @@
   <color name="splash_background_light">#FFFFFF</color>
   <color name="splash_background_dark">#111111</color>
   
-  <!-- AppBar e BottomBar: tom mais claro que o body -->
-  <color name="appbar_background">#1C1C1E</color>
+  <!-- AppBar = mesmo fundo do body no escuro -->
+  <color name="appbar_background">#111111</color>
+  <!-- BottomBar ligeiramente mais claro -->
   <color name="bottom_nav_background">#1C1C1E</color>
   <color name="bottom_nav_text_color">#007AFF</color>
   
@@ -27,8 +28,7 @@
   <color name="surface">#1C1C1E</color>
   <color name="card_background">#2C2C2E</color>
   
-  <!-- Secção de apps mesmo tom do appbar -->
-  <color name="apps_section_background">#1C1C1E</color>
+  <color name="apps_section_background">#111111</color>
   
   <color name="popup_background">#2C2C2E</color>
   <color name="popup_shadow">#28FFFFFF</color>
