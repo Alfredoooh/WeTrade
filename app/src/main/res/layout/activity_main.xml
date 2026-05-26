@@ -21,24 +21,36 @@
             app:elevation="0dp"
             app:liftOnScroll="false">
 
-            <com.google.android.material.appbar.MaterialToolbar
-                android:id="@+id/toolbar"
+            <!-- Usar RelativeLayout para controlo exacto de posições -->
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 android:background="@color/appbar_background"
-                app:contentInsetStart="0dp"
-                app:contentInsetEnd="0dp">
+                android:paddingStart="12dp"
+                android:paddingEnd="0dp">
 
-                <!-- Logo -->
+                <!-- Logo à esquerda -->
                 <ImageView
                     android:id="@+id/toolbarAppIcon"
                     android:layout_width="52dp"
                     android:layout_height="52dp"
-                    android:layout_gravity="start|center_vertical"
-                    android:layout_marginStart="12dp"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentStart="true"
                     android:scaleType="fitCenter" />
 
-                <!-- Ask AI — imediatamente à direita do logo -->
+                <!-- btnMenu no extremo direito -->
+                <ImageView
+                    android:id="@+id/btnMenu"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:padding="10dp"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentEnd="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <!-- btnAskAi imediatamente à esquerda do btnMenu -->
                 <LinearLayout
                     android:id="@+id/btnAskAi"
                     android:layout_width="wrap_content"
@@ -48,8 +60,9 @@
                     android:background="@drawable/ask_ai_pill_bg"
                     android:paddingStart="10dp"
                     android:paddingEnd="10dp"
-                    android:layout_gravity="start|center_vertical"
-                    android:layout_marginStart="8dp"
+                    android:layout_centerVertical="true"
+                    android:layout_toStartOf="@id/btnMenu"
+                    android:layout_marginEnd="4dp"
                     android:clickable="true"
                     android:focusable="true">
 
@@ -71,17 +84,15 @@
 
                 </LinearLayout>
 
-                <!-- Search pill (tab pesquisa) -->
+                <!-- Search pill — visível só na tab de pesquisa -->
                 <LinearLayout
                     android:id="@+id/searchPill"
                     android:layout_width="match_parent"
                     android:layout_height="36dp"
-                    android:layout_gravity="center_vertical"
+                    android:layout_centerVertical="true"
                     android:layout_marginStart="8dp"
                     android:layout_marginEnd="8dp"
                     android:background="@drawable/search_input_bg"
-                    android:stateListAnimator="@null"
-                    android:elevation="0dp"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
                     android:paddingStart="12dp"
@@ -113,18 +124,7 @@
 
                 </LinearLayout>
 
-                <!-- Botão menu — extremo direito -->
-                <ImageView
-                    android:id="@+id/btnMenu"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:padding="12dp"
-                    android:layout_gravity="end|center_vertical"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-            </com.google.android.material.appbar.MaterialToolbar>
+            </RelativeLayout>
 
         </com.google.android.material.appbar.AppBarLayout>
 
@@ -139,7 +139,6 @@
             android:layout_height="0.5dp"
             android:background="@color/divider" />
 
-        <!-- Bottom Nav: Home | Search | Hub | Abas -->
         <LinearLayout
             android:id="@+id/bottomNav"
             android:layout_width="match_parent"
@@ -192,7 +191,6 @@
                     android:layout_gravity="center" />
             </FrameLayout>
 
-            <!-- Tab Abas: mostra contagem -->
             <FrameLayout
                 android:id="@+id/tabTabs"
                 android:layout_width="0dp"
@@ -201,15 +199,12 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
                 android:focusable="true">
-
-                <!-- Borda quadrada com número -->
                 <FrameLayout
                     android:id="@+id/tabTabsBadgeFrame"
                     android:layout_width="26dp"
                     android:layout_height="26dp"
                     android:layout_gravity="center"
                     android:background="@drawable/tabs_badge_bg">
-
                     <TextView
                         android:id="@+id/tabTabsCount"
                         android:layout_width="wrap_content"
@@ -219,16 +214,13 @@
                         android:textSize="11sp"
                         android:textStyle="bold"
                         android:textColor="@color/icon_tint" />
-
                 </FrameLayout>
-
             </FrameLayout>
 
         </LinearLayout>
 
     </LinearLayout>
 
-    <!-- Drawer direito -->
     <LinearLayout
         android:id="@+id/drawerContainer"
         android:layout_width="280dp"
@@ -246,7 +238,6 @@
             android:paddingEnd="24dp"
             android:paddingTop="40dp"
             android:paddingBottom="16dp">
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -254,7 +245,6 @@
                 android:textSize="26sp"
                 android:textStyle="bold"
                 android:textColor="@color/drawer_text" />
-
         </LinearLayout>
 
         <View
@@ -273,7 +263,6 @@
             android:paddingStart="24dp"
             android:paddingEnd="24dp"
             android:background="?attr/selectableItemBackground">
-
             <FrameLayout
                 android:layout_width="32dp"
                 android:layout_height="32dp"
@@ -285,7 +274,6 @@
                     android:layout_height="16dp"
                     android:layout_gravity="center" />
             </FrameLayout>
-
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -293,12 +281,10 @@
                 android:text="@string/drawer_settings"
                 android:textSize="15sp"
                 android:textColor="@color/drawer_text" />
-
             <ImageView
                 android:id="@+id/drawerChevronSettings"
                 android:layout_width="14dp"
                 android:layout_height="14dp" />
-
         </LinearLayout>
 
         <LinearLayout
@@ -310,7 +296,6 @@
             android:paddingStart="24dp"
             android:paddingEnd="24dp"
             android:background="?attr/selectableItemBackground">
-
             <FrameLayout
                 android:layout_width="32dp"
                 android:layout_height="32dp"
@@ -322,7 +307,6 @@
                     android:layout_height="16dp"
                     android:layout_gravity="center" />
             </FrameLayout>
-
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -330,12 +314,10 @@
                 android:text="@string/drawer_about"
                 android:textSize="15sp"
                 android:textColor="@color/drawer_text" />
-
             <ImageView
                 android:id="@+id/drawerChevronAbout"
                 android:layout_width="14dp"
                 android:layout_height="14dp" />
-
         </LinearLayout>
 
     </LinearLayout>
