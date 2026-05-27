@@ -6,21 +6,20 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffXfermode
-import android.graphics.RectF
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.wilin.app.R
@@ -52,12 +51,19 @@ data class NewsItem(
     val category: String = ""
 )
 
+data class AppItem(
+    val label: String,
+    val url: String,
+    val iconAsset: String,
+    val category: String
+)
+
 class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
-    private val sites = listOf(
+    private val mainSites = mutableListOf(
         SiteItem("Google",    "https://google.com",       "icons/png/google.png"),
         SiteItem("YouTube",   "https://youtube.com",      "icons/png/youtube.png"),
         SiteItem("Facebook",  "https://facebook.com",     "icons/png/facebook.png"),
@@ -67,19 +73,40 @@ class HomeFragment : Fragment() {
         SiteItem("ChatGPT",   "https://chat.openai.com",  "icons/png/chatgpt.png"),
         SiteItem("TikTok",    "https://tiktok.com",       "icons/png/tiktok.png"),
         SiteItem("Reddit",    "https://reddit.com",       "icons/png/reddit.png"),
-        SiteItem("Mais",      "",                         "", isMore = true)
     )
 
-    private val newsCategories    = listOf("Mundo", "Tecnologia", "Saúde", "Desporto", "Ciência", "Entretenimento")
-    private val newsCategoryKeys  = listOf("world", "technology", "health", "sports", "science", "entertainment")
+    private val extraSites = mutableListOf<SiteItem>()
+
+    private val availableApps = listOf(
+        AppItem("Gmail",       "https://mail.google.com",    "icons/png/google.png",    "Google"),
+        AppItem("Drive",       "https://drive.google.com",   "icons/png/google.png",    "Google"),
+        AppItem("Maps",        "https://maps.google.com",    "icons/png/google.png",    "Google"),
+        AppItem("Docs",        "https://docs.google.com",    "icons/png/google.png",    "Google"),
+        AppItem("LinkedIn",    "https://linkedin.com",       "icons/png/x.png",         "Social"),
+        AppItem("Telegram",    "https://web.telegram.org",   "icons/png/whatsapp.png",  "Social"),
+        AppItem("Discord",     "https://discord.com/app",    "icons/png/reddit.png",    "Social"),
+        AppItem("Pinterest",   "https://pinterest.com",      "icons/png/instagram.png", "Social"),
+        AppItem("Twitch",      "https://twitch.tv",          "icons/png/youtube.png",   "Entretenimento"),
+        AppItem("Netflix",     "https://netflix.com",        "icons/png/youtube.png",   "Entretenimento"),
+        AppItem("Spotify",     "https://open.spotify.com",   "icons/png/youtube.png",   "Entretenimento"),
+        AppItem("Amazon",      "https://amazon.com",         "icons/png/google.png",    "Compras"),
+        AppItem("AliExpress",  "https://aliexpress.com",     "icons/png/google.png",    "Compras"),
+        AppItem("Shein",       "https://shein.com",          "icons/png/instagram.png", "Compras"),
+        AppItem("GitHub",      "https://github.com",         "icons/png/x.png",         "Dev"),
+        AppItem("StackOverflow","https://stackoverflow.com", "icons/png/reddit.png",    "Dev"),
+        AppItem("Gemini",      "https://gemini.google.com",  "icons/png/google.png",    "IA"),
+        AppItem("Claude",      "https://claude.ai",          "icons/png/chatgpt.png",   "IA"),
+        AppItem("Perplexity",  "https://perplexity.ai",      "icons/png/x.png",         "IA"),
+        AppItem("Copilot",     "https://copilot.microsoft.com","icons/png/x.png",       "IA"),
+    )
+
+    private val newsCategories   = listOf("Mundo","Tecnologia","Saúde","Desporto","Ciência","Entretenimento")
+    private val newsCategoryKeys = listOf("world","technology","health","sports","science","entertainment")
     private var selectedCategoryIndex = 0
     private val newsItems = mutableListOf<NewsItem>()
     private lateinit var newsAdapter: NewsAdapter
 
-    // URL da tua API no Render — substitui pelo teu URL real
-    private val NEWS_API_BASE = "https://wetrade-news-api.onrender.com"
-    // Fallback: newsdata.io
-    private val NEWSDATA_KEY  = "pub_7d7d1ac2f86b4bc6b4662fd5d6dad47c"
+    private val NEWS_API_BASE = "https://globeapiservice001.onrender.com"
 
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(8, TimeUnit.SECONDS)
@@ -87,6 +114,10 @@ class HomeFragment : Fragment() {
         .build()
 
     private val mainToggleChips = mutableListOf<TextView>()
+    private lateinit var sitesHScroll: HorizontalScrollView
+    private lateinit var sitesRowContainer: LinearLayout
+    private lateinit var dotsContainer: LinearLayout
+    private var currentPage = 0
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
@@ -95,25 +126,13 @@ class HomeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        binding.sitesGrid.layoutManager = GridLayoutManager(requireContext(), 5)
-        binding.sitesGrid.adapter = SitesAdapter(sites) { item ->
-            if (!item.isMore) {
-                val intent = Intent(requireContext(), BrowserResponseActivity::class.java).apply {
-                    putExtra(BrowserResponseActivity.EXTRA_QUERY, item.url)
-                }
-                startActivity(intent)
-                requireActivity().overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
-            }
-        }
-
+        buildSitesCarousel()
         buildCategoryToggles()
 
         newsAdapter = NewsAdapter(newsItems) { url ->
-            val intent = Intent(requireContext(), BrowserResponseActivity::class.java).apply {
+            startActivity(Intent(requireContext(), BrowserResponseActivity::class.java).apply {
                 putExtra(BrowserResponseActivity.EXTRA_QUERY, url)
-            }
-            startActivity(intent)
+            })
             requireActivity().overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
         binding.newsRecycler.layoutManager = LinearLayoutManager(requireContext())
@@ -122,6 +141,397 @@ class HomeFragment : Fragment() {
 
         fetchNews(newsCategoryKeys[0])
     }
+
+    // ── Carrossel ─────────────────────────────────────────────────────────────
+
+    private fun buildSitesCarousel() {
+        val ctx = requireContext()
+        val dp  = ctx.resources.displayMetrics.density
+        binding.sitesCarouselContainer.removeAllViews()
+
+        sitesHScroll = HorizontalScrollView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            isHorizontalScrollBarEnabled = false
+            isSmoothScrollingEnabled = true
+        }
+
+        sitesRowContainer = LinearLayout(ctx).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        sitesHScroll.addView(sitesRowContainer)
+        binding.sitesCarouselContainer.addView(sitesHScroll)
+
+        dotsContainer = LinearLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).also { it.topMargin = (6 * dp).toInt() }
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_HORIZONTAL
+        }
+        binding.sitesCarouselContainer.addView(dotsContainer)
+
+        renderPages()
+    }
+
+    private fun renderPages() {
+        val ctx = requireContext()
+        val dp  = ctx.resources.displayMetrics.density
+        val screenW = resources.displayMetrics.widthPixels
+
+        sitesRowContainer.removeAllViews()
+        dotsContainer.removeAllViews()
+
+        // Página 1 — sites principais + botão "Mais" se sem extras
+        val page1Items = mainSites.toMutableList()
+        if (extraSites.isEmpty()) page1Items.add(SiteItem("Mais","","",isMore=true))
+        sitesRowContainer.addView(buildPage(page1Items, screenW, dp))
+
+        // Página 2 — extras (se existirem)
+        if (extraSites.isNotEmpty()) {
+            val page2Items = extraSites.toMutableList()
+            page2Items.add(SiteItem("Mais","","",isMore=true))
+            sitesRowContainer.addView(buildPage(page2Items, screenW, dp))
+        }
+
+        val pageCount = if (extraSites.isNotEmpty()) 2 else 1
+        if (pageCount > 1) {
+            for (i in 0 until pageCount) {
+                val dot = View(ctx).apply {
+                    val sz = (7 * dp).toInt()
+                    layoutParams = LinearLayout.LayoutParams(sz, sz).also {
+                        it.marginStart = (4 * dp).toInt()
+                        it.marginEnd   = (4 * dp).toInt()
+                    }
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        shape = android.graphics.drawable.GradientDrawable.OVAL
+                        setColor(if (i == currentPage) ContextCompat.getColor(ctx, R.color.colorPrimary)
+                                 else ContextCompat.getColor(ctx, R.color.divider))
+                    }
+                }
+                dotsContainer.addView(dot)
+            }
+            sitesHScroll.viewTreeObserver.addOnScrollChangedListener {
+                val newPage = if (sitesHScroll.scrollX > screenW / 2) 1 else 0
+                if (newPage != currentPage) { currentPage = newPage; updateDots() }
+            }
+        }
+    }
+
+    private fun buildPage(items: List<SiteItem>, screenW: Int, dp: Float): LinearLayout {
+        val ctx = requireContext()
+        return LinearLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(screenW, LinearLayout.LayoutParams.WRAP_CONTENT)
+            orientation = LinearLayout.VERTICAL
+            items.chunked(5).forEach { row ->
+                addView(LinearLayout(ctx).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    orientation = LinearLayout.HORIZONTAL
+                    row.forEach { addView(buildCell(it, dp, screenW / 5)) }
+                    repeat(5 - row.size) {
+                        addView(View(ctx).apply { layoutParams = LinearLayout.LayoutParams(screenW/5, 1) })
+                    }
+                })
+            }
+        }
+    }
+
+    private fun buildCell(item: SiteItem, dp: Float, width: Int): LinearLayout {
+        val ctx = requireContext()
+        return LinearLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(width, LinearLayout.LayoutParams.WRAP_CONTENT)
+            orientation = LinearLayout.VERTICAL
+            gravity     = Gravity.CENTER_HORIZONTAL
+            setPadding(0, (10*dp).toInt(), 0, (10*dp).toInt())
+            isClickable = true; isFocusable = true
+            background  = ContextCompat.getDrawable(ctx, R.drawable.ripple_item)
+
+            val iconSz = (40*dp).toInt()
+            val container = FrameLayout(ctx).apply {
+                layoutParams = LinearLayout.LayoutParams((48*dp).toInt(), (48*dp).toInt())
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL
+                    setColor(Color.WHITE)
+                }
+                elevation = 2*dp
+            }
+            val icon = ImageView(ctx).apply {
+                layoutParams = FrameLayout.LayoutParams(iconSz, iconSz, Gravity.CENTER)
+                scaleType    = ImageView.ScaleType.FIT_CENTER
+            }
+            when {
+                item.isMore -> icon.setImageBitmap(makeMoreBmp(iconSz))
+                item.iconAsset.isNotEmpty() -> {
+                    icon.setImageBitmap(makePlaceholderBmp(iconSz))
+                    try {
+                        val s = ctx.assets.open(item.iconAsset)
+                        val bmp = BitmapFactory.decodeStream(s); s.close()
+                        icon.setImageBitmap(Bitmap.createScaledBitmap(bmp, iconSz, iconSz, true))
+                    } catch (_: Exception) {}
+                }
+                else -> icon.setImageBitmap(makePlaceholderBmp(iconSz))
+            }
+            container.addView(icon)
+
+            val label = TextView(ctx).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).also { it.topMargin = (5*dp).toInt() }
+                text = item.label; textSize = 10f; maxLines = 1
+                gravity   = Gravity.CENTER_HORIZONTAL
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
+            }
+            addView(container); addView(label)
+
+            setOnClickListener {
+                if (item.isMore) showMoreModal()
+                else startActivity(Intent(ctx, BrowserResponseActivity::class.java).apply {
+                    putExtra(BrowserResponseActivity.EXTRA_QUERY, item.url)
+                }).also { requireActivity().overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left) }
+            }
+        }
+    }
+
+    private fun updateDots() {
+        val ctx = requireContext()
+        for (i in 0 until dotsContainer.childCount) {
+            (dotsContainer.getChildAt(i).background as? android.graphics.drawable.GradientDrawable)
+                ?.setColor(if (i == currentPage) ContextCompat.getColor(ctx, R.color.colorPrimary)
+                           else ContextCompat.getColor(ctx, R.color.divider))
+        }
+    }
+
+    // ── Modal Mais Apps ───────────────────────────────────────────────────────
+
+    private fun showMoreModal() {
+        val ctx     = requireContext()
+        val dp      = ctx.resources.displayMetrics.density
+        val rootView = requireActivity().window.decorView as FrameLayout
+        val sheetH  = (resources.displayMetrics.heightPixels * 0.72f).toInt()
+        val cornerR = 28 * dp
+
+        val overlay = FrameLayout(ctx).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            setBackgroundColor(Color.argb(140, 0, 0, 0))
+            isClickable = true; isFocusable = true
+        }
+
+        val sheet = LinearLayout(ctx).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, sheetH, Gravity.BOTTOM
+            )
+            orientation = LinearLayout.VERTICAL
+            background  = android.graphics.drawable.GradientDrawable().apply {
+                shape       = android.graphics.drawable.GradientDrawable.RECTANGLE
+                cornerRadii = floatArrayOf(cornerR,cornerR,cornerR,cornerR,0f,0f,0f,0f)
+                setColor(ContextCompat.getColor(ctx, R.color.surface))
+            }
+            translationY = sheetH.toFloat()
+        }
+
+        // Handle bar
+        val handleWrap = FrameLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, (28*dp).toInt()
+            )
+        }
+        handleWrap.addView(View(ctx).apply {
+            layoutParams = FrameLayout.LayoutParams((40*dp).toInt(), (4*dp).toInt(), Gravity.CENTER)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                cornerRadius = 2*dp
+                setColor(ContextCompat.getColor(ctx, R.color.divider))
+            }
+        })
+
+        val title = TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).also { it.marginStart=(20*dp).toInt(); it.bottomMargin=(16*dp).toInt() }
+            text = "Adicionar App"; textSize = 20f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
+        }
+
+        val scroll = ScrollView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
+            )
+        }
+        val content = LinearLayout(ctx).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            orientation = LinearLayout.VERTICAL
+            setPadding((16*dp).toInt(), 0, (16*dp).toInt(), (32*dp).toInt())
+        }
+
+        val appW = (resources.displayMetrics.widthPixels - (32*dp).toInt()) / 4
+
+        availableApps.groupBy { it.category }.forEach { (cat, apps) ->
+            content.addView(TextView(ctx).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).also { it.topMargin=(16*dp).toInt(); it.bottomMargin=(10*dp).toInt() }
+                text = cat; textSize = 13f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
+            })
+            apps.chunked(4).forEach { row ->
+                content.addView(LinearLayout(ctx).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    orientation = LinearLayout.HORIZONTAL
+                    row.forEach { app ->
+                        addView(buildModalCell(app, appW.toInt(), dp) {
+                            if (!extraSites.any { it.url == app.url }) {
+                                extraSites.add(SiteItem(app.label, app.url, app.iconAsset))
+                                currentPage = 1
+                                renderPages()
+                                // Scroll para página 2
+                                sitesHScroll.post {
+                                    sitesHScroll.smoothScrollTo(resources.displayMetrics.widthPixels, 0)
+                                }
+                                Toast.makeText(ctx, "${app.label} adicionado", Toast.LENGTH_SHORT).show()
+                            }
+                        })
+                    }
+                    repeat(4 - row.size) {
+                        addView(View(ctx).apply { layoutParams = LinearLayout.LayoutParams(appW.toInt(), 1) })
+                    }
+                })
+            }
+        }
+
+        scroll.addView(content)
+        sheet.addView(handleWrap)
+        sheet.addView(title)
+        sheet.addView(scroll)
+        overlay.addView(sheet)
+        rootView.addView(overlay)
+
+        sheet.animate()
+            .translationY(0f)
+            .setDuration(320)
+            .setInterpolator(android.view.animation.DecelerateInterpolator(2f))
+            .start()
+
+        overlay.setOnClickListener { dismissModal(overlay, sheet, sheetH, rootView) }
+    }
+
+    private fun buildModalCell(app: AppItem, width: Int, dp: Float, onAdd: () -> Unit): LinearLayout {
+        val ctx = requireContext()
+        val added = extraSites.any { it.url == app.url }
+        return LinearLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(width, LinearLayout.LayoutParams.WRAP_CONTENT)
+            orientation = LinearLayout.VERTICAL
+            gravity     = Gravity.CENTER_HORIZONTAL
+            setPadding(0, (8*dp).toInt(), 0, (8*dp).toInt())
+            isClickable = !added; isFocusable = !added
+            alpha = if (added) 0.45f else 1f
+            if (!added) background = ContextCompat.getDrawable(ctx, R.drawable.ripple_item)
+
+            val iconSz = (36*dp).toInt()
+            val container = FrameLayout(ctx).apply {
+                layoutParams = LinearLayout.LayoutParams((46*dp).toInt(), (46*dp).toInt())
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL
+                    setColor(Color.WHITE)
+                }
+                elevation = 2*dp
+            }
+            val icon = ImageView(ctx).apply {
+                layoutParams = FrameLayout.LayoutParams(iconSz, iconSz, Gravity.CENTER)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+            }
+            try {
+                val s = ctx.assets.open(app.iconAsset)
+                icon.setImageBitmap(Bitmap.createScaledBitmap(BitmapFactory.decodeStream(s), iconSz, iconSz, true))
+                s.close()
+            } catch (_: Exception) { icon.setImageBitmap(makePlaceholderBmp(iconSz)) }
+
+            if (added) {
+                container.addView(View(ctx).apply {
+                    val bsz = (14*dp).toInt()
+                    layoutParams = FrameLayout.LayoutParams(bsz, bsz, Gravity.BOTTOM or Gravity.END)
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        shape = android.graphics.drawable.GradientDrawable.OVAL
+                        setColor(Color.parseColor("#34C759"))
+                    }
+                })
+            }
+            container.addView(icon)
+
+            addView(container)
+            addView(TextView(ctx).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).also { it.topMargin = (4*dp).toInt() }
+                text = app.label; textSize = 10f; maxLines = 1
+                gravity   = Gravity.CENTER_HORIZONTAL
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
+            })
+            if (!added) setOnClickListener { onAdd() }
+        }
+    }
+
+    private fun dismissModal(overlay: FrameLayout, sheet: LinearLayout, sheetH: Int, root: FrameLayout) {
+        sheet.animate()
+            .translationY(sheetH.toFloat())
+            .setDuration(240)
+            .setInterpolator(android.view.animation.AccelerateInterpolator(1.5f))
+            .withEndAction { root.removeView(overlay) }
+            .start()
+    }
+
+    // ── Bitmap helpers ────────────────────────────────────────────────────────
+
+    private fun makePlaceholderBmp(size: Int): Bitmap {
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        Paint(Paint.ANTI_ALIAS_FLAG).also {
+            it.color = Color.parseColor("#E5E5EA")
+            Canvas(bmp).drawCircle(size/2f, size/2f, size/2f, it)
+        }
+        return bmp
+    }
+
+    private fun makeMoreBmp(size: Int): Bitmap {
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val p = Paint(Paint.ANTI_ALIAS_FLAG)
+        p.color = Color.parseColor("#E5E5EA")
+        c.drawCircle(size/2f, size/2f, size/2f, p)
+        p.color = Color.parseColor("#888888")
+        val dotR = size*0.08f; val off = size*0.25f
+        for (row in 0..1) for (col in 0..1)
+            c.drawCircle(size/2f - off + col*off*2, size/2f - off + row*off*2, dotR, p)
+        return bmp
+    }
+
+    // ── Category toggles ──────────────────────────────────────────────────────
 
     private fun buildCategoryToggles() {
         val ctx = requireContext()
@@ -140,34 +550,25 @@ class HomeFragment : Fragment() {
         val ctx = requireContext()
         return TextView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                (32 * dp).toInt()
-            ).also { it.marginEnd = (8 * dp).toInt() }
-            text = label
-            textSize = 13f
-            gravity = Gravity.CENTER
-            setPadding((14 * dp).toInt(), 0, (14 * dp).toInt(), 0)
-            isClickable = true
-            isFocusable = true
+                LinearLayout.LayoutParams.WRAP_CONTENT, (32*dp).toInt()
+            ).also { it.marginEnd = (8*dp).toInt() }
+            text = label; textSize = 13f; gravity = Gravity.CENTER
+            setPadding((14*dp).toInt(), 0, (14*dp).toInt(), 0)
+            isClickable = true; isFocusable = true
             applyChipStyle(this, selected, dp)
         }
     }
 
     private fun applyChipStyle(chip: TextView, selected: Boolean, dp: Float) {
         val ctx = requireContext()
-        val bg = android.graphics.drawable.GradientDrawable().apply {
+        chip.background = android.graphics.drawable.GradientDrawable().apply {
             shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-            cornerRadius = 16 * dp
+            cornerRadius = 16*dp
             if (selected) setColor(ContextCompat.getColor(ctx, R.color.colorPrimary))
             else { setColor(0); setStroke(1, ContextCompat.getColor(ctx, R.color.divider)) }
         }
-        chip.background = bg
-        chip.setTextColor(
-            if (selected) Color.WHITE
-            else ContextCompat.getColor(ctx, R.color.text_secondary)
-        )
-        chip.setTypeface(chip.typeface,
-            if (selected) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+        chip.setTextColor(if (selected) Color.WHITE else ContextCompat.getColor(ctx, R.color.text_secondary))
+        chip.setTypeface(chip.typeface, if (selected) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
     }
 
     private fun selectCategory(index: Int) {
@@ -176,227 +577,59 @@ class HomeFragment : Fragment() {
         applyChipStyle(mainToggleChips[selectedCategoryIndex], false, dp)
         applyChipStyle(mainToggleChips[index], true, dp)
         selectedCategoryIndex = index
-        newsItems.clear()
-        newsAdapter.notifyDataSetChanged()
+        newsItems.clear(); newsAdapter.notifyDataSetChanged()
         fetchNews(newsCategoryKeys[index])
     }
 
-    /**
-     * Tenta primeiro a API do Render. Se falhar, cai no newsdata.io.
-     * Carrega 20 notícias por categoria.
-     */
+    // ── Fetch notícias ────────────────────────────────────────────────────────
+
     private fun fetchNews(category: String) {
         CoroutineScope(Dispatchers.IO).launch {
             val fetched = mutableListOf<NewsItem>()
             try {
-                // Tenta API Render
-                val renderUrl = "$NEWS_API_BASE/news?category=$category&lang=pt&limit=20"
-                val req  = Request.Builder().url(renderUrl).build()
+                val req  = Request.Builder().url("$NEWS_API_BASE/news?category=$category&limit=20").build()
                 val resp = httpClient.newCall(req).execute()
                 if (resp.isSuccessful) {
-                    val body = resp.body?.string() ?: ""
-                    val arr  = JSONArray(body)
+                    val arr = JSONArray(resp.body?.string() ?: "[]")
                     for (i in 0 until arr.length()) {
-                        val obj = arr.getJSONObject(i)
-                        fetched.add(parseRenderItem(obj))
+                        val o = arr.getJSONObject(i)
+                        fetched.add(NewsItem(
+                            title       = o.optString("title"),
+                            description = o.optString("description"),
+                            imageUrl    = o.optString("image_url"),
+                            sourceUrl   = o.optString("url"),
+                            sourceName  = o.optString("source_name"),
+                            faviconUrl  = o.optString("favicon_url"),
+                            category    = o.optString("category")
+                        ))
                     }
                 }
             } catch (_: Exception) {}
 
-            // Fallback newsdata.io se não trouxe nada
-            if (fetched.isEmpty()) {
-                try {
-                    val url  = "https://newsdata.io/api/1/news?apikey=$NEWSDATA_KEY&language=pt&category=$category&size=20"
-                    val req  = Request.Builder().url(url).build()
-                    val resp = httpClient.newCall(req).execute()
-                    val body = resp.body?.string() ?: ""
-                    val json = JSONObject(body)
-                    val results = json.optJSONArray("results") ?: JSONArray()
-                    for (i in 0 until results.length()) {
-                        val obj   = results.getJSONObject(i)
-                        val title = obj.optString("title", "")
-                        val desc  = obj.optString("description", "")
-                        val img   = obj.optString("image_url", "")
-                        val link  = obj.optString("link", "")
-                        val src   = obj.optString("source_id", "")
-                        val srcUrl = obj.optString("source_url", "")
-                        val host  = extractHost(srcUrl.ifEmpty { link })
-                        val favicon = if (host.isNotEmpty()) "https://www.google.com/s2/favicons?domain=$host&sz=32" else ""
-                        if (title.isNotEmpty()) {
-                            fetched.add(NewsItem(title, desc, img, link, src, favicon, category))
-                        }
-                    }
-                } catch (_: Exception) {}
-            }
-
             withContext(Dispatchers.Main) {
-                newsItems.clear()
-                newsItems.addAll(fetched)
+                newsItems.clear(); newsItems.addAll(fetched)
                 newsAdapter.notifyDataSetChanged()
             }
         }
     }
 
-    private fun parseRenderItem(obj: JSONObject): NewsItem {
-        val title   = obj.optString("title", "")
-        val desc    = obj.optString("description", "")
-        val img     = obj.optString("image_url", "")
-        val link    = obj.optString("url", "")
-        val src     = obj.optString("source_name", "")
-        val srcDomain = obj.optString("source_domain", "")
-        val favicon = if (srcDomain.isNotEmpty())
-            "https://www.google.com/s2/favicons?domain=$srcDomain&sz=32" else ""
-        val cat = obj.optString("category", "")
-        return NewsItem(title, desc, img, link, src, favicon, cat)
-    }
-
-    private fun extractHost(url: String): String =
-        runCatching { android.net.Uri.parse(url).host ?: "" }.getOrDefault("")
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
+    override fun onDestroyView() { super.onDestroyView(); _binding = null }
 }
 
-// ── SitesAdapter ──────────────────────────────────────────────────────────────
-
-class SitesAdapter(
-    private val items: List<SiteItem>,
-    private val onClick: (SiteItem) -> Unit
-) : RecyclerView.Adapter<SitesAdapter.VH>() {
-
-    inner class VH(val root: LinearLayout, val icon: ImageView, val label: TextView) :
-        RecyclerView.ViewHolder(root)
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val ctx = parent.context
-        val dp  = ctx.resources.displayMetrics.density
-
-        val root = LinearLayout(ctx).apply {
-            layoutParams = RecyclerView.LayoutParams(
-                RecyclerView.LayoutParams.MATCH_PARENT,
-                RecyclerView.LayoutParams.WRAP_CONTENT
-            )
-            orientation = LinearLayout.VERTICAL
-            gravity     = Gravity.CENTER_HORIZONTAL
-            setPadding(0, (10 * dp).toInt(), 0, (10 * dp).toInt())
-            isClickable = true
-            isFocusable = true
-            background  = ContextCompat.getDrawable(ctx, R.drawable.ripple_item)
-        }
-
-        // Ícone menor: 40dp em vez de 52dp
-        val iconSize = (40 * dp).toInt()
-        // Container circular branco com padding
-        val iconContainer = FrameLayout(ctx).apply {
-            val containerSize = (48 * dp).toInt()
-            layoutParams = LinearLayout.LayoutParams(containerSize, containerSize)
-            // Fundo branco circular
-            background = android.graphics.drawable.GradientDrawable().apply {
-                shape = android.graphics.drawable.GradientDrawable.OVAL
-                setColor(Color.WHITE)
-            }
-            // Sombra leve
-            elevation = 2 * dp
-        }
-
-        val icon = ImageView(ctx).apply {
-            val padding = (4 * dp).toInt()
-            layoutParams = FrameLayout.LayoutParams(iconSize, iconSize, Gravity.CENTER)
-            scaleType    = ImageView.ScaleType.FIT_CENTER
-        }
-        iconContainer.addView(icon)
-
-        val label = TextView(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.topMargin = (5 * dp).toInt() }
-            textSize  = 10f
-            maxLines  = 1
-            gravity   = Gravity.CENTER_HORIZONTAL
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
-        }
-
-        root.addView(iconContainer)
-        root.addView(label)
-        return VH(root, icon, label)
-    }
-
-    override fun onBindViewHolder(holder: VH, position: Int) {
-        val item = items[position]
-        val ctx  = holder.root.context
-        val dp   = ctx.resources.displayMetrics.density
-        val iconSize = (40 * dp).toInt()
-
-        holder.label.text = item.label
-
-        if (item.isMore) {
-            holder.icon.setImageBitmap(makeMoreBitmap(iconSize))
-        } else {
-            holder.icon.setImageBitmap(makeCirclePlaceholder(iconSize))
-            try {
-                val stream  = ctx.assets.open(item.iconAsset)
-                val decoded = BitmapFactory.decodeStream(stream)
-                stream.close()
-                // Sem cortar em círculo — deixa o PNG original com fundo branco do container
-                val scaled = Bitmap.createScaledBitmap(decoded, iconSize, iconSize, true)
-                holder.icon.setImageBitmap(scaled)
-            } catch (_: Exception) {}
-        }
-
-        holder.root.setOnClickListener { onClick(item) }
-    }
-
-    private fun makeCirclePlaceholder(size: Int): Bitmap {
-        val bmp    = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bmp)
-        val paint  = Paint(Paint.ANTI_ALIAS_FLAG)
-        paint.color = Color.parseColor("#E5E5EA")
-        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
-        return bmp
-    }
-
-    private fun makeMoreBitmap(size: Int): Bitmap {
-        val bmp    = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bmp)
-        val paint  = Paint(Paint.ANTI_ALIAS_FLAG)
-        paint.color = Color.parseColor("#E5E5EA")
-        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
-        paint.color = Color.parseColor("#888888")
-        val dotR = size * 0.08f
-        val off  = size * 0.25f
-        val cx   = size / 2f; val cy = size / 2f
-        for (row in 0..1) for (col in 0..1)
-            canvas.drawCircle(cx - off + col * off * 2, cy - off + row * off * 2, dotR, paint)
-        return bmp
-    }
-
-    override fun getItemCount() = items.size
-}
-
-// ── NewsAdapter ───────────────────────────────────────────────────────────────
+// ── NewsAdapter ────────────────────────────────────────────────────────────────
 
 class NewsAdapter(
     private val items: List<NewsItem>,
     private val onClick: (String) -> Unit
 ) : RecyclerView.Adapter<NewsAdapter.VH>() {
 
-    private val httpClient = OkHttpClient.Builder()
-        .connectTimeout(5, TimeUnit.SECONDS)
-        .readTimeout(5, TimeUnit.SECONDS)
-        .build()
+    private val http = OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.SECONDS).readTimeout(5, TimeUnit.SECONDS).build()
 
     inner class VH(
-        val card: LinearLayout,
-        val image: ImageView,
-        val title: TextView,
-        val desc: TextView,
-        val sourceRow: LinearLayout,
-        val faviconIv: ImageView,
-        val source: TextView
+        val card: LinearLayout, val image: ImageView,
+        val title: TextView, val desc: TextView,
+        val sourceRow: LinearLayout, val favicon: ImageView, val source: TextView
     ) : RecyclerView.ViewHolder(card)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -405,98 +638,48 @@ class NewsAdapter(
 
         val card = LinearLayout(ctx).apply {
             layoutParams = RecyclerView.LayoutParams(
-                RecyclerView.LayoutParams.MATCH_PARENT,
-                RecyclerView.LayoutParams.WRAP_CONTENT
-            ).also {
-                it.marginStart  = (16 * dp).toInt()
-                it.marginEnd    = (16 * dp).toInt()
-                it.bottomMargin = (12 * dp).toInt()
-            }
-            orientation   = LinearLayout.VERTICAL
-            clipToOutline = true
-            isClickable   = true
-            isFocusable   = true
-            elevation     = (2 * dp)
-            background    = neutralCardBg(ctx, dp)
+                RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT
+            ).also { it.marginStart=(16*dp).toInt(); it.marginEnd=(16*dp).toInt(); it.bottomMargin=(12*dp).toInt() }
+            orientation=LinearLayout.VERTICAL; clipToOutline=true
+            isClickable=true; isFocusable=true; elevation=2*dp
+            background = darkCardBg(ctx, dp)
         }
-
         val image = ImageView(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                (180 * dp).toInt()
-            )
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (180*dp).toInt())
             scaleType = ImageView.ScaleType.CENTER_CROP
         }
-
         val textArea = LinearLayout(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             orientation = LinearLayout.VERTICAL
-            setPadding((14 * dp).toInt(), (12 * dp).toInt(), (14 * dp).toInt(), (14 * dp).toInt())
+            setPadding((14*dp).toInt(), (12*dp).toInt(), (14*dp).toInt(), (14*dp).toInt())
         }
-
         val title = TextView(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            textSize = 15f
-            maxLines = 2
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-            // Texto sempre branco — estilo Perplexity
-            setTextColor(Color.WHITE)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            textSize=15f; maxLines=2; ellipsize=android.text.TextUtils.TruncateAt.END
+            setTypeface(typeface, android.graphics.Typeface.BOLD); setTextColor(Color.WHITE)
         }
-
         val desc = TextView(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.topMargin = (6 * dp).toInt() }
-            textSize = 13f
-            maxLines = 3
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            // Descrição branca semi-transparente
-            setTextColor(Color.argb(200, 255, 255, 255))
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                .also { it.topMargin=(6*dp).toInt() }
+            textSize=13f; maxLines=3; ellipsize=android.text.TextUtils.TruncateAt.END
+            setTextColor(Color.argb(190,255,255,255))
         }
-
-        // Linha da fonte: favicon + nome
         val sourceRow = LinearLayout(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.topMargin = (10 * dp).toInt() }
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                .also { it.topMargin=(10*dp).toInt() }
+            orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL
         }
-
-        val faviconIv = ImageView(ctx).apply {
-            val sz = (14 * dp).toInt()
-            layoutParams = LinearLayout.LayoutParams(sz, sz)
-                .also { it.marginEnd = (6 * dp).toInt() }
-            scaleType = ImageView.ScaleType.FIT_CENTER
+        val favicon = ImageView(ctx).apply {
+            val sz=(14*dp).toInt()
+            layoutParams = LinearLayout.LayoutParams(sz,sz).also { it.marginEnd=(6*dp).toInt() }
+            scaleType=ImageView.ScaleType.FIT_CENTER
         }
+        val source = TextView(ctx).apply { textSize=11f; setTextColor(Color.argb(160,255,255,255)) }
 
-        val source = TextView(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            textSize = 11f
-            setTextColor(Color.argb(160, 255, 255, 255))
-        }
-
-        sourceRow.addView(faviconIv)
-        sourceRow.addView(source)
-        textArea.addView(title)
-        textArea.addView(desc)
-        textArea.addView(sourceRow)
-        card.addView(image)
-        card.addView(textArea)
-
-        return VH(card, image, title, desc, sourceRow, faviconIv, source)
+        sourceRow.addView(favicon); sourceRow.addView(source)
+        textArea.addView(title); textArea.addView(desc); textArea.addView(sourceRow)
+        card.addView(image); card.addView(textArea)
+        return VH(card, image, title, desc, sourceRow, favicon, source)
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
@@ -507,65 +690,37 @@ class NewsAdapter(
         holder.title.text  = item.title
         holder.desc.text   = item.description.ifEmpty { item.title }
         holder.source.text = item.sourceName.replaceFirstChar { it.uppercase() }
-
-        // Reset
-        holder.card.background = neutralCardBg(ctx, dp)
-        holder.title.setTextColor(Color.WHITE)
-        holder.desc.setTextColor(Color.argb(200, 255, 255, 255))
-        holder.image.setImageDrawable(
-            android.graphics.drawable.ColorDrawable(Color.parseColor("#2C2C2E"))
-        )
-        holder.faviconIv.setImageDrawable(null)
-
+        holder.card.background = darkCardBg(ctx, dp)
+        holder.image.setImageDrawable(android.graphics.drawable.ColorDrawable(Color.parseColor("#2C2C2E")))
+        holder.favicon.setImageDrawable(null)
         holder.card.setOnClickListener { onClick(item.sourceUrl) }
 
-        // Carrega favicon da fonte
         if (item.faviconUrl.isNotEmpty()) {
-            val faviconUrl = item.faviconUrl
+            val fUrl = item.faviconUrl; val pos = position
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val req  = Request.Builder().url(faviconUrl).build()
-                    val resp = httpClient.newCall(req).execute()
-                    val bytes = resp.body?.bytes() ?: return@launch
+                    val bytes = http.newCall(Request.Builder().url(fUrl).build()).execute().body?.bytes() ?: return@launch
                     val bmp   = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@launch
-                    withContext(Dispatchers.Main) {
-                        if (holder.bindingAdapterPosition == position) {
-                            holder.faviconIv.setImageBitmap(bmp)
-                        }
-                    }
+                    withContext(Dispatchers.Main) { if (holder.bindingAdapterPosition == pos) holder.favicon.setImageBitmap(bmp) }
                 } catch (_: Exception) {}
             }
         }
 
-        // Carrega imagem da notícia
         if (item.imageUrl.isNotEmpty()) {
-            val adapterPos = position
+            val pos = position
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val req   = Request.Builder().url(item.imageUrl).build()
-                    val resp  = httpClient.newCall(req).execute()
-                    val bytes = resp.body?.bytes() ?: return@launch
+                    val bytes = http.newCall(Request.Builder().url(item.imageUrl).build()).execute().body?.bytes() ?: return@launch
                     val bmp   = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@launch
-                    val dominant = dominantColor(bmp)
-                    val isWhitish = isVeryLight(dominant)
-
+                    val dom   = dominant(bmp)
+                    val light = lum(dom) > 0.70
                     withContext(Dispatchers.Main) {
-                        if (holder.bindingAdapterPosition != adapterPos) return@withContext
+                        if (holder.bindingAdapterPosition != pos) return@withContext
                         holder.image.setImageBitmap(bmp)
-
-                        // Se a cor dominante for muito clara (branco/cinza claro),
-                        // força fundo escuro para não estragar o texto branco
-                        val cardColor = if (isWhitish) {
-                            Color.parseColor("#1E1E1E")
-                        } else {
-                            // Escurece a cor dominante para garantir texto legível
-                            darkenColor(dominant, 0.55f)
-                        }
-
+                        val col = if (light) Color.parseColor("#1E1E1E") else darken(dom, 0.55f)
                         holder.card.background = android.graphics.drawable.GradientDrawable().apply {
-                            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-                            cornerRadius = 12 * dp
-                            setColor(withAlpha(cardColor, 0.95f))
+                            shape=android.graphics.drawable.GradientDrawable.RECTANGLE
+                            cornerRadius=12*dp; setColor(alpha(col, 0.96f))
                         }
                     }
                 } catch (_: Exception) {}
@@ -573,42 +728,29 @@ class NewsAdapter(
         }
     }
 
-    private fun neutralCardBg(ctx: android.content.Context, dp: Float) =
+    private fun darkCardBg(ctx: android.content.Context, dp: Float) =
         android.graphics.drawable.GradientDrawable().apply {
-            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-            cornerRadius = 12 * dp
-            // Card base sempre escuro para texto branco funcionar
-            setColor(Color.parseColor("#1E1E1E"))
+            shape=android.graphics.drawable.GradientDrawable.RECTANGLE
+            cornerRadius=12*dp; setColor(Color.parseColor("#1E1E1E"))
         }
 
-    private fun dominantColor(bmp: Bitmap): Int {
-        val small = Bitmap.createScaledBitmap(bmp, 16, 16, true)
-        var r = 0L; var g = 0L; var b = 0L
-        val n = small.width * small.height
-        for (x in 0 until small.width) for (y in 0 until small.height) {
-            val c = small.getPixel(x, y)
-            r += Color.red(c); g += Color.green(c); b += Color.blue(c)
+    private fun dominant(bmp: Bitmap): Int {
+        val s=Bitmap.createScaledBitmap(bmp,16,16,true)
+        var r=0L; var g=0L; var b=0L; val n=s.width*s.height
+        for(x in 0 until s.width) for(y in 0 until s.height) {
+            val c=s.getPixel(x,y); r+=Color.red(c); g+=Color.green(c); b+=Color.blue(c)
         }
-        return Color.rgb((r / n).toInt(), (g / n).toInt(), (b / n).toInt())
+        return Color.rgb((r/n).toInt(),(g/n).toInt(),(b/n).toInt())
     }
-
-    /** Luminância > 0.70 = muito claro (branco/bege) */
-    private fun isVeryLight(color: Int): Boolean {
-        val r = Color.red(color) / 255.0
-        val g = Color.green(color) / 255.0
-        val b = Color.blue(color) / 255.0
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.70
+    private fun lum(c: Int): Double {
+        val r=Color.red(c)/255.0; val g=Color.green(c)/255.0; val b=Color.blue(c)/255.0
+        return 0.2126*r+0.7152*g+0.0722*b
     }
-
-    /** Escurece uma cor multiplicando os canais por factor (0..1) */
-    private fun darkenColor(color: Int, factor: Float): Int = Color.rgb(
-        (Color.red(color)   * factor).toInt().coerceIn(0, 255),
-        (Color.green(color) * factor).toInt().coerceIn(0, 255),
-        (Color.blue(color)  * factor).toInt().coerceIn(0, 255)
+    private fun darken(c: Int, f: Float) = Color.rgb(
+        (Color.red(c)*f).toInt().coerceIn(0,255),
+        (Color.green(c)*f).toInt().coerceIn(0,255),
+        (Color.blue(c)*f).toInt().coerceIn(0,255)
     )
-
-    private fun withAlpha(color: Int, alpha: Float): Int =
-        Color.argb((alpha * 255).toInt(), Color.red(color), Color.green(color), Color.blue(color))
-
+    private fun alpha(c: Int, a: Float) = Color.argb((a*255).toInt(),Color.red(c),Color.green(c),Color.blue(c))
     override fun getItemCount() = items.size
 }
