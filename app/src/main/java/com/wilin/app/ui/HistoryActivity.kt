@@ -147,7 +147,7 @@ class HistoryActivity : AppCompatActivity() {
             text = "Todos os registos do histórico serão apagados permanentemente."
             textSize = 14f
             setTextColor(textSec)
-            lineSpacingMultiplier = 1.4f
+            setlineSpacing =(0f, 1.4f)
         }
 
         // Aviso irreversível
