@@ -19,6 +19,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -63,6 +64,7 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
+    // mainSites são editáveis (removíveis por long press)
     private val mainSites = mutableListOf(
         SiteItem("Google",    "https://google.com",       "icons/png/google.png"),
         SiteItem("YouTube",   "https://youtube.com",      "icons/png/youtube.png"),
@@ -75,29 +77,34 @@ class HomeFragment : Fragment() {
         SiteItem("Reddit",    "https://reddit.com",       "icons/png/reddit.png"),
     )
 
-    private val extraSites = mutableListOf<SiteItem>()
+    // Cada secção de extras comporta até ITEMS_PER_PAGE itens (sem contar o botão +)
+    // O botão + é sempre o último item de cada secção
+    private val ITEMS_PER_PAGE = 9 // 9 apps + 1 botão "Mais" = 10 por página
+
+    // extraSites armazenados por secção (índice 0 = secção 2, índice 1 = secção 3, ...)
+    private val extraSections = mutableListOf<MutableList<SiteItem>>()
 
     private val availableApps = listOf(
-        AppItem("Gmail",       "https://mail.google.com",    "icons/png/google.png",    "Google"),
-        AppItem("Drive",       "https://drive.google.com",   "icons/png/google.png",    "Google"),
-        AppItem("Maps",        "https://maps.google.com",    "icons/png/google.png",    "Google"),
-        AppItem("Docs",        "https://docs.google.com",    "icons/png/google.png",    "Google"),
-        AppItem("LinkedIn",    "https://linkedin.com",       "icons/png/x.png",         "Social"),
-        AppItem("Telegram",    "https://web.telegram.org",   "icons/png/whatsapp.png",  "Social"),
-        AppItem("Discord",     "https://discord.com/app",    "icons/png/reddit.png",    "Social"),
-        AppItem("Pinterest",   "https://pinterest.com",      "icons/png/instagram.png", "Social"),
-        AppItem("Twitch",      "https://twitch.tv",          "icons/png/youtube.png",   "Entretenimento"),
-        AppItem("Netflix",     "https://netflix.com",        "icons/png/youtube.png",   "Entretenimento"),
-        AppItem("Spotify",     "https://open.spotify.com",   "icons/png/youtube.png",   "Entretenimento"),
-        AppItem("Amazon",      "https://amazon.com",         "icons/png/google.png",    "Compras"),
-        AppItem("AliExpress",  "https://aliexpress.com",     "icons/png/google.png",    "Compras"),
-        AppItem("Shein",       "https://shein.com",          "icons/png/instagram.png", "Compras"),
-        AppItem("GitHub",      "https://github.com",         "icons/png/x.png",         "Dev"),
-        AppItem("StackOverflow","https://stackoverflow.com", "icons/png/reddit.png",    "Dev"),
-        AppItem("Gemini",      "https://gemini.google.com",  "icons/png/google.png",    "IA"),
-        AppItem("Claude",      "https://claude.ai",          "icons/png/chatgpt.png",   "IA"),
-        AppItem("Perplexity",  "https://perplexity.ai",      "icons/png/x.png",         "IA"),
-        AppItem("Copilot",     "https://copilot.microsoft.com","icons/png/x.png",       "IA"),
+        AppItem("Gmail",        "https://mail.google.com",      "icons/png/google.png",    "Google"),
+        AppItem("Drive",        "https://drive.google.com",     "icons/png/google.png",    "Google"),
+        AppItem("Maps",         "https://maps.google.com",      "icons/png/google.png",    "Google"),
+        AppItem("Docs",         "https://docs.google.com",      "icons/png/google.png",    "Google"),
+        AppItem("LinkedIn",     "https://linkedin.com",         "icons/png/x.png",         "Social"),
+        AppItem("Telegram",     "https://web.telegram.org",     "icons/png/whatsapp.png",  "Social"),
+        AppItem("Discord",      "https://discord.com/app",      "icons/png/reddit.png",    "Social"),
+        AppItem("Pinterest",    "https://pinterest.com",        "icons/png/instagram.png", "Social"),
+        AppItem("Twitch",       "https://twitch.tv",            "icons/png/youtube.png",   "Entretenimento"),
+        AppItem("Netflix",      "https://netflix.com",          "icons/png/youtube.png",   "Entretenimento"),
+        AppItem("Spotify",      "https://open.spotify.com",     "icons/png/youtube.png",   "Entretenimento"),
+        AppItem("Amazon",       "https://amazon.com",           "icons/png/google.png",    "Compras"),
+        AppItem("AliExpress",   "https://aliexpress.com",       "icons/png/google.png",    "Compras"),
+        AppItem("Shein",        "https://shein.com",            "icons/png/instagram.png", "Compras"),
+        AppItem("GitHub",       "https://github.com",           "icons/png/x.png",         "Dev"),
+        AppItem("StackOverflow","https://stackoverflow.com",    "icons/png/reddit.png",    "Dev"),
+        AppItem("Gemini",       "https://gemini.google.com",    "icons/png/google.png",    "IA"),
+        AppItem("Claude",       "https://claude.ai",            "icons/png/chatgpt.png",   "IA"),
+        AppItem("Perplexity",   "https://perplexity.ai",        "icons/png/x.png",         "IA"),
+        AppItem("Copilot",      "https://copilot.microsoft.com","icons/png/x.png",         "IA"),
     )
 
     private val newsCategories   = listOf("Mundo","Tecnologia","Saúde","Desporto","Ciência","Entretenimento")
@@ -114,6 +121,7 @@ class HomeFragment : Fragment() {
         .build()
 
     private val mainToggleChips = mutableListOf<TextView>()
+    private val stickyToggleChips = mutableListOf<TextView>()
     private lateinit var sitesHScroll: HorizontalScrollView
     private lateinit var sitesRowContainer: LinearLayout
     private lateinit var dotsContainer: LinearLayout
@@ -128,6 +136,7 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         buildSitesCarousel()
         buildCategoryToggles()
+        setupStickyScroll()
 
         newsAdapter = NewsAdapter(newsItems) { url ->
             startActivity(Intent(requireContext(), BrowserResponseActivity::class.java).apply {
@@ -142,7 +151,47 @@ class HomeFragment : Fragment() {
         fetchNews(newsCategoryKeys[0])
     }
 
-    // ── Carrossel ─────────────────────────────────────────────────────────────
+    // ── Sticky scroll ──────────────────────────────────────────────────────────
+
+    private fun setupStickyScroll() {
+        binding.homeScrollView.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, _ ->
+            val stickySection = binding.stickyToggleSection
+            val overlayLayout = binding.stickyToggleOverlay
+
+            // Posição do topo da secção sticky relativa ao ScrollView
+            val location = IntArray(2)
+            stickySection.getLocationInWindow(location)
+            val parentLocation = IntArray(2)
+            binding.homeScrollView.getLocationInWindow(parentLocation)
+
+            val stickyTop = location[1] - parentLocation[1]
+
+            if (stickyTop <= 0) {
+                // Secção saiu do ecrã pelo topo → mostrar overlay fixo
+                if (overlayLayout.visibility != View.VISIBLE) {
+                    overlayLayout.visibility = View.VISIBLE
+                    syncStickyChips()
+                }
+            } else {
+                overlayLayout.visibility = View.GONE
+            }
+        })
+    }
+
+    // Sincroniza o estado dos chips (selecionado) entre o scroll normal e o sticky
+    private fun syncStickyChips() {
+        val dp = requireContext().resources.displayMetrics.density
+        binding.categoryToggleContainerSticky.removeAllViews()
+        stickyToggleChips.clear()
+        newsCategories.forEachIndexed { i, label ->
+            val chip = makeChip(label, i == selectedCategoryIndex, dp)
+            chip.setOnClickListener { selectCategory(i) }
+            stickyToggleChips.add(chip)
+            binding.categoryToggleContainerSticky.addView(chip)
+        }
+    }
+
+    // ── Carrossel ──────────────────────────────────────────────────────────────
 
     private fun buildSitesCarousel() {
         val ctx = requireContext()
@@ -190,19 +239,30 @@ class HomeFragment : Fragment() {
         sitesRowContainer.removeAllViews()
         dotsContainer.removeAllViews()
 
-        // Página 1 — sites principais + botão "Mais" se sem extras
+        // Página 1 — mainSites + botão "Mais" se a secção 1 de extras estiver cheia ou vazia
         val page1Items = mainSites.toMutableList()
-        if (extraSites.isEmpty()) page1Items.add(SiteItem("Mais","","",isMore=true))
-        sitesRowContainer.addView(buildPage(page1Items, screenW, dp))
+        val page1HasSpace = mainSites.size < ITEMS_PER_PAGE
+        if (page1HasSpace || extraSections.isEmpty()) {
+            page1Items.add(SiteItem("Mais", "", "", isMore = true))
+        }
+        sitesRowContainer.addView(buildPage(page1Items, screenW, dp, pageIndex = 0))
 
-        // Página 2 — extras (se existirem)
-        if (extraSites.isNotEmpty()) {
-            val page2Items = extraSites.toMutableList()
-            page2Items.add(SiteItem("Mais","","",isMore=true))
-            sitesRowContainer.addView(buildPage(page2Items, screenW, dp))
+        // Páginas extra — cada secção de extras tem os seus items + botão "Mais" no final
+        extraSections.forEachIndexed { sIdx, section ->
+            val pageItems = section.toMutableList()
+            // Só adiciona botão "Mais" se esta secção estiver cheia (= pode haver próxima)
+            // ou se for a última secção com espaço
+            val sectionFull = section.size >= ITEMS_PER_PAGE
+            val isLastSection = sIdx == extraSections.size - 1
+            if (isLastSection) {
+                pageItems.add(SiteItem("Mais", "", "", isMore = true))
+            } else if (sectionFull) {
+                // Secção cheia e não é a última — não mostra botão "Mais" (a próxima secção já existe)
+            }
+            sitesRowContainer.addView(buildPage(pageItems, screenW, dp, pageIndex = sIdx + 1))
         }
 
-        val pageCount = if (extraSites.isNotEmpty()) 2 else 1
+        val pageCount = 1 + extraSections.size
         if (pageCount > 1) {
             for (i in 0 until pageCount) {
                 val dot = View(ctx).apply {
@@ -220,13 +280,14 @@ class HomeFragment : Fragment() {
                 dotsContainer.addView(dot)
             }
             sitesHScroll.viewTreeObserver.addOnScrollChangedListener {
-                val newPage = if (sitesHScroll.scrollX > screenW / 2) 1 else 0
-                if (newPage != currentPage) { currentPage = newPage; updateDots() }
+                val newPage = (sitesHScroll.scrollX + screenW / 2) / screenW
+                val clampedPage = newPage.coerceIn(0, pageCount - 1)
+                if (clampedPage != currentPage) { currentPage = clampedPage; updateDots() }
             }
         }
     }
 
-    private fun buildPage(items: List<SiteItem>, screenW: Int, dp: Float): LinearLayout {
+    private fun buildPage(items: List<SiteItem>, screenW: Int, dp: Float, pageIndex: Int): LinearLayout {
         val ctx = requireContext()
         return LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(screenW, LinearLayout.LayoutParams.WRAP_CONTENT)
@@ -238,7 +299,7 @@ class HomeFragment : Fragment() {
                         LinearLayout.LayoutParams.WRAP_CONTENT
                     )
                     orientation = LinearLayout.HORIZONTAL
-                    row.forEach { addView(buildCell(it, dp, screenW / 5)) }
+                    row.forEach { addView(buildCell(it, dp, screenW / 5, pageIndex)) }
                     repeat(5 - row.size) {
                         addView(View(ctx).apply { layoutParams = LinearLayout.LayoutParams(screenW/5, 1) })
                     }
@@ -247,7 +308,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun buildCell(item: SiteItem, dp: Float, width: Int): LinearLayout {
+    private fun buildCell(item: SiteItem, dp: Float, width: Int, pageIndex: Int): LinearLayout {
         val ctx = requireContext()
         return LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(width, LinearLayout.LayoutParams.WRAP_CONTENT)
@@ -296,13 +357,49 @@ class HomeFragment : Fragment() {
             }
             addView(container); addView(label)
 
+            // Click normal
             setOnClickListener {
                 if (item.isMore) showMoreModal()
                 else startActivity(Intent(ctx, BrowserResponseActivity::class.java).apply {
                     putExtra(BrowserResponseActivity.EXTRA_QUERY, item.url)
                 }).also { requireActivity().overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left) }
             }
+
+            // Long press para remover (não aplica ao botão "Mais")
+            if (!item.isMore) {
+                setOnLongClickListener {
+                    showRemoveConfirm(item, pageIndex)
+                    true
+                }
+            }
         }
+    }
+
+    private fun showRemoveConfirm(item: SiteItem, pageIndex: Int) {
+        val ctx = requireContext()
+        android.app.AlertDialog.Builder(ctx)
+            .setTitle("Remover app")
+            .setMessage("Remover \"${item.label}\" da secção?")
+            .setPositiveButton("Remover") { _, _ ->
+                if (pageIndex == 0) {
+                    mainSites.removeAll { it.url == item.url }
+                } else {
+                    val sIdx = pageIndex - 1
+                    if (sIdx < extraSections.size) {
+                        extraSections[sIdx].removeAll { it.url == item.url }
+                        // Limpa secções vazias do final
+                        while (extraSections.isNotEmpty() && extraSections.last().isEmpty()) {
+                            extraSections.removeAt(extraSections.size - 1)
+                        }
+                    }
+                }
+                // Mantém página atual se possível
+                val totalPages = 1 + extraSections.size
+                if (currentPage >= totalPages) currentPage = totalPages - 1
+                renderPages()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun updateDots() {
@@ -314,7 +411,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    // ── Modal Mais Apps ───────────────────────────────────────────────────────
+    // ── Modal Mais Apps ────────────────────────────────────────────────────────
 
     private fun showMoreModal() {
         val ctx     = requireContext()
@@ -345,7 +442,6 @@ class HomeFragment : Fragment() {
             translationY = sheetH.toFloat()
         }
 
-        // Handle bar
         val handleWrap = FrameLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, (28*dp).toInt()
@@ -405,16 +501,9 @@ class HomeFragment : Fragment() {
                     orientation = LinearLayout.HORIZONTAL
                     row.forEach { app ->
                         addView(buildModalCell(app, appW.toInt(), dp) {
-                            if (!extraSites.any { it.url == app.url }) {
-                                extraSites.add(SiteItem(app.label, app.url, app.iconAsset))
-                                currentPage = 1
-                                renderPages()
-                                // Scroll para página 2
-                                sitesHScroll.post {
-                                    sitesHScroll.smoothScrollTo(resources.displayMetrics.widthPixels, 0)
-                                }
-                                Toast.makeText(ctx, "${app.label} adicionado", Toast.LENGTH_SHORT).show()
-                            }
+                            addAppToCorrectSection(app)
+                            dismissModal(overlay, sheet, sheetH, rootView)
+                            showMoreModal() // re-abre para continuar a adicionar
                         })
                     }
                     repeat(4 - row.size) {
@@ -440,9 +529,47 @@ class HomeFragment : Fragment() {
         overlay.setOnClickListener { dismissModal(overlay, sheet, sheetH, rootView) }
     }
 
+    /**
+     * Adiciona o app na secção correcta:
+     * - Página 1 (mainSites): se tiver espaço (< ITEMS_PER_PAGE)
+     * - Caso contrário, vai para a última secção de extras se tiver espaço
+     * - Se a última secção estiver cheia, cria nova secção
+     * O app aparece NO LUGAR do botão "+", que avança para o fim.
+     */
+    private fun addAppToCorrectSection(app: AppItem) {
+        val newItem = SiteItem(app.label, app.url, app.iconAsset)
+
+        // Verifica se já existe em algum lado
+        val allUrls = mainSites.map { it.url } + extraSections.flatten().map { it.url }
+        if (allUrls.contains(app.url)) {
+            Toast.makeText(requireContext(), "${app.label} já adicionado", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (mainSites.size < ITEMS_PER_PAGE) {
+            mainSites.add(newItem)
+            currentPage = 0
+        } else {
+            if (extraSections.isEmpty() || extraSections.last().size >= ITEMS_PER_PAGE) {
+                extraSections.add(mutableListOf(newItem))
+            } else {
+                extraSections.last().add(newItem)
+            }
+            currentPage = extraSections.size // última página
+        }
+
+        renderPages()
+        // Scroll para a página onde foi adicionado
+        sitesHScroll.post {
+            sitesHScroll.smoothScrollTo(currentPage * resources.displayMetrics.widthPixels, 0)
+        }
+        Toast.makeText(requireContext(), "${app.label} adicionado", Toast.LENGTH_SHORT).show()
+    }
+
     private fun buildModalCell(app: AppItem, width: Int, dp: Float, onAdd: () -> Unit): LinearLayout {
         val ctx = requireContext()
-        val added = extraSites.any { it.url == app.url }
+        val allUrls = mainSites.map { it.url } + extraSections.flatten().map { it.url }
+        val added = allUrls.contains(app.url)
         return LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(width, LinearLayout.LayoutParams.WRAP_CONTENT)
             orientation = LinearLayout.VERTICAL
@@ -507,7 +634,7 @@ class HomeFragment : Fragment() {
             .start()
     }
 
-    // ── Bitmap helpers ────────────────────────────────────────────────────────
+    // ── Bitmap helpers ─────────────────────────────────────────────────────────
 
     private fun makePlaceholderBmp(size: Int): Bitmap {
         val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
@@ -531,7 +658,7 @@ class HomeFragment : Fragment() {
         return bmp
     }
 
-    // ── Category toggles ──────────────────────────────────────────────────────
+    // ── Category toggles ───────────────────────────────────────────────────────
 
     private fun buildCategoryToggles() {
         val ctx = requireContext()
@@ -576,12 +703,15 @@ class HomeFragment : Fragment() {
         val dp = requireContext().resources.displayMetrics.density
         applyChipStyle(mainToggleChips[selectedCategoryIndex], false, dp)
         applyChipStyle(mainToggleChips[index], true, dp)
+        // Sync sticky também
+        if (stickyToggleChips.size > selectedCategoryIndex) applyChipStyle(stickyToggleChips[selectedCategoryIndex], false, dp)
+        if (stickyToggleChips.size > index) applyChipStyle(stickyToggleChips[index], true, dp)
         selectedCategoryIndex = index
         newsItems.clear(); newsAdapter.notifyDataSetChanged()
         fetchNews(newsCategoryKeys[index])
     }
 
-    // ── Fetch notícias ────────────────────────────────────────────────────────
+    // ── Fetch notícias ─────────────────────────────────────────────────────────
 
     private fun fetchNews(category: String) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -614,143 +744,4 @@ class HomeFragment : Fragment() {
     }
 
     override fun onDestroyView() { super.onDestroyView(); _binding = null }
-}
-
-// ── NewsAdapter ────────────────────────────────────────────────────────────────
-
-class NewsAdapter(
-    private val items: List<NewsItem>,
-    private val onClick: (String) -> Unit
-) : RecyclerView.Adapter<NewsAdapter.VH>() {
-
-    private val http = OkHttpClient.Builder()
-        .connectTimeout(5, TimeUnit.SECONDS).readTimeout(5, TimeUnit.SECONDS).build()
-
-    inner class VH(
-        val card: LinearLayout, val image: ImageView,
-        val title: TextView, val desc: TextView,
-        val sourceRow: LinearLayout, val favicon: ImageView, val source: TextView
-    ) : RecyclerView.ViewHolder(card)
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val ctx = parent.context
-        val dp  = ctx.resources.displayMetrics.density
-
-        val card = LinearLayout(ctx).apply {
-            layoutParams = RecyclerView.LayoutParams(
-                RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT
-            ).also { it.marginStart=(16*dp).toInt(); it.marginEnd=(16*dp).toInt(); it.bottomMargin=(12*dp).toInt() }
-            orientation=LinearLayout.VERTICAL; clipToOutline=true
-            isClickable=true; isFocusable=true; elevation=2*dp
-            background = darkCardBg(ctx, dp)
-        }
-        val image = ImageView(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (180*dp).toInt())
-            scaleType = ImageView.ScaleType.CENTER_CROP
-        }
-        val textArea = LinearLayout(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            orientation = LinearLayout.VERTICAL
-            setPadding((14*dp).toInt(), (12*dp).toInt(), (14*dp).toInt(), (14*dp).toInt())
-        }
-        val title = TextView(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            textSize=15f; maxLines=2; ellipsize=android.text.TextUtils.TruncateAt.END
-            setTypeface(typeface, android.graphics.Typeface.BOLD); setTextColor(Color.WHITE)
-        }
-        val desc = TextView(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                .also { it.topMargin=(6*dp).toInt() }
-            textSize=13f; maxLines=3; ellipsize=android.text.TextUtils.TruncateAt.END
-            setTextColor(Color.argb(190,255,255,255))
-        }
-        val sourceRow = LinearLayout(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                .also { it.topMargin=(10*dp).toInt() }
-            orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL
-        }
-        val favicon = ImageView(ctx).apply {
-            val sz=(14*dp).toInt()
-            layoutParams = LinearLayout.LayoutParams(sz,sz).also { it.marginEnd=(6*dp).toInt() }
-            scaleType=ImageView.ScaleType.FIT_CENTER
-        }
-        val source = TextView(ctx).apply { textSize=11f; setTextColor(Color.argb(160,255,255,255)) }
-
-        sourceRow.addView(favicon); sourceRow.addView(source)
-        textArea.addView(title); textArea.addView(desc); textArea.addView(sourceRow)
-        card.addView(image); card.addView(textArea)
-        return VH(card, image, title, desc, sourceRow, favicon, source)
-    }
-
-    override fun onBindViewHolder(holder: VH, position: Int) {
-        val item = items[position]
-        val ctx  = holder.card.context
-        val dp   = ctx.resources.displayMetrics.density
-
-        holder.title.text  = item.title
-        holder.desc.text   = item.description.ifEmpty { item.title }
-        holder.source.text = item.sourceName.replaceFirstChar { it.uppercase() }
-        holder.card.background = darkCardBg(ctx, dp)
-        holder.image.setImageDrawable(android.graphics.drawable.ColorDrawable(Color.parseColor("#2C2C2E")))
-        holder.favicon.setImageDrawable(null)
-        holder.card.setOnClickListener { onClick(item.sourceUrl) }
-
-        if (item.faviconUrl.isNotEmpty()) {
-            val fUrl = item.faviconUrl; val pos = position
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    val bytes = http.newCall(Request.Builder().url(fUrl).build()).execute().body?.bytes() ?: return@launch
-                    val bmp   = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@launch
-                    withContext(Dispatchers.Main) { if (holder.bindingAdapterPosition == pos) holder.favicon.setImageBitmap(bmp) }
-                } catch (_: Exception) {}
-            }
-        }
-
-        if (item.imageUrl.isNotEmpty()) {
-            val pos = position
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    val bytes = http.newCall(Request.Builder().url(item.imageUrl).build()).execute().body?.bytes() ?: return@launch
-                    val bmp   = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@launch
-                    val dom   = dominant(bmp)
-                    val light = lum(dom) > 0.70
-                    withContext(Dispatchers.Main) {
-                        if (holder.bindingAdapterPosition != pos) return@withContext
-                        holder.image.setImageBitmap(bmp)
-                        val col = if (light) Color.parseColor("#1E1E1E") else darken(dom, 0.55f)
-                        holder.card.background = android.graphics.drawable.GradientDrawable().apply {
-                            shape=android.graphics.drawable.GradientDrawable.RECTANGLE
-                            cornerRadius=12*dp; setColor(alpha(col, 0.96f))
-                        }
-                    }
-                } catch (_: Exception) {}
-            }
-        }
-    }
-
-    private fun darkCardBg(ctx: android.content.Context, dp: Float) =
-        android.graphics.drawable.GradientDrawable().apply {
-            shape=android.graphics.drawable.GradientDrawable.RECTANGLE
-            cornerRadius=12*dp; setColor(Color.parseColor("#1E1E1E"))
-        }
-
-    private fun dominant(bmp: Bitmap): Int {
-        val s=Bitmap.createScaledBitmap(bmp,16,16,true)
-        var r=0L; var g=0L; var b=0L; val n=s.width*s.height
-        for(x in 0 until s.width) for(y in 0 until s.height) {
-            val c=s.getPixel(x,y); r+=Color.red(c); g+=Color.green(c); b+=Color.blue(c)
-        }
-        return Color.rgb((r/n).toInt(),(g/n).toInt(),(b/n).toInt())
-    }
-    private fun lum(c: Int): Double {
-        val r=Color.red(c)/255.0; val g=Color.green(c)/255.0; val b=Color.blue(c)/255.0
-        return 0.2126*r+0.7152*g+0.0722*b
-    }
-    private fun darken(c: Int, f: Float) = Color.rgb(
-        (Color.red(c)*f).toInt().coerceIn(0,255),
-        (Color.green(c)*f).toInt().coerceIn(0,255),
-        (Color.blue(c)*f).toInt().coerceIn(0,255)
-    )
-    private fun alpha(c: Int, a: Float) = Color.argb((a*255).toInt(),Color.red(c),Color.green(c),Color.blue(c))
-    override fun getItemCount() = items.size
 }

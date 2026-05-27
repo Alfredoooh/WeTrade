@@ -28,7 +28,6 @@
                 android:paddingStart="16dp"
                 android:paddingEnd="0dp">
 
-                <!-- Texto "Home" no lugar do ícone do app -->
                 <TextView
                     android:id="@+id/toolbarTitle"
                     android:layout_width="wrap_content"
@@ -40,19 +39,18 @@
                     android:textStyle="bold"
                     android:textColor="@color/text_primary" />
 
-                <!-- btnMenu no extremo direito -->
+                <!-- btnMenu: 16dp igual aos ícones do drawer -->
                 <ImageView
                     android:id="@+id/btnMenu"
                     android:layout_width="44dp"
                     android:layout_height="44dp"
-                    android:padding="10dp"
+                    android:padding="14dp"
                     android:layout_centerVertical="true"
                     android:layout_alignParentEnd="true"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true" />
 
-                <!-- btnAskAi com fundo bottom_nav_background no escuro -->
                 <LinearLayout
                     android:id="@+id/btnAskAi"
                     android:layout_width="wrap_content"
@@ -86,7 +84,6 @@
 
                 </LinearLayout>
 
-                <!-- Search pill — visível só na tab de pesquisa -->
                 <LinearLayout
                     android:id="@+id/searchPill"
                     android:layout_width="match_parent"
@@ -208,14 +205,14 @@
 
     </LinearLayout>
 
-    <!-- Drawer lateral -->
+    <!-- Drawer: cor do corpo -->
     <LinearLayout
         android:id="@+id/drawerContainer"
         android:layout_width="280dp"
         android:layout_height="match_parent"
         android:layout_gravity="end"
         android:orientation="vertical"
-        android:background="@color/drawer_background"
+        android:background="@color/background"
         android:fitsSystemWindows="true">
 
         <LinearLayout

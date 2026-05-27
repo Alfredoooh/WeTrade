@@ -52,4 +52,5 @@
     <color name="incognito_bg">#1A1A2E</color>
     <color name="incognito_surface">#252540</color>
     <color name="incognito_text">#FFFFFF</color>
+    <color name="ask_ai_pill_color">#EBEBEB</color>
 </resources>

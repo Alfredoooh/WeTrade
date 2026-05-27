@@ -68,7 +68,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnAskAiIcon.setImageDrawable(svgDrawable("icons/svg/ai.svg", 13, iconSec))
         binding.btnAskAi.setOnClickListener { startActivity(Intent(this, AiSearchActivity::class.java)) }
 
-        binding.btnMenu.setImageDrawable(svgDrawable("icons/svg/menu.svg", 24, iconTint))
+        binding.btnMenu.setImageDrawable(svgDrawable("icons/svg/menu.svg", 16, iconTint))
         binding.btnMenu.setOnClickListener {
             if (binding.drawerLayout.isDrawerOpen(GravityCompat.END))
                 binding.drawerLayout.closeDrawer(GravityCompat.END)
