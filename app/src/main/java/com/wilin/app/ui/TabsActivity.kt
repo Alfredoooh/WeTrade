@@ -36,10 +36,11 @@ class TabsActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_TRANSITION_SCREENSHOT_PATH = "transition_screenshot_path"
-        private const val CARD_WIDTH_DP   = 300f
-        // Altura real: ecrã menos toolbar menos bottom padding
-        private const val CARD_GAP_DP     = 16f
-        private const val CARD_SIDE_DP    = 20f
+        const val EXTRA_SOURCE_SCALE = "source_scale"
+
+        private const val CARD_WIDTH_DP = 300f
+        private const val CARD_GAP_DP  = 16f
+        private const val CARD_SIDE_DP = 20f
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,13 +60,13 @@ class TabsActivity : AppCompatActivity() {
         val blue     = ContextCompat.getColor(this, R.color.colorPrimary)
         val bg       = ContextCompat.getColor(this, R.color.background)
 
-        // Calcular altura do card = altura do ecrã - toolbar(56) - top padding(16) - bottom padding(80)
-        val screenH   = resources.displayMetrics.heightPixels
-        val toolbarH  = (56 * dp).toInt()
-        val cardH     = (screenH - toolbarH - (16 * dp).toInt() - (80 * dp).toInt()).coerceAtLeast((400 * dp).toInt())
-        val cardW     = (CARD_WIDTH_DP * dp).toInt()
-        val cardGap   = (CARD_GAP_DP * dp).toInt()
-        val sideM     = (CARD_SIDE_DP * dp).toInt()
+        val screenH  = resources.displayMetrics.heightPixels
+        val screenW  = resources.displayMetrics.widthPixels
+        val toolbarH = (56 * dp).toInt()
+        val cardH    = (screenH - toolbarH - (16 * dp).toInt() - (80 * dp).toInt()).coerceAtLeast((400 * dp).toInt())
+        val cardW    = (CARD_WIDTH_DP * dp).toInt()
+        val cardGap  = (CARD_GAP_DP * dp).toInt()
+        val sideM    = (CARD_SIDE_DP * dp).toInt()
 
         val root = FrameLayout(this).apply {
             layoutParams = ViewGroup.LayoutParams(
@@ -92,7 +93,7 @@ class TabsActivity : AppCompatActivity() {
             setImageDrawable(svgDrawable("icons/svg/back_arrow.svg", 24, iconTint))
             isClickable = true; isFocusable = true
             background = rippleDrawable()
-            setOnClickListener { finish() }
+            setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         }
 
         val tabCountTv = TextView(this).apply {
@@ -148,9 +149,9 @@ class TabsActivity : AppCompatActivity() {
             val isHome: Boolean = false
         )
 
-        val tabs = TabManager.getTabs()
+        val tabs      = TabManager.getTabs()
         val currentId = TabManager.getCurrentId()
-        val items = mutableListOf<CardItem>()
+        val items     = mutableListOf<CardItem>()
 
         tabs.forEach { tab ->
             items.add(CardItem(
@@ -165,12 +166,22 @@ class TabsActivity : AppCompatActivity() {
             items.add(CardItem(id = "__home__", title = "Início", url = "", preview = it, isHome = true))
         }
 
+        val activeIndex = items.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
+
         items.forEachIndexed { index, item ->
             val isActive = item.id == currentId || item.isHome
             val card = buildCard(
                 item.id, item.title, item.url, item.preview, item.isHome, isActive,
                 cardW, cardH, cardGap, dp, blue, iconTint, tabs,
-                enterDelay = index * 40L
+                // Cards antes do activo: entram da esquerda com delay
+                // Card activo: aparece imediatamente (parece ser o ecrã que "encolheu")
+                // Cards depois: entram com delay crescente
+                enterDelay = when {
+                    item.id == currentId || item.isHome -> 0L
+                    index < activeIndex -> (activeIndex - index) * 35L
+                    else                -> (index - activeIndex) * 35L
+                },
+                isActiveTransition = (item.id == currentId && !item.isHome)
             ) {
                 val c = TabManager.getTabs().size
                 tabCountTv.text = if (c == 1) "1 Aba" else "$c Abas"
@@ -203,9 +214,11 @@ class TabsActivity : AppCompatActivity() {
         root.addView(btnNewBottom)
         setContentView(root)
 
-        // Scroll para o último card após layout, com animação suave
+        // ── Scroll para mostrar o card activo centrado ────────────────────────
         hScrollView.post {
-            hScrollView.smoothScrollTo(hScrollView.getChildAt(0)?.width ?: 0, 0)
+            val targetScrollX = (activeIndex * (cardW + cardGap) - (screenW - cardW) / 2)
+                .coerceAtLeast(0)
+            hScrollView.scrollTo(targetScrollX, 0)
         }
     }
 
@@ -224,6 +237,7 @@ class TabsActivity : AppCompatActivity() {
         iconTint: Int,
         tabs: List<BrowserTab>,
         enterDelay: Long = 0L,
+        isActiveTransition: Boolean = false,
         onClose: () -> Unit
     ): FrameLayout {
         val ctx = this
@@ -233,31 +247,51 @@ class TabsActivity : AppCompatActivity() {
                 it.marginEnd = cardGap
             }
             background = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
+                shape        = GradientDrawable.RECTANGLE
                 cornerRadius = 18 * dp
                 setColor(ContextCompat.getColor(ctx, R.color.card_background))
                 if (isActive) setStroke((2 * dp).toInt(), blue)
             }
             clipToOutline = true
             elevation = if (isActive) 12f * dp else 4f * dp
-            // Estado inicial para animação de entrada
-            alpha = 0f
-            scaleX = 0.88f
-            scaleY = 0.88f
-            translationY = 60f * dp
         }
 
-        // Animação de entrada escalonada — container transform de entrada
-        card.postDelayed({
-            card.animate()
-                .alpha(1f)
-                .scaleX(1f)
-                .scaleY(1f)
-                .translationY(0f)
-                .setDuration(380)
-                .setInterpolator(OvershootInterpolator(0.8f))
-                .start()
-        }, enterDelay)
+        // ── Animação de entrada ───────────────────────────────────────────────
+        when {
+            isActiveTransition -> {
+                // Card activo: simulação do ecrã que "encolheu" em MainActivity.
+                // Aparece com fade rápido — não precisa animar scale porque
+                // o olho humano percebe-o como continuação do shrink anterior.
+                card.alpha = 0f
+                card.scaleX = 1f
+                card.scaleY = 1f
+                card.translationY = 0f
+                card.postDelayed({
+                    card.animate()
+                        .alpha(1f)
+                        .setDuration(160)
+                        .setInterpolator(DecelerateInterpolator(1.5f))
+                        .start()
+                }, 40L)
+            }
+            else -> {
+                // Outros cards: entram de baixo com overshoot — sentido físico de "cartões"
+                card.alpha = 0f
+                card.scaleX = 0.88f
+                card.scaleY = 0.88f
+                card.translationY = 70f * dp
+                card.postDelayed({
+                    card.animate()
+                        .alpha(1f)
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .translationY(0f)
+                        .setDuration(400)
+                        .setInterpolator(OvershootInterpolator(0.75f))
+                        .start()
+                }, enterDelay)
+            }
+        }
 
         // Preview da página
         val previewIv = ImageView(ctx).apply {
@@ -337,18 +371,17 @@ class TabsActivity : AppCompatActivity() {
         header.addView(faviconIv)
         header.addView(titleTv)
         header.addView(closeBtn)
-
         card.addView(previewIv)
         card.addView(header)
 
-        // Clique no card — container transform de saída (ampliação até ecrã completo)
+        // ── Clique no card — container transform de saída ─────────────────────
+        // O card expande até cobrir o ecrã: iOS-style reverse de entrada
         card.setOnClickListener {
             if (isHome) {
-                // Anima card a expandir e depois fecha
                 card.animate()
-                    .scaleX(1.08f).scaleY(1.08f)
+                    .scaleX(1.06f).scaleY(1.06f)
                     .alpha(0f)
-                    .setDuration(300)
+                    .setDuration(280)
                     .setInterpolator(DecelerateInterpolator(2.5f))
                     .withEndAction { finish() }
                     .start()
@@ -357,13 +390,11 @@ class TabsActivity : AppCompatActivity() {
                 TabManager.setCurrentId(tab.id)
                 TabManager.save(ctx)
 
-                // Container transform: card expande até cobrir o ecrã inteiro
                 val screenW = resources.displayMetrics.widthPixels
                 val screenH = resources.displayMetrics.heightPixels
                 val scaleX  = screenW.toFloat() / card.width.toFloat()
                 val scaleY  = screenH.toFloat() / card.height.toFloat()
 
-                // Obtém posição do card no ecrã para calcular pivot
                 val loc = IntArray(2)
                 card.getLocationOnScreen(loc)
                 card.pivotX = 0f
@@ -374,8 +405,8 @@ class TabsActivity : AppCompatActivity() {
                     .scaleY(scaleY)
                     .translationX(-loc[0].toFloat())
                     .translationY(-loc[1].toFloat())
-                    .alpha(0.6f)
-                    .setDuration(380)
+                    .alpha(0.5f)
+                    .setDuration(360)
                     .setInterpolator(DecelerateInterpolator(2.8f))
                     .withEndAction {
                         startActivity(Intent(ctx, BrowserResponseActivity::class.java).apply {
@@ -414,6 +445,12 @@ class TabsActivity : AppCompatActivity() {
                 if (bmp != null) Handler(Looper.getMainLooper()).post { iv.setImageBitmap(bmp) }
             }
         }.start()
+    }
+
+    override fun finish() {
+        super.finish()
+        // Sem transição ao fechar — a MainActivity já está pronta (reset instantâneo)
+        overridePendingTransition(0, 0)
     }
 
     private fun applyTheme() {

@@ -1,6 +1,5 @@
 package com.wilin.app.ui
 
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -11,6 +10,7 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.content.Intent
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
@@ -23,6 +23,7 @@ import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.wilin.app.MainActivity
 import com.wilin.app.R
 import com.wilin.app.databinding.FragmentHomeBinding
 import kotlinx.coroutines.CoroutineScope
@@ -64,7 +65,6 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
-    // mainSites são editáveis (removíveis por long press)
     private val mainSites = mutableListOf(
         SiteItem("Google",    "https://google.com",       "icons/png/google.png"),
         SiteItem("YouTube",   "https://youtube.com",      "icons/png/youtube.png"),
@@ -77,11 +77,8 @@ class HomeFragment : Fragment() {
         SiteItem("Reddit",    "https://reddit.com",       "icons/png/reddit.png"),
     )
 
-    // Cada secção de extras comporta até ITEMS_PER_PAGE itens (sem contar o botão +)
-    // O botão + é sempre o último item de cada secção
-    private val ITEMS_PER_PAGE = 9 // 9 apps + 1 botão "Mais" = 10 por página
+    private val ITEMS_PER_PAGE = 9
 
-    // extraSites armazenados por secção (índice 0 = secção 2, índice 1 = secção 3, ...)
     private val extraSections = mutableListOf<MutableList<SiteItem>>()
 
     private val availableApps = listOf(
@@ -120,7 +117,7 @@ class HomeFragment : Fragment() {
         .readTimeout(8, TimeUnit.SECONDS)
         .build()
 
-    private val mainToggleChips = mutableListOf<TextView>()
+    private val mainToggleChips   = mutableListOf<TextView>()
     private val stickyToggleChips = mutableListOf<TextView>()
     private lateinit var sitesHScroll: HorizontalScrollView
     private lateinit var sitesRowContainer: LinearLayout
@@ -151,14 +148,18 @@ class HomeFragment : Fragment() {
         fetchNews(newsCategoryKeys[0])
     }
 
-    // ── Sticky scroll ──────────────────────────────────────────────────────────
+    // ── Sticky scroll + hook para MainActivity ────────────────────────────────
 
     private fun setupStickyScroll() {
-        binding.homeScrollView.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, _ ->
+        binding.homeScrollView.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
+            val dy = scrollY - oldScrollY
+
+            // Notificar MainActivity para animar AppBar + BottomNav
+            (activity as? MainActivity)?.onHomeScrolled(dy, scrollY)
+
             val stickySection = binding.stickyToggleSection
             val overlayLayout = binding.stickyToggleOverlay
 
-            // Posição do topo da secção sticky relativa ao ScrollView
             val location = IntArray(2)
             stickySection.getLocationInWindow(location)
             val parentLocation = IntArray(2)
@@ -167,10 +168,13 @@ class HomeFragment : Fragment() {
             val stickyTop = location[1] - parentLocation[1]
 
             if (stickyTop <= 0) {
-                // Secção saiu do ecrã pelo topo → mostrar overlay fixo
                 if (overlayLayout.visibility != View.VISIBLE) {
                     overlayLayout.visibility = View.VISIBLE
                     syncStickyChips()
+                    // Sincronizar translationY com a posição actual da AppBar
+                    val appBarTransY = (activity as? MainActivity)
+                        ?.binding?.appBarLayout?.translationY ?: 0f
+                    overlayLayout.translationY = appBarTransY
                 }
             } else {
                 overlayLayout.visibility = View.GONE
@@ -178,17 +182,17 @@ class HomeFragment : Fragment() {
         })
     }
 
-    // Sincroniza o estado dos chips (selecionado) entre o scroll normal e o sticky
-    private fun syncStickyChips() {
-        val dp = requireContext().resources.displayMetrics.density
-        binding.categoryToggleContainerSticky.removeAllViews()
-        stickyToggleChips.clear()
-        newsCategories.forEachIndexed { i, label ->
-            val chip = makeChip(label, i == selectedCategoryIndex, dp)
-            chip.setOnClickListener { selectCategory(i) }
-            stickyToggleChips.add(chip)
-            binding.categoryToggleContainerSticky.addView(chip)
-        }
+    /**
+     * Chamado pela MainActivity quando a AppBar anima (esconde/mostra).
+     * O overlay sticky segue a AppBar para não ficar "suspense" no ar:
+     *   - AppBar visível (translationY=0)      → overlay na posição normal (0)
+     *   - AppBar escondida (translationY=-Hdp) → overlay sobe o mesmo valor
+     *     ficando colado ao status bar
+     */
+    fun updateStickyOverlayTranslation(appBarTransY: Float) {
+        if (_binding == null) return
+        // Aplica sempre, independente da visibilidade, para estar pronto quando aparecer
+        binding.stickyToggleOverlay.translationY = appBarTransY
     }
 
     // ── Carrossel ──────────────────────────────────────────────────────────────
@@ -239,7 +243,6 @@ class HomeFragment : Fragment() {
         sitesRowContainer.removeAllViews()
         dotsContainer.removeAllViews()
 
-        // Página 1 — mainSites + botão "Mais" se a secção 1 de extras estiver cheia ou vazia
         val page1Items = mainSites.toMutableList()
         val page1HasSpace = mainSites.size < ITEMS_PER_PAGE
         if (page1HasSpace || extraSections.isEmpty()) {
@@ -247,17 +250,11 @@ class HomeFragment : Fragment() {
         }
         sitesRowContainer.addView(buildPage(page1Items, screenW, dp, pageIndex = 0))
 
-        // Páginas extra — cada secção de extras tem os seus items + botão "Mais" no final
         extraSections.forEachIndexed { sIdx, section ->
             val pageItems = section.toMutableList()
-            // Só adiciona botão "Mais" se esta secção estiver cheia (= pode haver próxima)
-            // ou se for a última secção com espaço
-            val sectionFull = section.size >= ITEMS_PER_PAGE
             val isLastSection = sIdx == extraSections.size - 1
             if (isLastSection) {
                 pageItems.add(SiteItem("Mais", "", "", isMore = true))
-            } else if (sectionFull) {
-                // Secção cheia e não é a última — não mostra botão "Mais" (a próxima secção já existe)
             }
             sitesRowContainer.addView(buildPage(pageItems, screenW, dp, pageIndex = sIdx + 1))
         }
@@ -357,7 +354,6 @@ class HomeFragment : Fragment() {
             }
             addView(container); addView(label)
 
-            // Click normal
             setOnClickListener {
                 if (item.isMore) showMoreModal()
                 else startActivity(Intent(ctx, BrowserResponseActivity::class.java).apply {
@@ -365,7 +361,6 @@ class HomeFragment : Fragment() {
                 }).also { requireActivity().overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left) }
             }
 
-            // Long press para remover (não aplica ao botão "Mais")
             if (!item.isMore) {
                 setOnLongClickListener {
                     showRemoveConfirm(item, pageIndex)
@@ -387,13 +382,11 @@ class HomeFragment : Fragment() {
                     val sIdx = pageIndex - 1
                     if (sIdx < extraSections.size) {
                         extraSections[sIdx].removeAll { it.url == item.url }
-                        // Limpa secções vazias do final
                         while (extraSections.isNotEmpty() && extraSections.last().isEmpty()) {
                             extraSections.removeAt(extraSections.size - 1)
                         }
                     }
                 }
-                // Mantém página atual se possível
                 val totalPages = 1 + extraSections.size
                 if (currentPage >= totalPages) currentPage = totalPages - 1
                 renderPages()
@@ -503,7 +496,7 @@ class HomeFragment : Fragment() {
                         addView(buildModalCell(app, appW.toInt(), dp) {
                             addAppToCorrectSection(app)
                             dismissModal(overlay, sheet, sheetH, rootView)
-                            showMoreModal() // re-abre para continuar a adicionar
+                            showMoreModal()
                         })
                     }
                     repeat(4 - row.size) {
@@ -529,23 +522,13 @@ class HomeFragment : Fragment() {
         overlay.setOnClickListener { dismissModal(overlay, sheet, sheetH, rootView) }
     }
 
-    /**
-     * Adiciona o app na secção correcta:
-     * - Página 1 (mainSites): se tiver espaço (< ITEMS_PER_PAGE)
-     * - Caso contrário, vai para a última secção de extras se tiver espaço
-     * - Se a última secção estiver cheia, cria nova secção
-     * O app aparece NO LUGAR do botão "+", que avança para o fim.
-     */
     private fun addAppToCorrectSection(app: AppItem) {
         val newItem = SiteItem(app.label, app.url, app.iconAsset)
-
-        // Verifica se já existe em algum lado
         val allUrls = mainSites.map { it.url } + extraSections.flatten().map { it.url }
         if (allUrls.contains(app.url)) {
             Toast.makeText(requireContext(), "${app.label} já adicionado", Toast.LENGTH_SHORT).show()
             return
         }
-
         if (mainSites.size < ITEMS_PER_PAGE) {
             mainSites.add(newItem)
             currentPage = 0
@@ -555,11 +538,9 @@ class HomeFragment : Fragment() {
             } else {
                 extraSections.last().add(newItem)
             }
-            currentPage = extraSections.size // última página
+            currentPage = extraSections.size
         }
-
         renderPages()
-        // Scroll para a página onde foi adicionado
         sitesHScroll.post {
             sitesHScroll.smoothScrollTo(currentPage * resources.displayMetrics.widthPixels, 0)
         }
@@ -673,6 +654,18 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun syncStickyChips() {
+        val dp = requireContext().resources.displayMetrics.density
+        binding.categoryToggleContainerSticky.removeAllViews()
+        stickyToggleChips.clear()
+        newsCategories.forEachIndexed { i, label ->
+            val chip = makeChip(label, i == selectedCategoryIndex, dp)
+            chip.setOnClickListener { selectCategory(i) }
+            stickyToggleChips.add(chip)
+            binding.categoryToggleContainerSticky.addView(chip)
+        }
+    }
+
     private fun makeChip(label: String, selected: Boolean, dp: Float): TextView {
         val ctx = requireContext()
         return TextView(ctx).apply {
@@ -703,7 +696,6 @@ class HomeFragment : Fragment() {
         val dp = requireContext().resources.displayMetrics.density
         applyChipStyle(mainToggleChips[selectedCategoryIndex], false, dp)
         applyChipStyle(mainToggleChips[index], true, dp)
-        // Sync sticky também
         if (stickyToggleChips.size > selectedCategoryIndex) applyChipStyle(stickyToggleChips[selectedCategoryIndex], false, dp)
         if (stickyToggleChips.size > index) applyChipStyle(stickyToggleChips[index], true, dp)
         selectedCategoryIndex = index
