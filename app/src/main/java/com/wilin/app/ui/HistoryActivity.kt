@@ -12,9 +12,11 @@ import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -36,9 +38,9 @@ class HistoryActivity : AppCompatActivity() {
     private val history = mutableListOf<String>()
 
     companion object {
-        private const val PREFS_HISTORY  = "wilin_search_history"
-        private const val KEY_HISTORY    = "history"
-        private const val FAVICON_CACHE  = "favicons"
+        private const val PREFS_HISTORY = "wilin_search_history"
+        private const val KEY_HISTORY   = "history"
+        private const val FAVICON_CACHE = "favicons"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,15 +51,14 @@ class HistoryActivity : AppCompatActivity() {
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         binding.btnBack.setImageDrawable(svgDrawable("icons/svg/back_arrow.svg", 24, iconTint))
         binding.btnBack.setOnClickListener { finish() }
-
         binding.btnClear.setOnClickListener { showClearConfirmDialog() }
 
         loadHistory()
 
         val adapter = HistoryActivityAdapter(
-            items   = history,
-            context = this,
-            onClick = { query ->
+            items        = history,
+            context      = this,
+            onClick      = { query ->
                 TabManager.init(this)
                 val url = if (query.startsWith("http")) query
                           else "https://duckduckgo.com/?q=${Uri.encode(query)}&kae=d&k1=-1"
@@ -70,7 +71,7 @@ class HistoryActivity : AppCompatActivity() {
                 )
                 finish()
             },
-            onDelete = { pos ->
+            onDelete     = { pos ->
                 history.removeAt(pos)
                 saveHistory()
                 binding.emptyState.visibility =
@@ -88,12 +89,17 @@ class HistoryActivity : AppCompatActivity() {
     // ─── Dialog de confirmação ────────────────────────────────────────────────
 
     private fun showClearConfirmDialog() {
-        val dp        = resources.displayMetrics.density
-        val bgColor   = ContextCompat.getColor(this, R.color.dialog_background)
-        val textPrim  = ContextCompat.getColor(this, R.color.text_primary)
-        val textSec   = ContextCompat.getColor(this, R.color.text_secondary)
-        val blue      = ContextCompat.getColor(this, R.color.colorPrimary)
-        val red       = Color.parseColor("#FF3B30")
+        val dp       = resources.displayMetrics.density
+        val textPrim = ContextCompat.getColor(this, R.color.text_primary)
+        val textSec  = ContextCompat.getColor(this, R.color.text_secondary)
+        val blue     = ContextCompat.getColor(this, R.color.colorPrimary)
+        val red      = Color.parseColor("#FF3B30")
+        val divColor = ContextCompat.getColor(this, R.color.divider)
+
+        // Resolver ripple fora de qualquer apply para evitar reatribuição de val
+        val tv = TypedValue()
+        theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
+        val rippleBg = tv.resourceId
 
         // Overlay escuro
         val overlay = FrameLayout(this).apply {
@@ -101,17 +107,16 @@ class HistoryActivity : AppCompatActivity() {
             isClickable = true
         }
 
-        // Card central
+        // Card
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background  = ContextCompat.getDrawable(this@HistoryActivity, R.drawable.rounded_card_bg)
             val hPad = (24 * dp).toInt()
-            val vPad = (28 * dp).toInt()
-            setPadding(hPad, vPad, hPad, (20 * dp).toInt())
+            setPadding(hPad, (28 * dp).toInt(), hPad, (20 * dp).toInt())
             elevation = 24f
         }
 
-        // Ícone de aviso
+        // Ícone
         val iconWarn = ImageView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -128,7 +133,7 @@ class HistoryActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).also { it.bottomMargin = (10 * dp).toInt() }
             text = "Limpar histórico"
-            textSize  = 17f
+            textSize = 17f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
             setTextColor(textPrim)
         }
@@ -156,15 +161,15 @@ class HistoryActivity : AppCompatActivity() {
             setTextColor(red)
         }
 
-        // Divisor
+        // Divisor horizontal
         val divider = View(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 1
             ).also { it.bottomMargin = (4 * dp).toInt() }
-            setBackgroundColor(ContextCompat.getColor(this@HistoryActivity, R.color.divider))
+            setBackgroundColor(divColor)
         }
 
-        // Botões
+        // Linha de botões
         val btnRow = LinearLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -173,38 +178,35 @@ class HistoryActivity : AppCompatActivity() {
             orientation = LinearLayout.HORIZONTAL
         }
 
-        val btnNo = TextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(0, (48 * dp).toInt(), 1f)
-            text     = "Não"
-            textSize = 15f
-            gravity  = Gravity.CENTER
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-            setTextColor(blue)
-            isClickable = true; isFocusable = true
-            background = with(android.util.TypedValue()) {
-                theme.resolveAttribute(android.R.attr.selectableItemBackground, this, true)
-                ContextCompat.getDrawable(this@HistoryActivity, resourceId)
-            }
-        }
+        // Botão NÃO — background resolvido antes do apply
+        val btnNo = TextView(this)
+        btnNo.layoutParams = LinearLayout.LayoutParams(0, (48 * dp).toInt(), 1f)
+        btnNo.text = "Não"
+        btnNo.textSize = 15f
+        btnNo.gravity = Gravity.CENTER
+        btnNo.setTypeface(btnNo.typeface, android.graphics.Typeface.BOLD)
+        btnNo.setTextColor(blue)
+        btnNo.isClickable = true
+        btnNo.isFocusable = true
+        btnNo.setBackgroundResource(rippleBg)
 
+        // Divisor vertical entre botões
         val btnDivider = View(this).apply {
             layoutParams = LinearLayout.LayoutParams(1, LinearLayout.LayoutParams.MATCH_PARENT)
-            setBackgroundColor(ContextCompat.getColor(this@HistoryActivity, R.color.divider))
+            setBackgroundColor(divColor)
         }
 
-        val btnYes = TextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(0, (48 * dp).toInt(), 1f)
-            text     = "Sim"
-            textSize = 15f
-            gravity  = Gravity.CENTER
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-            setTextColor(red)
-            isClickable = true; isFocusable = true
-            background = with(android.util.TypedValue()) {
-                theme.resolveAttribute(android.R.attr.selectableItemBackground, this, true)
-                ContextCompat.getDrawable(this@HistoryActivity, resourceId)
-            }
-        }
+        // Botão SIM
+        val btnYes = TextView(this)
+        btnYes.layoutParams = LinearLayout.LayoutParams(0, (48 * dp).toInt(), 1f)
+        btnYes.text = "Sim"
+        btnYes.textSize = 15f
+        btnYes.gravity = Gravity.CENTER
+        btnYes.setTypeface(btnYes.typeface, android.graphics.Typeface.BOLD)
+        btnYes.setTextColor(red)
+        btnYes.isClickable = true
+        btnYes.isFocusable = true
+        btnYes.setBackgroundResource(rippleBg)
 
         btnRow.addView(btnNo)
         btnRow.addView(btnDivider)
@@ -217,30 +219,28 @@ class HistoryActivity : AppCompatActivity() {
         card.addView(divider)
         card.addView(btnRow)
 
-        // Posicionar o card no centro
         val cardParams = FrameLayout.LayoutParams(
-            (FrameLayout.LayoutParams.MATCH_PARENT),
+            FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.WRAP_CONTENT,
             Gravity.CENTER
         ).apply {
-            val margin = (32 * dp).toInt()
-            leftMargin = margin; rightMargin = margin
+            val m = (32 * dp).toInt()
+            leftMargin = m; rightMargin = m
         }
         overlay.addView(card, cardParams)
 
-        // Adicionar ao root da Activity
         val root = window.decorView.findViewById<ViewGroup>(android.R.id.content)
         root.addView(overlay, ViewGroup.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
         ))
 
-        // Animação de entrada
+        // Animação entrada
         overlay.alpha = 0f
         card.scaleX = 0.92f; card.scaleY = 0.92f
         overlay.animate().alpha(1f).setDuration(200).start()
         card.animate().scaleX(1f).scaleY(1f).setDuration(220)
-            .setInterpolator(android.view.animation.DecelerateInterpolator(2f)).start()
+            .setInterpolator(DecelerateInterpolator(2f)).start()
 
         fun dismiss() {
             overlay.animate().alpha(0f).setDuration(160).withEndAction {
@@ -249,12 +249,11 @@ class HistoryActivity : AppCompatActivity() {
         }
 
         overlay.setOnClickListener { dismiss() }
-        btnNo.setOnClickListener  { dismiss() }
-        btnYes.setOnClickListener {
+        btnNo.setOnClickListener   { dismiss() }
+        btnYes.setOnClickListener  {
             dismiss()
             history.clear()
             getSharedPreferences(PREFS_HISTORY, MODE_PRIVATE).edit().remove(KEY_HISTORY).apply()
-            // Apagar cache de favicons também
             faviconCacheDir().listFiles()?.forEach { it.delete() }
             binding.recycler.adapter?.notifyDataSetChanged()
             binding.emptyState.visibility = View.VISIBLE
@@ -311,27 +310,34 @@ class HistoryActivityAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val ctx  = parent.context
-        val dp   = ctx.resources.displayMetrics.density
-        val textColor   = ContextCompat.getColor(ctx, R.color.text_primary)
-        val secondColor = ContextCompat.getColor(ctx, R.color.icon_tint_secondary)
+        val ctx       = parent.context
+        val dp        = ctx.resources.displayMetrics.density
+        val textColor = ContextCompat.getColor(ctx, R.color.text_primary)
+        val iconSec   = ContextCompat.getColor(ctx, R.color.icon_tint_secondary)
+
+        // Resolver ripple fora de apply
+        val tv = TypedValue()
+        ctx.theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
+        val rowRipple = tv.resourceId
+
+        val tv2 = TypedValue()
+        ctx.theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, tv2, true)
+        val borderlessRipple = tv2.resourceId
 
         val row = LinearLayout(ctx).apply {
             layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
             orientation = LinearLayout.HORIZONTAL
             gravity     = android.view.Gravity.CENTER_VERTICAL
             val h = (16 * dp).toInt()
             val v = (13 * dp).toInt()
             setPadding(h, v, h, v)
             isClickable = true; isFocusable = true
-            background = with(android.util.TypedValue()) {
-                ctx.theme.resolveAttribute(android.R.attr.selectableItemBackground, this, true)
-                ContextCompat.getDrawable(ctx, resourceId)
-            }
+            setBackgroundResource(rowRipple)
         }
 
-        // Favicon 18dp
         val faviconIv = ImageView(ctx).apply {
             tag = "favicon"
             val sz = (18 * dp).toInt()
@@ -350,19 +356,16 @@ class HistoryActivityAdapter(
             ellipsize = TextUtils.TruncateAt.END
         }
 
-        val deleteBtn = ImageView(ctx).apply {
-            tag = "delete"
-            val sz = (40 * dp).toInt()
-            layoutParams = LinearLayout.LayoutParams(sz, sz)
-            val p = (10 * dp).toInt()
-            setPadding(p, p, p, p)
-            setImageDrawable(svgFn("icons/svg/close.svg", 18, secondColor))
-            isClickable = true; isFocusable = true
-            background = with(android.util.TypedValue()) {
-                ctx.theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, this, true)
-                ContextCompat.getDrawable(ctx, resourceId)
-            }
-        }
+        val deleteBtn = ImageView(ctx)
+        deleteBtn.tag = "delete"
+        val sz = (40 * dp).toInt()
+        deleteBtn.layoutParams = LinearLayout.LayoutParams(sz, sz)
+        val p = (10 * dp).toInt()
+        deleteBtn.setPadding(p, p, p, p)
+        deleteBtn.setImageDrawable(svgFn("icons/svg/close.svg", 18, iconSec))
+        deleteBtn.isClickable = true
+        deleteBtn.isFocusable = true
+        deleteBtn.setBackgroundResource(borderlessRipple)
 
         row.addView(faviconIv)
         row.addView(textTv)
@@ -379,12 +382,10 @@ class HistoryActivityAdapter(
             if (pos >= 0) { onDelete(pos); notifyItemRemoved(pos) }
         }
 
-        // Favicon: tenta determinar host
         val host = extractHost(query)
         if (host != null) {
             loadFavicon(host, holder.favicon)
         } else {
-            // Sem host (pesquisa de texto) — ícone de lupa
             val tint = ContextCompat.getColor(context, R.color.icon_tint_secondary)
             holder.favicon.setImageDrawable(
                 svgFn("icons/svg/magnifying_glass_outline.svg", 18, tint)
@@ -394,47 +395,39 @@ class HistoryActivityAdapter(
 
     override fun getItemCount() = items.size
 
-    // ─── Favicon com cache em disco ───────────────────────────────────────────
-
     private fun extractHost(query: String): String? {
         return try {
-            if (query.startsWith("http://") || query.startsWith("https://")) {
-                Uri.parse(query).host?.removePrefix("www.")
-            } else if (query.contains(".") && !query.contains(" ")) {
-                Uri.parse("https://$query").host?.removePrefix("www.")
-            } else null
+            when {
+                query.startsWith("http://") || query.startsWith("https://") ->
+                    Uri.parse(query).host?.removePrefix("www.")
+                query.contains(".") && !query.contains(" ") ->
+                    Uri.parse("https://$query").host?.removePrefix("www.")
+                else -> null
+            }
         } catch (_: Exception) { null }
     }
 
     private fun loadFavicon(host: String, imageView: ImageView) {
-        val safeKey  = host.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+        val safeKey   = host.replace(Regex("[^a-zA-Z0-9._-]"), "_")
         val cacheFile = File(faviconCache, "$safeKey.png")
 
         if (cacheFile.exists()) {
-            // Cache hit — carrega no UI thread
             val bmp = BitmapFactory.decodeFile(cacheFile.absolutePath)
             if (bmp != null) { imageView.setImageBitmap(bmp); return }
         }
 
-        // Placeholder enquanto carrega
         val tint = ContextCompat.getColor(context, R.color.icon_tint_secondary)
         imageView.setImageDrawable(svgFn("icons/svg/magnifying_glass_outline.svg", 18, tint))
 
-        // Carregar em background
         Thread {
             try {
-                val faviconUrl = "https://www.google.com/s2/favicons?domain=$host&sz=32"
-                val conn = URL(faviconUrl).openConnection() as HttpURLConnection
-                conn.connectTimeout = 4000
-                conn.readTimeout    = 4000
+                val conn = URL("https://www.google.com/s2/favicons?domain=$host&sz=32")
+                    .openConnection() as HttpURLConnection
+                conn.connectTimeout = 4000; conn.readTimeout = 4000
                 val bmp = BitmapFactory.decodeStream(conn.inputStream)
                 conn.disconnect()
                 if (bmp != null) {
-                    // Guardar cache em disco
-                    cacheFile.outputStream().use {
-                        bmp.compress(Bitmap.CompressFormat.PNG, 90, it)
-                    }
-                    // Atualizar UI
+                    cacheFile.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 90, it) }
                     (context as? androidx.appcompat.app.AppCompatActivity)
                         ?.runOnUiThread { imageView.setImageBitmap(bmp) }
                 }
