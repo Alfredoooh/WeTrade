@@ -49,4 +49,11 @@
     <string name="normal_tabs">Tabs normais</string>
     <string name="done">Concluído</string>
     <string name="search_container_transition">search_container_transition</string>
+    <string name="close">Fechar</string>
+   <string name="clara_hint">Escreve uma mensagem…</string>
+    <string name="clara_conversations">Conversas</string>
+       <string name="clara_new">Nova conversa</string>
+    <string name="clear_history_title">Limpar histórico</string>
+    <string name="clear_history_message">Todos os registos do histórico serão apagados permanentemente.</string>
+    <string name="clear_history_warning">⚠ Esta ação não pode ser desfeita.</string>
 </resources>

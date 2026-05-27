@@ -25,6 +25,7 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.Gravity
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.PixelCopy
 import android.view.View
 import android.view.animation.DecelerateInterpolator
@@ -65,6 +66,10 @@ class BrowserResponseActivity : AppCompatActivity() {
     private var isDesktopMode = false
     private var bottomBarVisible = true
     private var lastScrollY = 0
+
+    // Última posição do toque longo na WebView
+    private var lastTouchX = 0f
+    private var lastTouchY = 0f
 
     private var findBarVisible = false
     private lateinit var findBar: LinearLayout
@@ -179,47 +184,70 @@ class BrowserResponseActivity : AppCompatActivity() {
         insetsController.isAppearanceLightStatusBars = isLight
     }
 
+    // ─── captureAndOpenTabs ───────────────────────────────────────────────────
+
     private fun captureAndOpenTabs() {
-        val w = binding.webView.width
-        val h = binding.webView.height
+        TabManager.save(this)
+        val wv = binding.webView
+        val w  = wv.width
+        val h  = wv.height
 
         if (w <= 0 || h <= 0) {
             startActivity(Intent(this, TabsActivity::class.java))
+            overridePendingTransition(0, 0)
             return
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-            val location = IntArray(2)
-            binding.webView.getLocationInWindow(location)
-            val srcRect = Rect(location[0], location[1], location[0] + w, location[1] + h)
+        val targetW = 600
+        val targetH = (h.toFloat() / w.toFloat() * targetW).toInt().coerceAtMost(900)
 
-            PixelCopy.request(window, srcRect, bitmap, { result ->
+        fun saveAndOpen(src: Bitmap) {
+            val scaled = Bitmap.createScaledBitmap(src, targetW, targetH, true)
+            src.recycle()
+            TabScreenshots.save(this, currentTabId, scaled)
+            startActivity(Intent(this, TabsActivity::class.java))
+            overridePendingTransition(0, 0)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val bitmap  = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val loc     = IntArray(2)
+            wv.getLocationInWindow(loc)
+            val rect = Rect(loc[0], loc[1], loc[0] + w, loc[1] + h)
+            PixelCopy.request(window, rect, bitmap, { result ->
                 if (result == PixelCopy.SUCCESS) {
-                    val scaled = Bitmap.createScaledBitmap(bitmap, 400, 300, true)
-                    bitmap.recycle()
-                    TabScreenshots.save(this@BrowserResponseActivity, currentTabId, scaled)
+                    saveAndOpen(bitmap)
                 } else {
                     bitmap.recycle()
+                    try {
+                        wv.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+                        val fb = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                        wv.draw(Canvas(fb))
+                        wv.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                        saveAndOpen(fb)
+                    } catch (_: Exception) {
+                        wv.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                        startActivity(Intent(this, TabsActivity::class.java))
+                        overridePendingTransition(0, 0)
+                    }
                 }
-                startActivity(Intent(this, TabsActivity::class.java))
             }, Handler(Looper.getMainLooper()))
-
         } else {
-            runCatching {
-                binding.webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+            try {
+                wv.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
                 val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-                binding.webView.draw(Canvas(bmp))
-                binding.webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-                val scaled = Bitmap.createScaledBitmap(bmp, 400, 300, true)
-                bmp.recycle()
-                TabScreenshots.save(this@BrowserResponseActivity, currentTabId, scaled)
-            }.onFailure {
-                binding.webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                wv.draw(Canvas(bmp))
+                wv.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                saveAndOpen(bmp)
+            } catch (_: Exception) {
+                wv.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                startActivity(Intent(this, TabsActivity::class.java))
+                overridePendingTransition(0, 0)
             }
-            startActivity(Intent(this, TabsActivity::class.java))
         }
     }
+
+    // ─── FindBar ──────────────────────────────────────────────────────────────
 
     private fun buildFindBar() {
         val dp       = resources.displayMetrics.density
@@ -338,7 +366,9 @@ class BrowserResponseActivity : AppCompatActivity() {
         }.start()
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
+    // ─── WebView setup ────────────────────────────────────────────────────────
+
+    @SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility")
     private fun setupWebView() {
         binding.webView.apply {
             settings.javaScriptEnabled     = true
@@ -364,12 +394,22 @@ class BrowserResponseActivity : AppCompatActivity() {
                 Toast.makeText(this@BrowserResponseActivity, "A descarregar…", Toast.LENGTH_SHORT).show()
             })
 
+            // Registar posição do toque para o context menu aparecer no local certo
+            setOnTouchListener { v, event ->
+                if (event.action == MotionEvent.ACTION_DOWN) {
+                    lastTouchX = event.rawX
+                    lastTouchY = event.rawY
+                }
+                v.performClick()
+                false
+            }
+
             setOnLongClickListener {
                 val result = hitTestResult
                 if (result.type == WebView.HitTestResult.IMAGE_TYPE ||
                     result.type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
                     val imgUrl = result.extra ?: return@setOnLongClickListener false
-                    showImageContextMenu(imgUrl)
+                    showImageContextMenu(imgUrl, lastTouchX, lastTouchY)
                     true
                 } else false
             }
@@ -426,7 +466,9 @@ class BrowserResponseActivity : AppCompatActivity() {
         }
     }
 
-    private fun showImageContextMenu(imgUrl: String) {
+    // ─── Context menu imagem — aparece na posição do toque ───────────────────
+
+    private fun showImageContextMenu(imgUrl: String, touchX: Float, touchY: Float) {
         val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
         val bgColor   = ContextCompat.getColor(this, R.color.popup_background)
         val textColor = ContextCompat.getColor(this, R.color.text_primary)
@@ -448,8 +490,10 @@ class BrowserResponseActivity : AppCompatActivity() {
                 ))
             },
         )
-        showAnimatedPopup(items, iconTint, bgColor, textColor, Gravity.CENTER)
+        showAnimatedPopupAt(items, iconTint, bgColor, textColor, touchX.toInt(), touchY.toInt())
     }
+
+    // ─── Download ─────────────────────────────────────────────────────────────
 
     private fun downloadFile(url: String) {
         runCatching {
@@ -464,6 +508,8 @@ class BrowserResponseActivity : AppCompatActivity() {
             Toast.makeText(this, "Erro ao descarregar", Toast.LENGTH_SHORT).show()
         }
     }
+
+    // ─── Favicon ──────────────────────────────────────────────────────────────
 
     private fun loadFaviconViaJs(pageUrl: String) {
         runCatching {
@@ -480,6 +526,8 @@ class BrowserResponseActivity : AppCompatActivity() {
             }.start()
         }
     }
+
+    // ─── URL bar / nav buttons ────────────────────────────────────────────────
 
     private fun updateUrlBar(url: String) {
         val isHttps = url.startsWith("https://")
@@ -514,6 +562,8 @@ class BrowserResponseActivity : AppCompatActivity() {
         }
     }
 
+    // ─── Bottom bar show/hide ─────────────────────────────────────────────────
+
     private fun hideBottomBar() {
         if (!bottomBarVisible) return
         bottomBarVisible = false
@@ -525,6 +575,8 @@ class BrowserResponseActivity : AppCompatActivity() {
         bottomBarVisible = true
         binding.bottomBar.animate().translationY(0f).setDuration(200).start()
     }
+
+    // ─── Search modal ─────────────────────────────────────────────────────────
 
     private fun showSearchModal() {
         binding.searchModal.visibility = View.VISIBLE
@@ -627,6 +679,8 @@ class BrowserResponseActivity : AppCompatActivity() {
             .edit().putString(KEY_HISTORY, searchHistory.joinToString("|||")).apply()
     }
 
+    // ─── More menu ────────────────────────────────────────────────────────────
+
     private fun showMoreMenu() {
         val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
         val bgColor   = ContextCompat.getColor(this, R.color.popup_background)
@@ -643,8 +697,20 @@ class BrowserResponseActivity : AppCompatActivity() {
             PopupItem("icons/svg/history.svg", getString(R.string.history))      { startActivity(Intent(this, HistoryActivity::class.java)) },
             PopupItem("icons/svg/external.svg",getString(R.string.open_in_browser)) { openExternal() },
         )
-        showAnimatedPopup(items, iconTint, bgColor, textColor, Gravity.BOTTOM or Gravity.END)
+
+        // Posição do botão "mais" na tela — passa coordenadas reais
+        val loc = IntArray(2)
+        binding.btnMore.getLocationOnScreen(loc)
+        showAnimatedPopupAt(
+            items, iconTint, bgColor, textColor,
+            anchorX = loc[0] + binding.btnMore.width / 2,
+            anchorY = loc[1],
+            fromBottomBar = true,
+            showClose = true
+        )
     }
+
+    // ─── Blur scrim ───────────────────────────────────────────────────────────
 
     private fun showPopupScrim() {
         val root = binding.root
@@ -654,131 +720,226 @@ class BrowserResponseActivity : AppCompatActivity() {
         root.draw(Canvas(source))
 
         val blurred = createSoftBlurBitmap(source)
-        binding.popupBlurImage.setImageBitmap(blurred)
-        binding.popupBlurImage.alpha = 1f
+        source.recycle()
 
-        val rootLoc = IntArray(2)
-        val moreLoc = IntArray(2)
+        binding.popupBlurImage.setImageBitmap(blurred)
+
+        // Posição do botão "mais" — overlay circular por cima
+        val rootLoc = IntArray(2); val moreLoc = IntArray(2)
         root.getLocationInWindow(rootLoc)
         binding.btnMore.getLocationInWindow(moreLoc)
-
         val left = (moreLoc[0] - rootLoc[0]).coerceAtLeast(0)
         val top  = (moreLoc[1] - rootLoc[1]).coerceAtLeast(0)
-        val width  = binding.btnMore.width.coerceAtLeast(1)
-        val height = binding.btnMore.height.coerceAtLeast(1)
-
-        val safeWidth  = minOf(width,  source.width  - left)
-        val safeHeight = minOf(height, source.height - top)
-
-        if (safeWidth > 0 && safeHeight > 0) {
-            val moreBitmap = Bitmap.createBitmap(source, left, top, safeWidth, safeHeight)
-            (binding.popupMoreOverlay.layoutParams as? FrameLayout.LayoutParams)?.let { params ->
-                params.leftMargin = left
-                params.topMargin  = top
-                params.width      = safeWidth
-                params.height     = safeHeight
-                binding.popupMoreOverlay.layoutParams = params
+        val bw   = binding.btnMore.width.coerceAtLeast(1)
+        val bh   = binding.btnMore.height.coerceAtLeast(1)
+        val safeW = minOf(bw, blurred.width  - left)
+        val safeH = minOf(bh, blurred.height - top)
+        if (safeW > 0 && safeH > 0) {
+            val moreBmp = Bitmap.createBitmap(blurred, left, top, safeW, safeH)
+            (binding.popupMoreOverlay.layoutParams as? FrameLayout.LayoutParams)?.let { p ->
+                p.leftMargin = left; p.topMargin = top; p.width = safeW; p.height = safeH
+                binding.popupMoreOverlay.layoutParams = p
             }
-            binding.popupMoreOverlay.setImageBitmap(moreBitmap)
+            binding.popupMoreOverlay.setImageBitmap(moreBmp)
         }
 
-        source.recycle()
+        // Status bar escurece com o blur — slow motion
         binding.popupBlurOverlay.visibility = View.VISIBLE
         binding.popupBlurOverlay.bringToFront()
+        binding.popupBlurOverlay.alpha = 0f
+        binding.popupBlurOverlay.animate()
+            .alpha(1f)
+            .setDuration(400)
+            .setInterpolator(DecelerateInterpolator(2.5f))
+            .start()
+
+        // Status bar fica levemente escura
+        window.statusBarColor = Color.argb(80, 0, 0, 0)
+        insetsController.isAppearanceLightStatusBars = false
     }
 
     private fun hidePopupScrim() {
-        binding.popupBlurOverlay.visibility = View.GONE
-        binding.popupBlurImage.setImageDrawable(null)
-        binding.popupMoreOverlay.setImageDrawable(null)
+        binding.popupBlurOverlay.animate()
+            .alpha(0f)
+            .setDuration(220)
+            .setInterpolator(DecelerateInterpolator(2f))
+            .withEndAction {
+                binding.popupBlurOverlay.visibility = View.GONE
+                binding.popupBlurImage.setImageDrawable(null)
+                binding.popupMoreOverlay.setImageDrawable(null)
+            }.start()
+
+        // Restaura status bar
+        applyStatusBarTheme()
     }
 
     private fun createSoftBlurBitmap(source: Bitmap): Bitmap {
         val w = source.width
         val h = source.height
 
-        // Downsample agressivo — factor 0.05 dá blur forte e suave
-        val scale = 0.05f
+        // Downsample muito agressivo → blur suave e real sem RenderScript
+        val scale = 0.035f
         val sw = maxOf(1, (w * scale).toInt())
         val sh = maxOf(1, (h * scale).toInt())
-        val small = Bitmap.createScaledBitmap(source, sw, sh, true)
-        val blurred = Bitmap.createScaledBitmap(small, w, h, true)
+        val small   = Bitmap.createScaledBitmap(source, sw, sh, true)
+        // Double upsample para suavizar ainda mais
+        val medium  = Bitmap.createScaledBitmap(small, sw * 3, sh * 3, true)
         small.recycle()
+        val blurred = Bitmap.createScaledBitmap(medium, w, h, true)
+        medium.recycle()
 
-        // Overlay escuro permanente por cima do blur
+        // Overlay escuro forte em cima do blur
         val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(result)
         canvas.drawBitmap(blurred, 0f, 0f, null)
         blurred.recycle()
 
-        val dimPaint = Paint().apply { color = Color.argb(120, 0, 0, 0) }
+        val dimPaint = Paint().apply { color = Color.argb(160, 0, 0, 0) }
         canvas.drawRect(0f, 0f, w.toFloat(), h.toFloat(), dimPaint)
 
         return result
     }
 
-    private fun showAnimatedPopup(
+    // ─── Popup animado com posição absoluta ───────────────────────────────────
+
+    /**
+     * [anchorX] / [anchorY] — coordenadas absolutas na tela onde o popup deve aparecer
+     * [fromBottomBar] — se true o popup abre para cima (menu "mais" no rodapé)
+     * [showClose] — adiciona item "Fechar" que vai direto à SearchActivity
+     */
+    private fun showAnimatedPopupAt(
         items: List<PopupItem>,
-        iconTint: Int, bgColor: Int, textColor: Int, gravity: Int
+        iconTint: Int, bgColor: Int, textColor: Int,
+        anchorX: Int, anchorY: Int,
+        fromBottomBar: Boolean = false,
+        showClose: Boolean = false
     ) {
         showPopupScrim()
-
+        val dp = resources.displayMetrics.density
         var pop: PopupWindow? = null
 
         val menuView = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background  = ContextCompat.getDrawable(this@BrowserResponseActivity, R.drawable.popup_bg)
-            val pad = (8 * resources.displayMetrics.density).toInt()
+            val pad = (8 * dp).toInt()
             setPadding(0, pad, 0, pad)
         }
 
-        items.forEach { item ->
+        fun buildRow(icon: String, label: String, onClick: () -> Unit) {
             val row = LinearLayout(this).apply {
                 orientation  = LinearLayout.HORIZONTAL
                 this.gravity = Gravity.CENTER_VERTICAL
-                val h = (16 * resources.displayMetrics.density).toInt()
-                val v = (12 * resources.displayMetrics.density).toInt()
+                val h = (16 * dp).toInt()
+                val v = (12 * dp).toInt()
                 setPadding(h, v, h, v)
                 isClickable = true; isFocusable = true
                 background = ContextCompat.getDrawable(this@BrowserResponseActivity, R.drawable.ripple_item)
             }
             val iv = ImageView(this).apply {
                 layoutParams = LinearLayout.LayoutParams(
-                    (20 * resources.displayMetrics.density).toInt(),
-                    (20 * resources.displayMetrics.density).toInt()
-                ).also { it.marginEnd = (12 * resources.displayMetrics.density).toInt() }
-                setImageDrawable(svgDrawable(item.icon, 20, iconTint))
+                    (20 * dp).toInt(), (20 * dp).toInt()
+                ).also { it.marginEnd = (12 * dp).toInt() }
+                setImageDrawable(svgDrawable(icon, 20, iconTint))
             }
-            val tv = TextView(this).apply { text = item.label; setTextColor(textColor); textSize = 14f }
+            val tv = TextView(this).apply {
+                text = label; setTextColor(textColor); textSize = 14f
+            }
             row.addView(iv); row.addView(tv)
             menuView.addView(row)
+            row.setOnClickListener { pop?.dismiss(); onClick() }
+        }
 
-            row.setOnClickListener {
-                pop?.dismiss()
-                item.action()
+        items.forEach { buildRow(it.icon, it.label, it.action) }
+
+        if (showClose) {
+            // Divisor visual
+            val divider = View(this).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, (1 * dp).toInt()
+                ).also { it.setMargins((16 * dp).toInt(), (4 * dp).toInt(), (16 * dp).toInt(), (4 * dp).toInt()) }
+                setBackgroundColor(Color.argb(40, 128, 128, 128))
+            }
+            menuView.addView(divider)
+            // Botão fechar → SearchActivity directamente
+            buildRow("icons/svg/close.svg", getString(R.string.close)) {
+                startActivity(Intent(this, SearchActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                })
+                finish()
             }
         }
 
-        menuView.scaleX = 0.95f
-        menuView.scaleY = 0.95f
-        menuView.alpha = 0f
-        menuView.animate().scaleX(1f).scaleY(1f).alpha(1f)
-            .setDuration(180).setInterpolator(OvershootInterpolator(1.05f)).start()
+        // Animação suave slow-motion
+        menuView.scaleX = 0.85f
+        menuView.scaleY = 0.85f
+        menuView.alpha  = 0f
+        menuView.animate()
+            .scaleX(1f).scaleY(1f).alpha(1f)
+            .setDuration(320)
+            .setInterpolator(DecelerateInterpolator(2.8f))
+            .start()
+
+        val menuWidthPx = (240 * dp).toInt()
 
         pop = PopupWindow(
             menuView,
-            (220 * resources.displayMetrics.density).toInt(),
+            menuWidthPx,
             LinearLayout.LayoutParams.WRAP_CONTENT,
             true
-        )
-        pop.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        pop.elevation = 18f
-        pop.setOnDismissListener { hidePopupScrim() }
+        ).apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            elevation = 20f
+            setOnDismissListener { hidePopupScrim() }
+        }
 
-        val xOff = -(12 * resources.displayMetrics.density).toInt()
-        val yOff =  (60 * resources.displayMetrics.density).toInt()
-        pop.showAtLocation(binding.root, gravity, xOff, yOff)
+        // Calcular posição para o popup não sair do ecrã
+        val screenW = resources.displayMetrics.widthPixels
+        val xPos    = (anchorX - menuWidthPx).coerceAtLeast(8).coerceAtMost(screenW - menuWidthPx - 8)
+        val yPos    = if (fromBottomBar) anchorY - (360 * dp).toInt() else anchorY + (8 * dp).toInt()
+
+        pop.showAtLocation(binding.root, Gravity.NO_GRAVITY, xPos, yPos)
     }
+
+    // ─── Botão "mais" circular ────────────────────────────────────────────────
+    // (chamado uma vez depois do layout estar pronto, se quiseres forçar shape)
+    // O círculo é controlado pelo drawable do background no XML — não é preciso código extra.
+    // Se o teu XML já tiver ripple_circle como background no btnMore, está feito.
+    // Caso contrário podes chamar isto no onCreate depois do setContentView:
+    //   makeCircularButton(binding.btnMore)
+    private fun makeCircularButton(v: View) {
+        v.post {
+            val size = maxOf(v.width, v.height)
+            val lp = v.layoutParams
+            lp.width = size; lp.height = size
+            v.layoutParams = lp
+            v.background = ContextCompat.getDrawable(this, R.drawable.ripple_circle)
+        }
+    }
+
+    // ─── Back navigation ─────────────────────────────────────────────────────
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        when {
+            findBarVisible -> hideFindBar()
+            binding.searchModal.visibility == View.VISIBLE -> hideSearchModal()
+            binding.webView.canGoBack() -> binding.webView.goBack()
+            else -> {
+                // Não há página anterior → vai directo para a tela de pesquisa
+                startActivity(Intent(this, SearchActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                })
+                finish()
+            }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        TabManager.save(this)
+    }
+
+    // ─── Bookmarks / share / copy / desktop ───────────────────────────────────
 
     private fun shareUrl() {
         val url = binding.webView.url ?: return
@@ -827,20 +988,7 @@ class BrowserResponseActivity : AppCompatActivity() {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        when {
-            findBarVisible -> hideFindBar()
-            binding.searchModal.visibility == View.VISIBLE -> hideSearchModal()
-            binding.webView.canGoBack() -> binding.webView.goBack()
-            else -> super.onBackPressed()
-        }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        TabManager.save(this)
-    }
+    // ─── SVG helper ───────────────────────────────────────────────────────────
 
     private fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
         val px  = (sizeDp * resources.displayMetrics.density).toInt()
@@ -854,6 +1002,8 @@ class BrowserResponseActivity : AppCompatActivity() {
         return drawable
     }
 }
+
+// ─── HistoryModalAdapter ──────────────────────────────────────────────────────
 
 class HistoryModalAdapter(
     private var items: List<String>,
