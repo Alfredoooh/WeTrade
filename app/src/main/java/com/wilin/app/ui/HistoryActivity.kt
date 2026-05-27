@@ -6,7 +6,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
@@ -16,8 +15,6 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.DecelerateInterpolator
-import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -26,6 +23,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.caverock.androidsvg.SVG
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.wilin.app.R
 import com.wilin.app.databinding.ActivityHistoryBinding
 import java.io.File
@@ -89,175 +87,19 @@ class HistoryActivity : AppCompatActivity() {
     // ─── Dialog de confirmação ────────────────────────────────────────────────
 
     private fun showClearConfirmDialog() {
-        val dp       = resources.displayMetrics.density
-        val textPrim = ContextCompat.getColor(this, R.color.text_primary)
-        val textSec  = ContextCompat.getColor(this, R.color.text_secondary)
-        val blue     = ContextCompat.getColor(this, R.color.colorPrimary)
-        val red      = Color.parseColor("#FF3B30")
-        val divColor = ContextCompat.getColor(this, R.color.divider)
-
-        // Resolver ripple fora de qualquer apply para evitar reatribuição de val
-        val tv = TypedValue()
-        theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
-        val rippleBg = tv.resourceId
-
-        // Overlay escuro
-        val overlay = FrameLayout(this).apply {
-            setBackgroundColor(Color.argb(120, 0, 0, 0))
-            isClickable = true
-        }
-
-        // Card
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            background  = ContextCompat.getDrawable(this@HistoryActivity, R.drawable.rounded_card_bg)
-            val hPad = (24 * dp).toInt()
-            setPadding(hPad, (28 * dp).toInt(), hPad, (20 * dp).toInt())
-            elevation = 24f
-        }
-
-        // Ícone
-        val iconWarn = ImageView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.bottomMargin = (16 * dp).toInt() }
-            setImageDrawable(svgDrawable("icons/svg/history.svg", 32, red))
-            alpha = 0.9f
-        }
-
-        // Título
-        val title = TextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.bottomMargin = (10 * dp).toInt() }
-            text = "Limpar histórico"
-            textSize = 17f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-            setTextColor(textPrim)
-        }
-
-        // Mensagem
-        val message = TextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.bottomMargin = (8 * dp).toInt() }
-            text = "Todos os registos do histórico serão apagados permanentemente."
-            textSize = 14f
-            setTextColor(textSec)
-            setLineSpacing(0f, 1.4f)
-        }
-
-        // Aviso irreversível
-        val warning = TextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.bottomMargin = (24 * dp).toInt() }
-            text = "⚠ Esta ação não pode ser desfeita."
-            textSize = 12f
-            setTextColor(red)
-        }
-
-        // Divisor horizontal
-        val divider = View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 1
-            ).also { it.bottomMargin = (4 * dp).toInt() }
-            setBackgroundColor(divColor)
-        }
-
-        // Linha de botões
-        val btnRow = LinearLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            orientation = LinearLayout.HORIZONTAL
-        }
-
-        // Botão NÃO — background resolvido antes do apply
-        val btnNo = TextView(this)
-        btnNo.layoutParams = LinearLayout.LayoutParams(0, (48 * dp).toInt(), 1f)
-        btnNo.text = "Não"
-        btnNo.textSize = 15f
-        btnNo.gravity = Gravity.CENTER
-        btnNo.setTypeface(btnNo.typeface, android.graphics.Typeface.BOLD)
-        btnNo.setTextColor(blue)
-        btnNo.isClickable = true
-        btnNo.isFocusable = true
-        btnNo.setBackgroundResource(rippleBg)
-
-        // Divisor vertical entre botões
-        val btnDivider = View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(1, LinearLayout.LayoutParams.MATCH_PARENT)
-            setBackgroundColor(divColor)
-        }
-
-        // Botão SIM
-        val btnYes = TextView(this)
-        btnYes.layoutParams = LinearLayout.LayoutParams(0, (48 * dp).toInt(), 1f)
-        btnYes.text = "Sim"
-        btnYes.textSize = 15f
-        btnYes.gravity = Gravity.CENTER
-        btnYes.setTypeface(btnYes.typeface, android.graphics.Typeface.BOLD)
-        btnYes.setTextColor(red)
-        btnYes.isClickable = true
-        btnYes.isFocusable = true
-        btnYes.setBackgroundResource(rippleBg)
-
-        btnRow.addView(btnNo)
-        btnRow.addView(btnDivider)
-        btnRow.addView(btnYes)
-
-        card.addView(iconWarn)
-        card.addView(title)
-        card.addView(message)
-        card.addView(warning)
-        card.addView(divider)
-        card.addView(btnRow)
-
-        val cardParams = FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.WRAP_CONTENT,
-            Gravity.CENTER
-        ).apply {
-            val m = (32 * dp).toInt()
-            leftMargin = m; rightMargin = m
-        }
-        overlay.addView(card, cardParams)
-
-        val root = window.decorView.findViewById<ViewGroup>(android.R.id.content)
-        root.addView(overlay, ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        ))
-
-        // Animação entrada
-        overlay.alpha = 0f
-        card.scaleX = 0.92f; card.scaleY = 0.92f
-        overlay.animate().alpha(1f).setDuration(200).start()
-        card.animate().scaleX(1f).scaleY(1f).setDuration(220)
-            .setInterpolator(DecelerateInterpolator(2f)).start()
-
-        fun dismiss() {
-            overlay.animate().alpha(0f).setDuration(160).withEndAction {
-                root.removeView(overlay)
-            }.start()
-        }
-
-        overlay.setOnClickListener { dismiss() }
-        btnNo.setOnClickListener   { dismiss() }
-        btnYes.setOnClickListener  {
-            dismiss()
-            history.clear()
-            getSharedPreferences(PREFS_HISTORY, MODE_PRIVATE).edit().remove(KEY_HISTORY).apply()
-            faviconCacheDir().listFiles()?.forEach { it.delete() }
-            binding.recycler.adapter?.notifyDataSetChanged()
-            binding.emptyState.visibility = View.VISIBLE
-        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Limpar histórico")
+            .setMessage("Todos os registos do histórico serão apagados permanentemente. Esta ação não pode ser desfeita.")
+            .setNegativeButton("Não") { dialog, _ -> dialog.dismiss() }
+            .setPositiveButton("Sim") { dialog, _ ->
+                dialog.dismiss()
+                history.clear()
+                getSharedPreferences(PREFS_HISTORY, MODE_PRIVATE).edit().remove(KEY_HISTORY).apply()
+                faviconCacheDir().listFiles()?.forEach { it.delete() }
+                binding.recycler.adapter?.notifyDataSetChanged()
+                binding.emptyState.visibility = View.VISIBLE
+            }
+            .show()
     }
 
     // ─── Histórico ────────────────────────────────────────────────────────────
@@ -315,7 +157,6 @@ class HistoryActivityAdapter(
         val textColor = ContextCompat.getColor(ctx, R.color.text_primary)
         val iconSec   = ContextCompat.getColor(ctx, R.color.icon_tint_secondary)
 
-        // Resolver ripple fora de apply
         val tv = TypedValue()
         ctx.theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
         val rowRipple = tv.resourceId
@@ -330,7 +171,7 @@ class HistoryActivityAdapter(
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
             orientation = LinearLayout.HORIZONTAL
-            gravity     = android.view.Gravity.CENTER_VERTICAL
+            gravity     = Gravity.CENTER_VERTICAL
             val h = (16 * dp).toInt()
             val v = (13 * dp).toInt()
             setPadding(h, v, h, v)
@@ -428,7 +269,7 @@ class HistoryActivityAdapter(
                 conn.disconnect()
                 if (bmp != null) {
                     cacheFile.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 90, it) }
-                    (context as? androidx.appcompat.app.AppCompatActivity)
+                    (context as? AppCompatActivity)
                         ?.runOnUiThread { imageView.setImageBitmap(bmp) }
                 }
             } catch (_: Exception) { /* silencioso */ }

@@ -1,25 +1,21 @@
 package com.wilin.app.ui
 
-import android.animation.ValueAnimator
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.LinearGradient
-import android.graphics.Paint
 import android.graphics.PorterDuff
-import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
+import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
@@ -33,17 +29,6 @@ import com.caverock.androidsvg.SVG
 import com.wilin.app.R
 import java.io.File
 
-/**
- * TabsActivity — redesenhada completamente.
- *
- * A ideia:
- * - O ecrã torna-se um HorizontalScrollView de cards flutuantes
- * - O card mais à direita é o ecrã atual (Home / última tab ativa)
- * - Os cards à esquerda são as tabs recentes
- * - Deslizar para a esquerda revela as tabs anteriores
- * - Clicar num card abre essa tab
- * - O bottom bar NÃO aparece aqui — permanece na MainActivity
- */
 class TabsActivity : AppCompatActivity() {
 
     private lateinit var insetsController: WindowInsetsControllerCompat
@@ -52,9 +37,9 @@ class TabsActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_TRANSITION_SCREENSHOT_PATH = "transition_screenshot_path"
         private const val CARD_WIDTH_DP   = 300f
-        private const val CARD_HEIGHT_DP  = 520f
+        // Altura real: ecrã menos toolbar menos bottom padding
         private const val CARD_GAP_DP     = 16f
-        private const val CARD_SIDE_DP    = 20f  // margem lateral mínima
+        private const val CARD_SIDE_DP    = 20f
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,7 +59,14 @@ class TabsActivity : AppCompatActivity() {
         val blue     = ContextCompat.getColor(this, R.color.colorPrimary)
         val bg       = ContextCompat.getColor(this, R.color.background)
 
-        // Root: fundo do app
+        // Calcular altura do card = altura do ecrã - toolbar(56) - top padding(16) - bottom padding(80)
+        val screenH   = resources.displayMetrics.heightPixels
+        val toolbarH  = (56 * dp).toInt()
+        val cardH     = (screenH - toolbarH - (16 * dp).toInt() - (80 * dp).toInt()).coerceAtLeast((400 * dp).toInt())
+        val cardW     = (CARD_WIDTH_DP * dp).toInt()
+        val cardGap   = (CARD_GAP_DP * dp).toInt()
+        val sideM     = (CARD_SIDE_DP * dp).toInt()
+
         val root = FrameLayout(this).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -84,7 +76,6 @@ class TabsActivity : AppCompatActivity() {
         }
 
         // ── Toolbar ──────────────────────────────────────────────────────────
-        val toolbarH = (56 * dp).toInt()
         val toolbar = LinearLayout(this).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, toolbarH, Gravity.TOP
@@ -127,12 +118,7 @@ class TabsActivity : AppCompatActivity() {
         toolbar.addView(tabCountTv)
         toolbar.addView(btnNewTab)
 
-        // ── Área dos cards: HorizontalScrollView ─────────────────────────────
-        val cardW   = (CARD_WIDTH_DP  * dp).toInt()
-        val cardH   = (CARD_HEIGHT_DP * dp).toInt()
-        val cardGap = (CARD_GAP_DP   * dp).toInt()
-        val sideM   = (CARD_SIDE_DP  * dp).toInt()
-
+        // ── HorizontalScrollView de cards ────────────────────────────────────
         val hScrollView = HorizontalScrollView(this).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -154,7 +140,6 @@ class TabsActivity : AppCompatActivity() {
 
         hScrollView.addView(cardsRow)
 
-        // Construir lista de items: Home (screenshot) + tabs recentes
         data class CardItem(
             val id: String,
             val title: String,
@@ -167,30 +152,28 @@ class TabsActivity : AppCompatActivity() {
         val currentId = TabManager.getCurrentId()
         val items = mutableListOf<CardItem>()
 
-        // Tabs recentes (à esquerda, as mais antigas primeiro)
         tabs.forEach { tab ->
             items.add(CardItem(
-                id = tab.id,
-                title = tab.title.ifEmpty { if (tab.url.isEmpty()) "Nova aba" else tab.url },
-                url = tab.url,
+                id      = tab.id,
+                title   = tab.title.ifEmpty { if (tab.url.isEmpty()) "Nova aba" else tab.url },
+                url     = tab.url,
                 preview = TabScreenshots.get(this, tab.id)
             ))
         }
 
-        // Card do ecrã atual (à direita de tudo — Home / screenshot)
         transitionPreview?.let {
             items.add(CardItem(id = "__home__", title = "Início", url = "", preview = it, isHome = true))
         }
 
         items.forEachIndexed { index, item ->
             val isActive = item.id == currentId || item.isHome
-            val card = buildCard(item.id, item.title, item.url, item.preview, item.isHome, isActive,
-                cardW, cardH, cardGap, dp, blue, iconTint, tabs) {
-                // onClose
-                tabCountTv.text = run {
-                    val c = TabManager.getTabs().size
-                    if (c == 1) "1 Aba" else "$c Abas"
-                }
+            val card = buildCard(
+                item.id, item.title, item.url, item.preview, item.isHome, isActive,
+                cardW, cardH, cardGap, dp, blue, iconTint, tabs,
+                enterDelay = index * 40L
+            ) {
+                val c = TabManager.getTabs().size
+                tabCountTv.text = if (c == 1) "1 Aba" else "$c Abas"
             }
             cardsRow.addView(card)
         }
@@ -220,9 +203,9 @@ class TabsActivity : AppCompatActivity() {
         root.addView(btnNewBottom)
         setContentView(root)
 
-        // Scroll para o último card (mais recente) após layout
+        // Scroll para o último card após layout, com animação suave
         hScrollView.post {
-            hScrollView.fullScroll(HorizontalScrollView.FOCUS_RIGHT)
+            hScrollView.smoothScrollTo(hScrollView.getChildAt(0)?.width ?: 0, 0)
         }
     }
 
@@ -240,6 +223,7 @@ class TabsActivity : AppCompatActivity() {
         blue: Int,
         iconTint: Int,
         tabs: List<BrowserTab>,
+        enterDelay: Long = 0L,
         onClose: () -> Unit
     ): FrameLayout {
         val ctx = this
@@ -256,7 +240,24 @@ class TabsActivity : AppCompatActivity() {
             }
             clipToOutline = true
             elevation = if (isActive) 12f * dp else 4f * dp
+            // Estado inicial para animação de entrada
+            alpha = 0f
+            scaleX = 0.88f
+            scaleY = 0.88f
+            translationY = 60f * dp
         }
+
+        // Animação de entrada escalonada — container transform de entrada
+        card.postDelayed({
+            card.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .translationY(0f)
+                .setDuration(380)
+                .setInterpolator(OvershootInterpolator(0.8f))
+                .start()
+        }, enterDelay)
 
         // Preview da página
         val previewIv = ImageView(ctx).apply {
@@ -317,8 +318,10 @@ class TabsActivity : AppCompatActivity() {
                     val tab = tabs.firstOrNull { it.id == id } ?: return@setOnClickListener
                     card.animate()
                         .translationY(card.height.toFloat() + 40f)
+                        .scaleX(0.85f).scaleY(0.85f)
                         .alpha(0f)
-                        .setDuration(220)
+                        .setDuration(240)
+                        .setInterpolator(DecelerateInterpolator(2f))
                         .withEndAction {
                             (card.parent as? ViewGroup)?.removeView(card)
                             TabScreenshots.remove(ctx, tab.id)
@@ -338,21 +341,48 @@ class TabsActivity : AppCompatActivity() {
         card.addView(previewIv)
         card.addView(header)
 
+        // Clique no card — container transform de saída (ampliação até ecrã completo)
         card.setOnClickListener {
             if (isHome) {
-                finish()
+                // Anima card a expandir e depois fecha
+                card.animate()
+                    .scaleX(1.08f).scaleY(1.08f)
+                    .alpha(0f)
+                    .setDuration(300)
+                    .setInterpolator(DecelerateInterpolator(2.5f))
+                    .withEndAction { finish() }
+                    .start()
             } else {
                 val tab = tabs.firstOrNull { it.id == id } ?: return@setOnClickListener
                 TabManager.setCurrentId(tab.id)
                 TabManager.save(ctx)
+
+                // Container transform: card expande até cobrir o ecrã inteiro
+                val screenW = resources.displayMetrics.widthPixels
+                val screenH = resources.displayMetrics.heightPixels
+                val scaleX  = screenW.toFloat() / card.width.toFloat()
+                val scaleY  = screenH.toFloat() / card.height.toFloat()
+
+                // Obtém posição do card no ecrã para calcular pivot
+                val loc = IntArray(2)
+                card.getLocationOnScreen(loc)
+                card.pivotX = 0f
+                card.pivotY = 0f
+
                 card.animate()
-                    .scaleX(1.03f).scaleY(1.03f)
-                    .setDuration(90)
+                    .scaleX(scaleX)
+                    .scaleY(scaleY)
+                    .translationX(-loc[0].toFloat())
+                    .translationY(-loc[1].toFloat())
+                    .alpha(0.6f)
+                    .setDuration(380)
+                    .setInterpolator(DecelerateInterpolator(2.8f))
                     .withEndAction {
                         startActivity(Intent(ctx, BrowserResponseActivity::class.java).apply {
                             putExtra(BrowserResponseActivity.EXTRA_TAB_ID, tab.id)
                             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                         })
+                        overridePendingTransition(0, 0)
                         finish()
                     }.start()
             }

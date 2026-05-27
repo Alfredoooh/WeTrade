@@ -28,8 +28,8 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.PixelCopy
 import android.view.View
+import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
-import android.view.animation.OvershootInterpolator
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.webkit.DownloadListener
@@ -67,7 +67,6 @@ class BrowserResponseActivity : AppCompatActivity() {
     private var bottomBarVisible = true
     private var lastScrollY = 0
 
-    // Última posição do toque longo na WebView
     private var lastTouchX = 0f
     private var lastTouchY = 0f
 
@@ -96,9 +95,9 @@ class BrowserResponseActivity : AppCompatActivity() {
         binding = ActivityBrowserResponseBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Edge-to-edge desligado — o sistema gere as insets normalmente
         WindowCompat.setDecorFitsSystemWindows(window, true)
         insetsController = WindowInsetsControllerCompat(window, window.decorView)
-        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         applyStatusBarTheme()
 
         TabManager.init(this)
@@ -164,6 +163,7 @@ class BrowserResponseActivity : AppCompatActivity() {
             adapter = historyAdapter
         }
 
+        // WebView scroll → animar bottomBar; também ajusta margem inferior do WebView
         binding.webView.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
             val dy = scrollY - oldScrollY
             if (dy > 8 && bottomBarVisible && scrollY > 100) hideBottomBar()
@@ -178,6 +178,7 @@ class BrowserResponseActivity : AppCompatActivity() {
         updateTabsCount()
     }
 
+    // Status bar igual a todos os outros Activities — cor do tema, ícones claros/escuros
     private fun applyStatusBarTheme() {
         val isLight = !resources.configuration.isNightModeActive
         window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
@@ -210,8 +211,8 @@ class BrowserResponseActivity : AppCompatActivity() {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val bitmap  = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-            val loc     = IntArray(2)
+            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val loc    = IntArray(2)
             wv.getLocationInWindow(loc)
             val rect = Rect(loc[0], loc[1], loc[0] + w, loc[1] + h)
             PixelCopy.request(window, rect, bitmap, { result ->
@@ -308,7 +309,7 @@ class BrowserResponseActivity : AppCompatActivity() {
         findBar.addView(findNext)
         findBar.addView(findClose)
 
-        (binding.root as? FrameLayout)?.addView(
+        (binding.root as? ViewGroup)?.addView(
             findBar,
             FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -394,7 +395,6 @@ class BrowserResponseActivity : AppCompatActivity() {
                 Toast.makeText(this@BrowserResponseActivity, "A descarregar…", Toast.LENGTH_SHORT).show()
             })
 
-            // Registar posição do toque para o context menu aparecer no local certo
             setOnTouchListener { v, event ->
                 if (event.action == MotionEvent.ACTION_DOWN) {
                     lastTouchX = event.rawX
@@ -466,7 +466,49 @@ class BrowserResponseActivity : AppCompatActivity() {
         }
     }
 
-    // ─── Context menu imagem — aparece na posição do toque ───────────────────
+    // ─── Bottom bar — animação sequencial com WebView ─────────────────────────
+
+    private fun hideBottomBar() {
+        if (!bottomBarVisible) return
+        bottomBarVisible = false
+        val barH = binding.bottomBar.height.toFloat()
+        // bottomBar desce
+        binding.bottomBar.animate()
+            .translationY(barH)
+            .setDuration(220)
+            .setInterpolator(DecelerateInterpolator(2f))
+            .start()
+        // WebView expande sequencialmente — margem inferior vai a 0
+        binding.webView.animate()
+            .translationY(0f)
+            .setDuration(220)
+            .setInterpolator(DecelerateInterpolator(2f))
+            .withStartAction {
+                // Remove margem via layoutParams para o WebView usar o espaço todo
+                val lp = binding.webView.layoutParams as? ViewGroup.MarginLayoutParams
+                lp?.bottomMargin = 0
+                binding.webView.layoutParams = lp
+            }
+            .start()
+    }
+
+    private fun showBottomBar() {
+        if (bottomBarVisible) return
+        bottomBarVisible = true
+        val barH = binding.bottomBar.height.toFloat()
+        // Restaura margem do WebView primeiro, depois anima tudo junto
+        val lp = binding.webView.layoutParams as? ViewGroup.MarginLayoutParams
+        lp?.bottomMargin = barH.toInt()
+        binding.webView.layoutParams = lp
+
+        binding.bottomBar.animate()
+            .translationY(0f)
+            .setDuration(220)
+            .setInterpolator(DecelerateInterpolator(2f))
+            .start()
+    }
+
+    // ─── Context menu imagem ──────────────────────────────────────────────────
 
     private fun showImageContextMenu(imgUrl: String, touchX: Float, touchY: Float) {
         val iconTint  = ContextCompat.getColor(this, R.color.icon_tint)
@@ -560,20 +602,6 @@ class BrowserResponseActivity : AppCompatActivity() {
         } else {
             binding.tabsCount.visibility = View.GONE
         }
-    }
-
-    // ─── Bottom bar show/hide ─────────────────────────────────────────────────
-
-    private fun hideBottomBar() {
-        if (!bottomBarVisible) return
-        bottomBarVisible = false
-        binding.bottomBar.animate().translationY(binding.bottomBar.height.toFloat()).setDuration(200).start()
-    }
-
-    private fun showBottomBar() {
-        if (bottomBarVisible) return
-        bottomBarVisible = true
-        binding.bottomBar.animate().translationY(0f).setDuration(200).start()
     }
 
     // ─── Search modal ─────────────────────────────────────────────────────────
@@ -698,115 +726,20 @@ class BrowserResponseActivity : AppCompatActivity() {
             PopupItem("icons/svg/external.svg",getString(R.string.open_in_browser)) { openExternal() },
         )
 
-        // Posição do botão "mais" na tela — passa coordenadas reais
+        // Âncora: canto superior do botão "mais" — popup abre ACIMA dele
         val loc = IntArray(2)
         binding.btnMore.getLocationOnScreen(loc)
         showAnimatedPopupAt(
             items, iconTint, bgColor, textColor,
             anchorX = loc[0] + binding.btnMore.width / 2,
-            anchorY = loc[1],
+            anchorY = loc[1],          // topo do botão — popup calcula para abrir acima
             fromBottomBar = true,
             showClose = true
         )
     }
 
-    // ─── Blur scrim ───────────────────────────────────────────────────────────
+    // ─── Popup animado — acima do âncora, nunca em frente ────────────────────
 
-    private fun showPopupScrim() {
-        val root = binding.root
-        if (root.width <= 0 || root.height <= 0) return
-
-        val source = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
-        root.draw(Canvas(source))
-
-        val blurred = createSoftBlurBitmap(source)
-        source.recycle()
-
-        binding.popupBlurImage.setImageBitmap(blurred)
-
-        // Posição do botão "mais" — overlay circular por cima
-        val rootLoc = IntArray(2); val moreLoc = IntArray(2)
-        root.getLocationInWindow(rootLoc)
-        binding.btnMore.getLocationInWindow(moreLoc)
-        val left = (moreLoc[0] - rootLoc[0]).coerceAtLeast(0)
-        val top  = (moreLoc[1] - rootLoc[1]).coerceAtLeast(0)
-        val bw   = binding.btnMore.width.coerceAtLeast(1)
-        val bh   = binding.btnMore.height.coerceAtLeast(1)
-        val safeW = minOf(bw, blurred.width  - left)
-        val safeH = minOf(bh, blurred.height - top)
-        if (safeW > 0 && safeH > 0) {
-            val moreBmp = Bitmap.createBitmap(blurred, left, top, safeW, safeH)
-            (binding.popupMoreOverlay.layoutParams as? FrameLayout.LayoutParams)?.let { p ->
-                p.leftMargin = left; p.topMargin = top; p.width = safeW; p.height = safeH
-                binding.popupMoreOverlay.layoutParams = p
-            }
-            binding.popupMoreOverlay.setImageBitmap(moreBmp)
-        }
-
-        // Status bar escurece com o blur — slow motion
-        binding.popupBlurOverlay.visibility = View.VISIBLE
-        binding.popupBlurOverlay.bringToFront()
-        binding.popupBlurOverlay.alpha = 0f
-        binding.popupBlurOverlay.animate()
-            .alpha(1f)
-            .setDuration(400)
-            .setInterpolator(DecelerateInterpolator(2.5f))
-            .start()
-
-        // Status bar fica levemente escura
-        window.statusBarColor = Color.argb(80, 0, 0, 0)
-        insetsController.isAppearanceLightStatusBars = false
-    }
-
-    private fun hidePopupScrim() {
-        binding.popupBlurOverlay.animate()
-            .alpha(0f)
-            .setDuration(220)
-            .setInterpolator(DecelerateInterpolator(2f))
-            .withEndAction {
-                binding.popupBlurOverlay.visibility = View.GONE
-                binding.popupBlurImage.setImageDrawable(null)
-                binding.popupMoreOverlay.setImageDrawable(null)
-            }.start()
-
-        // Restaura status bar
-        applyStatusBarTheme()
-    }
-
-    private fun createSoftBlurBitmap(source: Bitmap): Bitmap {
-        val w = source.width
-        val h = source.height
-
-        // Downsample muito agressivo → blur suave e real sem RenderScript
-        val scale = 0.035f
-        val sw = maxOf(1, (w * scale).toInt())
-        val sh = maxOf(1, (h * scale).toInt())
-        val small   = Bitmap.createScaledBitmap(source, sw, sh, true)
-        // Double upsample para suavizar ainda mais
-        val medium  = Bitmap.createScaledBitmap(small, sw * 3, sh * 3, true)
-        small.recycle()
-        val blurred = Bitmap.createScaledBitmap(medium, w, h, true)
-        medium.recycle()
-
-        // Overlay escuro forte em cima do blur
-        val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(result)
-        canvas.drawBitmap(blurred, 0f, 0f, null)
-        blurred.recycle()
-
-        val dimPaint = Paint().apply { color = Color.argb(160, 0, 0, 0) }
-        canvas.drawRect(0f, 0f, w.toFloat(), h.toFloat(), dimPaint)
-
-        return result
-    }
-
-    // ─── Popup animado com posição absoluta ───────────────────────────────────
-
-    /**
-     * [anchorX] / [anchorY] — coordenadas absolutas na tela onde o popup deve aparecer
-     * [fromBottomBar] — se true o popup abre para cima (menu "mais" no rodapé)
-     * [showClose] — adiciona item "Fechar" que vai direto à SearchActivity
-     */
     private fun showAnimatedPopupAt(
         items: List<PopupItem>,
         iconTint: Int, bgColor: Int, textColor: Int,
@@ -814,7 +747,6 @@ class BrowserResponseActivity : AppCompatActivity() {
         fromBottomBar: Boolean = false,
         showClose: Boolean = false
     ) {
-        showPopupScrim()
         val dp = resources.displayMetrics.density
         var pop: PopupWindow? = null
 
@@ -852,7 +784,6 @@ class BrowserResponseActivity : AppCompatActivity() {
         items.forEach { buildRow(it.icon, it.label, it.action) }
 
         if (showClose) {
-            // Divisor visual
             val divider = View(this).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, (1 * dp).toInt()
@@ -860,7 +791,6 @@ class BrowserResponseActivity : AppCompatActivity() {
                 setBackgroundColor(Color.argb(40, 128, 128, 128))
             }
             menuView.addView(divider)
-            // Botão fechar → SearchActivity directamente
             buildRow("icons/svg/close.svg", getString(R.string.close)) {
                 startActivity(Intent(this, SearchActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -869,14 +799,11 @@ class BrowserResponseActivity : AppCompatActivity() {
             }
         }
 
-        // Animação suave slow-motion
-        menuView.scaleX = 0.85f
-        menuView.scaleY = 0.85f
-        menuView.alpha  = 0f
+        menuView.scaleX = 0.85f; menuView.scaleY = 0.85f; menuView.alpha = 0f
         menuView.animate()
             .scaleX(1f).scaleY(1f).alpha(1f)
-            .setDuration(320)
-            .setInterpolator(DecelerateInterpolator(2.8f))
+            .setDuration(280)
+            .setInterpolator(DecelerateInterpolator(2.5f))
             .start()
 
         val menuWidthPx = (240 * dp).toInt()
@@ -889,31 +816,24 @@ class BrowserResponseActivity : AppCompatActivity() {
         ).apply {
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             elevation = 20f
-            setOnDismissListener { hidePopupScrim() }
+            // Popup abre acima do âncora — o sistema resolve automaticamente com showAsDropDown
+            // mas como usamos showAtLocation precisamos calcular manualmente
         }
 
-        // Calcular posição para o popup não sair do ecrã
+        // Medir o popup para saber a altura exacta antes de posicionar
+        menuView.measure(
+            View.MeasureSpec.makeMeasureSpec(menuWidthPx, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        val popH = menuView.measuredHeight
+
         val screenW = resources.displayMetrics.widthPixels
-        val xPos    = (anchorX - menuWidthPx).coerceAtLeast(8).coerceAtMost(screenW - menuWidthPx - 8)
-        val yPos    = if (fromBottomBar) anchorY - (360 * dp).toInt() else anchorY + (8 * dp).toInt()
+        // X: alinhado à direita do âncora, sem sair do ecrã
+        val xPos = (anchorX - menuWidthPx).coerceAtLeast(8).coerceAtMost(screenW - menuWidthPx - 8)
+        // Y: popup termina ACIMA do botão âncora — anchorY é o topo do botão
+        val yPos = anchorY - popH - (8 * dp).toInt()
 
-        pop.showAtLocation(binding.root, Gravity.NO_GRAVITY, xPos, yPos)
-    }
-
-    // ─── Botão "mais" circular ────────────────────────────────────────────────
-    // (chamado uma vez depois do layout estar pronto, se quiseres forçar shape)
-    // O círculo é controlado pelo drawable do background no XML — não é preciso código extra.
-    // Se o teu XML já tiver ripple_circle como background no btnMore, está feito.
-    // Caso contrário podes chamar isto no onCreate depois do setContentView:
-    //   makeCircularButton(binding.btnMore)
-    private fun makeCircularButton(v: View) {
-        v.post {
-            val size = maxOf(v.width, v.height)
-            val lp = v.layoutParams
-            lp.width = size; lp.height = size
-            v.layoutParams = lp
-            v.background = ContextCompat.getDrawable(this, R.drawable.ripple_circle)
-        }
+        pop.showAtLocation(binding.root, Gravity.NO_GRAVITY, xPos, yPos.coerceAtLeast(0))
     }
 
     // ─── Back navigation ─────────────────────────────────────────────────────
@@ -925,7 +845,6 @@ class BrowserResponseActivity : AppCompatActivity() {
             binding.searchModal.visibility == View.VISIBLE -> hideSearchModal()
             binding.webView.canGoBack() -> binding.webView.goBack()
             else -> {
-                // Não há página anterior → vai directo para a tela de pesquisa
                 startActivity(Intent(this, SearchActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                 })

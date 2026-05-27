@@ -8,9 +8,9 @@
     <WebView
         android:id="@+id/webView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:layout_marginBottom="52dp" />
 
-    <!-- ProgressBar gradiente azul — posicionado independente do bottomBar -->
     <View
         android:id="@+id/progressBar"
         android:layout_width="0dp"
@@ -20,7 +20,6 @@
         android:background="@drawable/progress_gradient"
         android:visibility="gone" />
 
-    <!-- BottomBar fixo no fundo — sem linha separadora, sem wrapper -->
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="match_parent"
@@ -100,11 +99,12 @@
 
         </LinearLayout>
 
+        <!-- Tabs: ícone circular -->
         <FrameLayout
             android:id="@+id/btnTabs"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/ripple_circle"
             android:clickable="true"
             android:focusable="true">
 
@@ -228,29 +228,6 @@
                 android:nestedScrollingEnabled="false" />
 
         </LinearLayout>
-
-    </FrameLayout>
-
-    <!-- Blur overlay para popup — visível quando popup está aberto -->
-    <FrameLayout
-        android:id="@+id/popupBlurOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone"
-        android:clickable="true"
-        android:focusable="true">
-
-        <ImageView
-            android:id="@+id/popupBlurImage"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="centerCrop" />
-
-        <ImageView
-            android:id="@+id/popupMoreOverlay"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:scaleType="centerCrop" />
 
     </FrameLayout>
 
