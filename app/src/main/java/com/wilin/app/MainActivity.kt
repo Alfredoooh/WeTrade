@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
 
     private val homeFragment   = HomeFragment()
     private val searchFragment = SearchFragment()
-    private var currentTab = R.id.tabHome
+    private var currentTab     = R.id.tabHome
 
     private var appBarOffset       = 0f
     private var bottomNavOffset    = 0f
@@ -72,7 +72,8 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
 
         binding.appBarLayout.post {
             maxAppBarOffset    = binding.appBarLayout.height.toFloat()
-            maxBottomNavOffset = (binding.bottomNav.height + binding.navDivider.height).toFloat()
+            maxBottomNavOffset = binding.bottomNav.height.toFloat() +
+                                 binding.navDivider.height.toFloat()
         }
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
@@ -89,30 +90,41 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
                 binding.drawerLayout.openDrawer(GravityCompat.END)
         }
 
-        binding.searchPillIcon.setImageDrawable(svgDrawable("icons/svg/magnifying_glass_outline.svg", 18, iconSec))
-        binding.searchPill.setOnClickListener { startActivity(Intent(this, SearchActivity::class.java)) }
+        binding.searchPillIcon.setImageDrawable(
+            svgDrawable("icons/svg/magnifying_glass_outline.svg", 18, iconSec))
+        binding.searchPill.setOnClickListener {
+            startActivity(Intent(this, SearchActivity::class.java))
+        }
 
         binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 16, iconTint))
         binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 16, iconTint))
-        binding.drawerChevronSettings.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 14, iconSec))
-        binding.drawerChevronAbout.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 14, iconSec))
+        binding.drawerChevronSettings.setImageDrawable(
+            svgDrawable("icons/svg/chevron_right.svg", 14, iconSec))
+        binding.drawerChevronAbout.setImageDrawable(
+            svgDrawable("icons/svg/chevron_right.svg", 14, iconSec))
 
         binding.drawerItemSettings.setOnClickListener {
             binding.drawerLayout.closeDrawer(GravityCompat.END)
             startActivity(Intent(this, SettingsActivity::class.java))
         }
-        binding.drawerItemAbout.setOnClickListener { binding.drawerLayout.closeDrawer(GravityCompat.END) }
+        binding.drawerItemAbout.setOnClickListener {
+            binding.drawerLayout.closeDrawer(GravityCompat.END)
+        }
 
         updateTabsBadge()
 
         fun setIcons(activeTab: Int) {
             binding.tabHomeIcon.setImageDrawable(
-                if (activeTab == R.id.tabHome) svgDrawableGradient("icons/svg/home_filled.svg", 24)
-                else svgDrawable("icons/svg/home_outline.svg", 24, iconSec)
+                if (activeTab == R.id.tabHome)
+                    svgDrawableGradient("icons/svg/home_filled.svg", 24)
+                else
+                    svgDrawable("icons/svg/home_outline.svg", 24, iconSec)
             )
             binding.tabSearchIcon.setImageDrawable(
-                if (activeTab == R.id.tabSearch) svgDrawableGradient("icons/svg/magnifying_glass_filled.svg", 24)
-                else svgDrawable("icons/svg/magnifying_glass_outline.svg", 24, iconSec)
+                if (activeTab == R.id.tabSearch)
+                    svgDrawableGradient("icons/svg/magnifying_glass_filled.svg", 24)
+                else
+                    svgDrawable("icons/svg/magnifying_glass_outline.svg", 24, iconSec)
             )
         }
 
@@ -171,33 +183,18 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     }
 
     private fun applyScrollOffsets() {
-        // AppBar desliza para cima
+        // AppBar sobe
         binding.appBarLayout.translationY = -appBarOffset
-
-        // Container expande para baixo o mesmo valor que o appBar subiu
-        // E expande para baixo o mesmo que o bottomNav desceu
-        // → sem espaço escuro em lado nenhum
+        // Container sobe junto com appBar e cresce para baixo cobrindo o espaço do bottomNav
         binding.container.translationY = -appBarOffset
-        val containerLp = binding.container.layoutParams
-        if (containerLp != null) {
-            // Aumentar a altura do container para cobrir o espaço do appBar e do bottomNav
-            // Usamos padding negativo via translationY + scaleY não funciona bem;
-            // a solução correcta é bottom padding ou aumentar o layout height via margin.
-            // Mas o mais simples e correcto: container.bottom += offset via translationY já trata o top.
-            // Para o bottom: o navDivider e bottomNav descem, então o container pode crescer para baixo
-            // simplesmente não tendo o bottomNav a ocupar espaço visual.
-        }
-        // Divider e bottomNav descem para fora do ecrã
-        binding.navDivider.translationY = bottomNavOffset
-        binding.bottomNav.translationY  = bottomNavOffset
-
-        // O container precisa de crescer para cobrir o espaço que o bottomNav deixou
-        // A forma correcta: usar bottom margin negativo
         val params = binding.container.layoutParams as? android.widget.LinearLayout.LayoutParams
         if (params != null) {
             params.bottomMargin = -bottomNavOffset.toInt()
             binding.container.layoutParams = params
         }
+        // BottomNav e divider descem para fora do ecrã
+        binding.navDivider.translationY = bottomNavOffset
+        binding.bottomNav.translationY  = bottomNavOffset
     }
 
     fun revealBars() {
@@ -230,12 +227,11 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         val root    = binding.root
         val dp      = resources.displayMetrics.density
         val screenH = resources.displayMetrics.heightPixels.toFloat()
-        val targetScale = 0.84f
 
         window.setBackgroundDrawable(ColorDrawable(Color.parseColor("#1C1C1E")))
 
-        root.pivotX = root.width / 2f
-        root.pivotY = root.height / 2f
+        root.pivotX      = root.width / 2f
+        root.pivotY      = root.height / 2f
         root.clipToOutline = true
 
         ValueAnimator.ofFloat(0f, 22f * dp).apply {
@@ -252,8 +248,8 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         }.start()
 
         root.animate()
-            .scaleX(targetScale)
-            .scaleY(targetScale)
+            .scaleX(0.84f)
+            .scaleY(0.84f)
             .translationY(-(screenH * 0.04f))
             .setDuration(340)
             .setInterpolator(DecelerateInterpolator(2.5f))
@@ -283,7 +279,9 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         }.start()
 
         root.animate()
-            .scaleX(1f).scaleY(1f).translationY(0f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .translationY(0f)
             .setDuration(300)
             .setInterpolator(DecelerateInterpolator(2f))
             .withEndAction {
@@ -319,14 +317,19 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         val px  = (sizeDp * resources.displayMetrics.density).toInt()
         val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
         SVG.getFromAsset(assets, path).apply {
-            documentWidth = px.toFloat(); documentHeight = px.toFloat()
+            documentWidth  = px.toFloat()
+            documentHeight = px.toFloat()
             renderToCanvas(Canvas(bmp))
         }
         val gb = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
         val gc = Canvas(gb)
         val gp = Paint().apply {
-            shader = LinearGradient(0f, 0f, 0f, px.toFloat(),
-                Color.parseColor("#007AFF"), Color.parseColor("#00C6FF"), Shader.TileMode.CLAMP)
+            shader = LinearGradient(
+                0f, 0f, 0f, px.toFloat(),
+                Color.parseColor("#007AFF"),
+                Color.parseColor("#00C6FF"),
+                Shader.TileMode.CLAMP
+            )
         }
         gc.drawRect(0f, 0f, px.toFloat(), px.toFloat(), gp)
         gc.drawBitmap(bmp, 0f, 0f, Paint().apply {
@@ -339,15 +342,20 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         val px  = (sizeDp * resources.displayMetrics.density).toInt()
         val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
         SVG.getFromAsset(assets, path).apply {
-            documentWidth = px.toFloat(); documentHeight = px.toFloat()
+            documentWidth  = px.toFloat()
+            documentHeight = px.toFloat()
             renderToCanvas(Canvas(bmp))
         }
-        return BitmapDrawable(resources, bmp).also { it.setColorFilter(tint, PorterDuff.Mode.SRC_IN) }
+        return BitmapDrawable(resources, bmp).also {
+            it.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
+        }
     }
 
     private fun showFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
-            .hide(homeFragment).hide(searchFragment)
-            .show(fragment).commit()
+            .hide(homeFragment)
+            .hide(searchFragment)
+            .show(fragment)
+            .commit()
     }
 }
