@@ -1,3 +1,4 @@
+<!-- activity_main.xml -->
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.drawerlayout.widget.DrawerLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -133,7 +134,6 @@
             android:layout_height="match_parent"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-        <!-- Bottom Nav compacto: 48dp de altura -->
         <LinearLayout
             android:id="@+id/bottomNavWrapper"
             android:layout_width="match_parent"
@@ -151,7 +151,7 @@
             <LinearLayout
                 android:id="@+id/bottomNav"
                 android:layout_width="match_parent"
-                android:layout_height="44dp"
+                android:layout_height="52dp"
                 android:background="@color/bottom_nav_background"
                 android:orientation="horizontal">
 
@@ -165,8 +165,8 @@
                     android:focusable="true">
                     <ImageView
                         android:id="@+id/tabHomeIcon"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:layout_gravity="center" />
                 </FrameLayout>
 
@@ -180,8 +180,8 @@
                     android:focusable="true">
                     <ImageView
                         android:id="@+id/tabSearchIcon"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:layout_gravity="center" />
                 </FrameLayout>
 
@@ -195,8 +195,8 @@
                     android:focusable="true">
                     <FrameLayout
                         android:id="@+id/tabTabsBadgeFrame"
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
                         android:layout_gravity="center"
                         android:background="@drawable/tabs_badge_bg">
                         <TextView

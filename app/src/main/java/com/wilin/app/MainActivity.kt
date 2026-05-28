@@ -1,3 +1,4 @@
+// MainActivity.kt
 package com.wilin.app
 
 import android.animation.ValueAnimator
@@ -36,6 +37,7 @@ import com.wilin.app.ui.SearchActivity
 import com.wilin.app.ui.SearchFragment
 import com.wilin.app.ui.SettingsActivity
 import com.wilin.app.ui.TabManager
+import com.wilin.app.ui.TabScreenshots
 import com.wilin.app.ui.TabsActivity
 
 class MainActivity : AppCompatActivity(), HomeScrollCallback {
@@ -72,6 +74,7 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         applyStatusBarTheme()
 
         TabManager.init(this)
+        TabScreenshots.init(this)
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
@@ -111,18 +114,17 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         updateTabsBadge()
 
         fun setIcons(activeTab: Int) {
-            // Ícones 20dp para o bottom bar compacto
             binding.tabHomeIcon.setImageDrawable(
                 if (activeTab == R.id.tabHome)
-                    svgDrawableGradient("icons/svg/home_filled.svg", 20)
+                    svgDrawableGradient("icons/svg/home_filled.svg", 24)
                 else
-                    svgDrawable("icons/svg/home_outline.svg", 20, iconSec)
+                    svgDrawable("icons/svg/home_outline.svg", 24, iconSec)
             )
             binding.tabSearchIcon.setImageDrawable(
                 if (activeTab == R.id.tabSearch)
-                    svgDrawableGradient("icons/svg/magnifying_glass_filled.svg", 20)
+                    svgDrawableGradient("icons/svg/magnifying_glass_filled.svg", 24)
                 else
-                    svgDrawable("icons/svg/magnifying_glass_outline.svg", 20, iconSec)
+                    svgDrawable("icons/svg/magnifying_glass_outline.svg", 24, iconSec)
             )
         }
 
@@ -165,13 +167,9 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         setIcons(R.id.tabHome)
         updateAppBar(R.id.tabHome)
 
-        // Se foi lançado com intent de abrir browser (ex: atalho externo), redireciona
         handleIncomingIntent(intent)
     }
 
-    // Chamado quando a MainActivity já existe no stack e recebe um novo intent
-    // Isso resolve o bug: ao sair do browser e voltar ao app, o sistema
-    // faz onNewIntent na MainActivity (singleTask) em vez de criar nova instância
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -179,7 +177,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     }
 
     private fun handleIncomingIntent(intent: Intent?) {
-        // Se o intent tiver um tab_id ou query, abrir directamente o browser
         val tabId = intent?.getStringExtra(BrowserResponseActivity.EXTRA_TAB_ID)
         val query = intent?.getStringExtra(BrowserResponseActivity.EXTRA_QUERY)
         if (!tabId.isNullOrEmpty() || !query.isNullOrEmpty()) {
@@ -190,8 +187,8 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         }
     }
 
-    override fun onHomeScrollDown(dy: Int) { /* CoordinatorLayout trata automaticamente */ }
-    override fun onHomeScrollUp(dy: Int)   { /* CoordinatorLayout trata automaticamente */ }
+    override fun onHomeScrollDown(dy: Int) {}
+    override fun onHomeScrollUp(dy: Int)   {}
 
     @Suppress("UNCHECKED_CAST")
     fun showBottomNav() {
@@ -205,78 +202,24 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         applyStatusBarTheme()
         updateTabsBadge()
         showBottomNav()
-        restoreRootTransform()
     }
 
     private fun openTabsWithTransform() {
-        val root    = binding.root
-        val dp      = resources.displayMetrics.density
-        val screenH = resources.displayMetrics.heightPixels.toFloat()
-
-        window.setBackgroundDrawable(ColorDrawable(Color.parseColor("#1C1C1E")))
-
-        root.pivotX       = root.width / 2f
-        root.pivotY       = root.height / 2f
-        root.clipToOutline = true
-
-        ValueAnimator.ofFloat(0f, 22f * dp).apply {
-            duration = 340
-            interpolator = DecelerateInterpolator(2.5f)
-            addUpdateListener { anim ->
-                val r = anim.animatedValue as Float
-                root.outlineProvider = object : ViewOutlineProvider() {
-                    override fun getOutline(view: View, outline: Outline) {
-                        outline.setRoundRect(0, 0, view.width, view.height, r)
-                    }
-                }
-            }
-        }.start()
-
-        root.animate()
-            .scaleX(0.84f)
-            .scaleY(0.84f)
-            .translationY(-(screenH * 0.04f))
-            .setDuration(340)
-            .setInterpolator(DecelerateInterpolator(2.5f))
-            .withEndAction {
-                startActivity(Intent(this, TabsActivity::class.java))
-                overridePendingTransition(0, 0)
-            }
-            .start()
-    }
-
-    private fun restoreRootTransform() {
         val root = binding.root
-        if (root.scaleX == 1f && root.scaleY == 1f && root.translationY == 0f) return
 
-        val dp = resources.displayMetrics.density
-        ValueAnimator.ofFloat(22f * dp, 0f).apply {
-            duration = 300
-            interpolator = DecelerateInterpolator(2f)
-            addUpdateListener { anim ->
-                val r = anim.animatedValue as Float
-                root.outlineProvider = object : ViewOutlineProvider() {
-                    override fun getOutline(view: View, outline: Outline) {
-                        outline.setRoundRect(0, 0, root.width, root.height, r)
-                    }
-                }
-            }
-        }.start()
+        // Captura screenshot da janela actual para o card
+        val screenshot = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
+        root.draw(Canvas(screenshot))
+        TabScreenshots.saveCurrent(this, TabManager.getCurrentId(), screenshot)
 
-        root.animate()
-            .scaleX(1f)
-            .scaleY(1f)
-            .translationY(0f)
-            .setDuration(300)
-            .setInterpolator(DecelerateInterpolator(2f))
-            .withEndAction {
-                root.clipToOutline = false
-                root.outlineProvider = ViewOutlineProvider.BACKGROUND
-                window.setBackgroundDrawable(
-                    ColorDrawable(ContextCompat.getColor(this, R.color.background))
-                )
-            }
-            .start()
+        val intent = Intent(this, TabsActivity::class.java).apply {
+            putExtra("anim_src_width",  root.width)
+            putExtra("anim_src_height", root.height)
+            putExtra("anim_src_x",      0f)
+            putExtra("anim_src_y",      0f)
+        }
+        startActivity(intent)
+        overridePendingTransition(0, 0)
     }
 
     private fun updateTabsBadge() {

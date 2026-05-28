@@ -1,10 +1,10 @@
+// TabsScreenshot.kt
 package com.wilin.app.ui
 
 import android.content.Context
 import android.graphics.Bitmap
 import java.io.File
 import java.io.FileOutputStream
-import java.io.IOException
 
 object TabScreenshots {
     private const val DIR_NAME = "tab_screenshots"
@@ -36,6 +36,11 @@ object TabScreenshots {
                 out.flush()
             }
         }
+    }
+
+    // Alias usado pela MainActivity antes de abrir a TabsActivity
+    fun saveCurrent(context: Context, tabId: String, bitmap: Bitmap) {
+        save(context, tabId, bitmap)
     }
 
     fun get(context: Context, tabId: String): Bitmap? {
