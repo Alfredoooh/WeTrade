@@ -413,6 +413,25 @@ class HomeFragment : Fragment() {
             .show()
     }
 
+    private fun makeDot(active: Boolean, dp: Float): View {
+        val ctx = requireContext()
+        val size = (6 * dp).toInt()
+        val margin = (4 * dp).toInt()
+        return View(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(size, size).also {
+                it.marginStart = margin
+                it.marginEnd = margin
+            }
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(
+                    if (active) ContextCompat.getColor(ctx, R.color.colorPrimary)
+                    else ContextCompat.getColor(ctx, R.color.divider)
+                )
+            }
+        }
+    }
+
     private fun updateDots() {
         val ctx = requireContext()
         for (i in 0 until dotsContainer.childCount) {
