@@ -185,11 +185,15 @@ class TabsActivity : AppCompatActivity() {
         }
 
         val btnNewTab = FrameLayout(this).apply {
-            layoutParams = FrameLayout.LayoutParams((48 * dp).toInt(), (48 * dp).toInt(), Gravity.CENTER)
-            background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(blue) }
-            isClickable = true; isFocusable = true
-            elevation   = 6 * dp
-        }
+    layoutParams = FrameLayout.LayoutParams((48 * dp).toInt(), (48 * dp).toInt(), Gravity.CENTER)
+    val oval = GradientDrawable()
+    oval.shape = GradientDrawable.OVAL
+    oval.setColor(blue)
+    background = oval
+    isClickable = true
+    isFocusable = true
+    elevation   = 6 * dp
+}
         val plusIv = ImageView(this).apply {
             layoutParams = FrameLayout.LayoutParams((22 * dp).toInt(), (22 * dp).toInt(), Gravity.CENTER)
             setImageDrawable(svgDrawable("icons/svg/add.svg", 22, Color.WHITE))
