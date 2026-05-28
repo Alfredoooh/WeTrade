@@ -7,138 +7,141 @@
     android:layout_height="match_parent"
     android:fitsSystemWindows="false">
 
-    <!-- Raiz com FrameLayout para permitir sobreposição dos tab-cards -->
-    <FrameLayout
-        android:id="@+id/rootFrame"
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/coordinatorLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- Conteúdo principal (appbar + container + bottomnav) -->
-        <LinearLayout
-            android:id="@+id/mainContent"
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/appBarLayout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
+            android:layout_height="wrap_content"
+            android:background="@color/appbar_background"
+            android:fitsSystemWindows="true"
+            app:elevation="0dp"
+            app:liftOnScroll="false">
 
-            <com.google.android.material.appbar.AppBarLayout
-                android:id="@+id/appBarLayout"
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@color/background"
-                android:fitsSystemWindows="true"
-                app:elevation="0dp"
-                app:liftOnScroll="false">
+                android:layout_height="?attr/actionBarSize"
+                android:background="@color/appbar_background"
+                android:paddingStart="16dp"
+                android:paddingEnd="0dp"
+                app:layout_scrollFlags="scroll|enterAlways|snap">
 
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="?attr/actionBarSize"
-                    android:background="@color/background"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="0dp">
+                <TextView
+                    android:id="@+id/toolbarTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentStart="true"
+                    android:text="Home"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary" />
+
+                <ImageView
+                    android:id="@+id/btnMenu"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:padding="14dp"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentEnd="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <LinearLayout
+                    android:id="@+id/btnAskAi"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/ask_ai_pill_bg"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:layout_centerVertical="true"
+                    android:layout_toStartOf="@id/btnMenu"
+                    android:layout_marginEnd="4dp"
+                    android:clickable="true"
+                    android:focusable="true">
 
                     <TextView
-                        android:id="@+id/toolbarTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_centerVertical="true"
-                        android:layout_alignParentStart="true"
-                        android:text="Home"
-                        android:textSize="20sp"
+                        android:text="Ask AI"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary" />
+                        android:layout_marginEnd="4dp" />
 
                     <ImageView
-                        android:id="@+id/btnMenu"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
-                        android:padding="14dp"
-                        android:layout_centerVertical="true"
-                        android:layout_alignParentEnd="true"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:clickable="true"
-                        android:focusable="true" />
+                        android:id="@+id/btnAskAiIcon"
+                        android:layout_width="13dp"
+                        android:layout_height="13dp"
+                        android:clickable="false"
+                        android:focusable="false" />
 
-                    <LinearLayout
-                        android:id="@+id/btnAskAi"
-                        android:layout_width="wrap_content"
-                        android:layout_height="30dp"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:background="@drawable/ask_ai_pill_bg"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:layout_centerVertical="true"
-                        android:layout_toStartOf="@id/btnMenu"
-                        android:layout_marginEnd="4dp"
-                        android:clickable="true"
-                        android:focusable="true">
+                </LinearLayout>
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Ask AI"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"
-                            android:textStyle="bold"
-                            android:layout_marginEnd="4dp" />
+                <LinearLayout
+                    android:id="@+id/searchPill"
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:layout_centerVertical="true"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/search_input_bg"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:visibility="gone"
+                    android:clickable="true"
+                    android:focusable="true">
 
-                        <ImageView
-                            android:id="@+id/btnAskAiIcon"
-                            android:layout_width="13dp"
-                            android:layout_height="13dp"
-                            android:clickable="false"
-                            android:focusable="false" />
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/searchPill"
-                        android:layout_width="match_parent"
-                        android:layout_height="36dp"
-                        android:layout_centerVertical="true"
-                        android:layout_marginStart="8dp"
+                    <ImageView
+                        android:id="@+id/searchPillIcon"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
                         android:layout_marginEnd="8dp"
-                        android:background="@drawable/search_input_bg"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
-                        android:visibility="gone"
-                        android:clickable="true"
-                        android:focusable="true">
+                        android:clickable="false"
+                        android:focusable="false" />
 
-                        <ImageView
-                            android:id="@+id/searchPillIcon"
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:layout_marginEnd="8dp"
-                            android:clickable="false"
-                            android:focusable="false" />
+                    <TextView
+                        android:id="@+id/searchPillHint"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/search_hint"
+                        android:textSize="14sp"
+                        android:textColor="@color/text_hint"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:clickable="false"
+                        android:focusable="false" />
 
-                        <TextView
-                            android:id="@+id/searchPillHint"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/search_hint"
-                            android:textSize="14sp"
-                            android:textColor="@color/text_hint"
-                            android:maxLines="1"
-                            android:ellipsize="end"
-                            android:clickable="false"
-                            android:focusable="false" />
+                </LinearLayout>
 
-                    </LinearLayout>
+            </RelativeLayout>
 
-                </RelativeLayout>
+        </com.google.android.material.appbar.AppBarLayout>
 
-            </com.google.android.material.appbar.AppBarLayout>
+        <!-- Conteúdo principal -->
+        <FrameLayout
+            android:id="@+id/container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-            <FrameLayout
-                android:id="@+id/container"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
+        <!-- Bottom Nav com HideBottomViewOnScrollBehavior nativo -->
+        <LinearLayout
+            android:id="@+id/bottomNavWrapper"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="vertical"
+            app:layout_behavior="com.google.android.material.behavior.HideBottomViewOnScrollBehavior">
 
             <View
                 android:id="@+id/navDivider"
@@ -213,16 +216,7 @@
 
         </LinearLayout>
 
-        <!-- Track de tab-cards — sobreposto, invisível por omissão -->
-        <FrameLayout
-            android:id="@+id/tabSwitcherOverlay"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone"
-            android:clickable="false"
-            android:focusable="false" />
-
-    </FrameLayout>
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <!-- Drawer -->
     <LinearLayout

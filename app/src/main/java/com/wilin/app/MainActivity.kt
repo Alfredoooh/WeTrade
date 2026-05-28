@@ -18,6 +18,7 @@ import android.view.ViewOutlineProvider
 import android.view.animation.DecelerateInterpolator
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.GravityCompat
@@ -25,6 +26,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import com.caverock.androidsvg.SVG
+import com.google.android.material.behavior.HideBottomViewOnScrollBehavior
 import com.wilin.app.databinding.ActivityMainBinding
 import com.wilin.app.ui.AiSearchActivity
 import com.wilin.app.ui.HomeFragment
@@ -44,10 +46,11 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     private val searchFragment = SearchFragment()
     private var currentTab     = R.id.tabHome
 
-    private var appBarOffset       = 0f
-    private var bottomNavOffset    = 0f
-    private var maxAppBarOffset    = 0f
-    private var maxBottomNavOffset = 0f
+    // Behaviour nativo do Material3 — usado para forçar slideUp ao voltar de outra activity
+    private val bottomNavBehavior by lazy {
+        val lp = binding.bottomNavWrapper.layoutParams as CoordinatorLayout.LayoutParams
+        lp.behavior as? HideBottomViewOnScrollBehavior<*>
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -69,12 +72,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         applyStatusBarTheme()
 
         TabManager.init(this)
-
-        binding.appBarLayout.post {
-            maxAppBarOffset    = binding.appBarLayout.height.toFloat()
-            maxBottomNavOffset = binding.bottomNav.height.toFloat() +
-                                 binding.navDivider.height.toFloat()
-        }
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
@@ -147,7 +144,7 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
             currentTab = tabId
             setIcons(tabId)
             updateAppBar(tabId)
-            revealBars()
+            showBottomNav()
             when (tabId) {
                 R.id.tabHome   -> showFragment(homeFragment)
                 R.id.tabSearch -> showFragment(searchFragment)
@@ -168,56 +165,24 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         updateAppBar(R.id.tabHome)
     }
 
-    // ── Scroll callbacks ──────────────────────────────────────────────────────
+    // ── HomeScrollCallback — já não precisa de fazer nada, o CoordinatorLayout trata tudo ──
 
-    override fun onHomeScrollDown(dy: Int) {
-        appBarOffset    = (appBarOffset + dy).coerceIn(0f, maxAppBarOffset)
-        bottomNavOffset = (bottomNavOffset + dy).coerceIn(0f, maxBottomNavOffset)
-        applyScrollOffsets()
-    }
+    override fun onHomeScrollDown(dy: Int) { /* CoordinatorLayout trata automaticamente */ }
+    override fun onHomeScrollUp(dy: Int)   { /* CoordinatorLayout trata automaticamente */ }
 
-    override fun onHomeScrollUp(dy: Int) {
-        appBarOffset    = (appBarOffset - dy).coerceIn(0f, maxAppBarOffset)
-        bottomNavOffset = (bottomNavOffset - dy).coerceIn(0f, maxBottomNavOffset)
-        applyScrollOffsets()
-    }
-
-    private fun applyScrollOffsets() {
-        // AppBar sobe
-        binding.appBarLayout.translationY = -appBarOffset
-        // Container sobe junto com appBar e cresce para baixo cobrindo o espaço do bottomNav
-        binding.container.translationY = -appBarOffset
-        val params = binding.container.layoutParams as? android.widget.LinearLayout.LayoutParams
-        if (params != null) {
-            params.bottomMargin = -bottomNavOffset.toInt()
-            binding.container.layoutParams = params
-        }
-        // BottomNav e divider descem para fora do ecrã
-        binding.navDivider.translationY = bottomNavOffset
-        binding.bottomNav.translationY  = bottomNavOffset
-    }
-
-    fun revealBars() {
-        if (appBarOffset == 0f && bottomNavOffset == 0f) return
-        val fromAppBar    = appBarOffset
-        val fromBottomNav = bottomNavOffset
-        ValueAnimator.ofFloat(1f, 0f).apply {
-            duration = 220
-            interpolator = DecelerateInterpolator(2f)
-            addUpdateListener { anim ->
-                val f = anim.animatedValue as Float
-                appBarOffset    = fromAppBar * f
-                bottomNavOffset = fromBottomNav * f
-                applyScrollOffsets()
-            }
-        }.start()
+    // Força o bottomNav a aparecer (ao trocar de tab ou ao voltar de outra activity)
+    @Suppress("UNCHECKED_CAST")
+    fun showBottomNav() {
+        val lp = binding.bottomNavWrapper.layoutParams as CoordinatorLayout.LayoutParams
+        val behavior = lp.behavior as? HideBottomViewOnScrollBehavior<View> ?: return
+        behavior.slideUp(binding.bottomNavWrapper)
     }
 
     override fun onResume() {
         super.onResume()
         applyStatusBarTheme()
         updateTabsBadge()
-        revealBars()
+        showBottomNav()
         restoreRootTransform()
     }
 
@@ -230,8 +195,8 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
 
         window.setBackgroundDrawable(ColorDrawable(Color.parseColor("#1C1C1E")))
 
-        root.pivotX      = root.width / 2f
-        root.pivotY      = root.height / 2f
+        root.pivotX       = root.width / 2f
+        root.pivotY       = root.height / 2f
         root.clipToOutline = true
 
         ValueAnimator.ofFloat(0f, 22f * dp).apply {
