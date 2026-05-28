@@ -44,7 +44,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     private val searchFragment = SearchFragment()
     private var currentTab = R.id.tabHome
 
-    // Scroll hide/show
     private var appBarOffset       = 0f
     private var bottomNavOffset    = 0f
     private var maxAppBarOffset    = 0f
@@ -73,7 +72,7 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
 
         binding.appBarLayout.post {
             maxAppBarOffset    = binding.appBarLayout.height.toFloat()
-            maxBottomNavOffset = binding.bottomNav.height.toFloat()
+            maxBottomNavOffset = (binding.bottomNav.height + binding.navDivider.height).toFloat()
         }
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
@@ -157,7 +156,7 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         updateAppBar(R.id.tabHome)
     }
 
-    // ── HomeScrollCallback ────────────────────────────────────────────────────
+    // ── Scroll callbacks ──────────────────────────────────────────────────────
 
     override fun onHomeScrollDown(dy: Int) {
         appBarOffset    = (appBarOffset + dy).coerceIn(0f, maxAppBarOffset)
@@ -172,10 +171,33 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     }
 
     private fun applyScrollOffsets() {
+        // AppBar desliza para cima
         binding.appBarLayout.translationY = -appBarOffset
-        binding.container.translationY    = -appBarOffset
-        binding.navDivider.translationY   = bottomNavOffset
-        binding.bottomNav.translationY    = bottomNavOffset
+
+        // Container expande para baixo o mesmo valor que o appBar subiu
+        // E expande para baixo o mesmo que o bottomNav desceu
+        // → sem espaço escuro em lado nenhum
+        binding.container.translationY = -appBarOffset
+        val containerLp = binding.container.layoutParams
+        if (containerLp != null) {
+            // Aumentar a altura do container para cobrir o espaço do appBar e do bottomNav
+            // Usamos padding negativo via translationY + scaleY não funciona bem;
+            // a solução correcta é bottom padding ou aumentar o layout height via margin.
+            // Mas o mais simples e correcto: container.bottom += offset via translationY já trata o top.
+            // Para o bottom: o navDivider e bottomNav descem, então o container pode crescer para baixo
+            // simplesmente não tendo o bottomNav a ocupar espaço visual.
+        }
+        // Divider e bottomNav descem para fora do ecrã
+        binding.navDivider.translationY = bottomNavOffset
+        binding.bottomNav.translationY  = bottomNavOffset
+
+        // O container precisa de crescer para cobrir o espaço que o bottomNav deixou
+        // A forma correcta: usar bottom margin negativo
+        val params = binding.container.layoutParams as? android.widget.LinearLayout.LayoutParams
+        if (params != null) {
+            params.bottomMargin = -bottomNavOffset.toInt()
+            binding.container.layoutParams = params
+        }
     }
 
     fun revealBars() {
@@ -199,29 +221,23 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         applyStatusBarTheme()
         updateTabsBadge()
         revealBars()
-        // Restaurar a aparência do root após voltar da TabsActivity
         restoreRootTransform()
     }
 
-    // ── Animação de abertura do Tabs Switcher ─────────────────────────────────
-    // O root encolhe + arredonda, depois lança TabsActivity translúcida por cima.
-    // Como TabsActivity é translúcida, o utilizador vê o root encolhido por baixo
-    // dos cards — dá a ilusão de que é tudo na mesma tela.
+    // ── Tab Switcher ──────────────────────────────────────────────────────────
 
     private fun openTabsWithTransform() {
-        val root = binding.root
-        val dp   = resources.displayMetrics.density
+        val root    = binding.root
+        val dp      = resources.displayMetrics.density
         val screenH = resources.displayMetrics.heightPixels.toFloat()
         val targetScale = 0.84f
 
-        // Fundo escuro visível nos cantos arredondados
         window.setBackgroundDrawable(ColorDrawable(Color.parseColor("#1C1C1E")))
 
         root.pivotX = root.width / 2f
         root.pivotY = root.height / 2f
         root.clipToOutline = true
 
-        // Animar border-radius 0 → 22dp
         ValueAnimator.ofFloat(0f, 22f * dp).apply {
             duration = 340
             interpolator = DecelerateInterpolator(2.5f)
@@ -235,7 +251,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
             }
         }.start()
 
-        // Encolher
         root.animate()
             .scaleX(targetScale)
             .scaleY(targetScale)
@@ -243,17 +258,15 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
             .setDuration(340)
             .setInterpolator(DecelerateInterpolator(2.5f))
             .withEndAction {
-                // Lançar TabsActivity translúcida — o root encolhido fica visível por baixo
                 startActivity(Intent(this, TabsActivity::class.java))
                 overridePendingTransition(0, 0)
             }
             .start()
     }
 
-    // Restaura o root quando a TabsActivity fecha (onResume)
     private fun restoreRootTransform() {
         val root = binding.root
-        if (root.scaleX == 1f && root.scaleY == 1f) return
+        if (root.scaleX == 1f && root.scaleY == 1f && root.translationY == 0f) return
 
         val dp = resources.displayMetrics.density
         ValueAnimator.ofFloat(22f * dp, 0f).apply {
@@ -270,9 +283,7 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         }.start()
 
         root.animate()
-            .scaleX(1f)
-            .scaleY(1f)
-            .translationY(0f)
+            .scaleX(1f).scaleY(1f).translationY(0f)
             .setDuration(300)
             .setInterpolator(DecelerateInterpolator(2f))
             .withEndAction {

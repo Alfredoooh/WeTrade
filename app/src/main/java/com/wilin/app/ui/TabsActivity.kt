@@ -2,7 +2,6 @@ package com.wilin.app.ui
 
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.PorterDuff
@@ -27,21 +26,17 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.caverock.androidsvg.SVG
 import com.wilin.app.R
-import java.io.File
 
 class TabsActivity : AppCompatActivity() {
 
     private lateinit var insetsController: WindowInsetsControllerCompat
 
-    companion object {
-        const val EXTRA_TRANSITION_SCREENSHOT_PATH = "transition_screenshot_path"
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, true)
         insetsController = WindowInsetsControllerCompat(window, window.decorView)
-        applyTheme()
+        window.statusBarColor = Color.TRANSPARENT
+        insetsController.isAppearanceLightStatusBars = !resources.configuration.isNightModeActive
 
         TabManager.init(this)
         TabScreenshots.init(this)
@@ -49,27 +44,33 @@ class TabsActivity : AppCompatActivity() {
         val dp      = resources.displayMetrics.density
         val screenW = resources.displayMetrics.widthPixels.toFloat()
         val screenH = resources.displayMetrics.heightPixels.toFloat()
+        val blue    = ContextCompat.getColor(this, R.color.colorPrimary)
+        val iconSec = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
-        val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
-        val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
-        val blue     = ContextCompat.getColor(this, R.color.colorPrimary)
+        // A MainActivity está encolhida a 0.84 e subiu 4% da altura.
+        // O card "activo" deve ter exactamente essas dimensões para alinhar com o ecrã de baixo.
+        val mainScale   = 0.84f
+        val cardW       = (screenW * mainScale).toInt()
+        val cardH       = (screenH * mainScale).toInt()
+        val cardGap     = (14 * dp).toInt()
 
-        // Dimensões dos cards
-        val cardW   = (screenW * 0.72f).toInt()
-        val cardH   = (screenH * 0.66f).toInt()
-        val cardGap = (20 * dp).toInt()
-        val sidePad = ((screenW - cardW) / 2f).toInt()
+        // O card activo fica alinhado ao centro horizontal do ecrã encolhido
+        // (que está centrado, pois pivotX = width/2)
+        // Os outros cards ficam à sua esquerda
 
-        // ── Root translúcido com fundo escuro ────────────────────────────────
+        val tabs      = TabManager.getTabs()
+        val currentId = TabManager.getCurrentId()
+        val activeIdx = tabs.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
+
+        // ── Root ─────────────────────────────────────────────────────────────
         val root = FrameLayout(this).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
-            setBackgroundColor(Color.TRANSPARENT)
         }
 
-        // Fundo escuro semitransparente (fade-in ao abrir)
+        // Fundo escuro (fade-in)
         val dimBg = View(this).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -79,7 +80,7 @@ class TabsActivity : AppCompatActivity() {
             alpha = 0f
         }
 
-        // ── HorizontalScrollView com cards ──────────────────────────────────
+        // ── HorizontalScrollView ─────────────────────────────────────────────
         val hScroll = HorizontalScrollView(this).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -87,6 +88,8 @@ class TabsActivity : AppCompatActivity() {
             )
             isHorizontalScrollBarEnabled = false
             isFillViewport = false
+            // Toque no fundo do scroll (não nos cards) fecha
+            setOnClickListener { closeWithAnimation(dimBg) }
         }
 
         val track = LinearLayout(this).apply {
@@ -96,23 +99,75 @@ class TabsActivity : AppCompatActivity() {
             )
             orientation = LinearLayout.HORIZONTAL
             gravity     = Gravity.CENTER_VERTICAL
-            setPadding(sidePad, 0, sidePad, 0)
+            // Padding esquerdo: espaço antes do primeiro card lateral
+            // Padding direito: para que o card activo possa centrar no ecrã
+            val rightPad = ((screenW - cardW) / 2f).toInt()
+            val leftPad  = (screenW * 0.10f).toInt()
+            setPadding(leftPad, 0, rightPad, 0)
         }
 
         hScroll.addView(track)
 
-        // ── Botão "Nova aba" no fundo ao centro ──────────────────────────────
+        // ── Construir cards ──────────────────────────────────────────────────
+        // Ordem: todos os tabs por índice. O activo fica na posição correcta.
+        // O scroll começa no card activo alinhado com o ecrã encolhido (à direita).
+        tabs.forEachIndexed { idx, tab ->
+            val isActive = tab.id == currentId
+            val preview  = TabScreenshots.get(this, tab.id)
+            val card     = buildCard(
+                tab      = tab,
+                isActive = isActive,
+                preview  = preview,
+                cardW    = cardW,
+                cardH    = cardH,
+                cardGap  = cardGap,
+                dp       = dp,
+                blue     = blue,
+                iconSec  = iconSec,
+                dimBg    = dimBg
+            )
+            track.addView(card)
+        }
+
+        // Botão fechar
+        val btnClose = TextView(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                (44 * dp).toInt(),
+                Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+            ).also { it.bottomMargin = (40 * dp).toInt() }
+            text = "Fechar"
+            textSize = 14f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            setPadding((28 * dp).toInt(), 0, (28 * dp).toInt(), 0)
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = 22 * dp
+                setColor(Color.argb(150, 80, 80, 90))
+            }
+            isClickable = true; isFocusable = true
+            alpha = 0f
+            setOnClickListener { closeWithAnimation(dimBg) }
+        }
+
+        // Botão nova aba
         val btnNew = FrameLayout(this).apply {
             val sz = (52 * dp).toInt()
             layoutParams = FrameLayout.LayoutParams(sz, sz,
-                Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-            ).also { it.bottomMargin = (36 * dp).toInt() }
+                Gravity.BOTTOM or Gravity.END
+            ).also {
+                it.bottomMargin = (40 * dp).toInt()
+                it.marginEnd    = (24 * dp).toInt()
+            }
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(blue)
             }
             elevation = 10f * dp
             isClickable = true; isFocusable = true
+            alpha = 0f
             setOnClickListener { newTabAndOpen() }
         }
         btnNew.addView(ImageView(this).apply {
@@ -122,62 +177,30 @@ class TabsActivity : AppCompatActivity() {
             setImageDrawable(svgDrawable("icons/svg/add.svg", 22, Color.WHITE))
         })
 
-        // ── Botão "Fechar" (fecha o switcher e volta à MainActivity) ─────────
-        val btnClose = TextView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                (42 * dp).toInt(),
-                Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-            ).also { it.bottomMargin = (36 * dp + 52 * dp + 12 * dp).toInt() }
-            text = "Fechar"
-            textSize = 14f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-            setPadding((24 * dp).toInt(), 0, (24 * dp).toInt(), 0)
-            background = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                cornerRadius = 21 * dp
-                setColor(Color.argb(160, 80, 80, 90))
-            }
-            isClickable = true; isFocusable = true
-            setOnClickListener { closeWithAnimation() }
-        }
-
         root.addView(dimBg)
         root.addView(hScroll)
         root.addView(btnClose)
         root.addView(btnNew)
         setContentView(root)
 
-        // ── Construir cards ──────────────────────────────────────────────────
-        val tabs      = TabManager.getTabs()
-        val currentId = TabManager.getCurrentId()
-
-        tabs.forEach { tab ->
-            val isActive = tab.id == currentId
-            val preview  = TabScreenshots.get(this, tab.id)
-            val card     = buildCard(tab, isActive, preview, cardW, cardH, cardGap, dp, blue, iconSec)
-            track.addView(card)
-        }
-
-        // Scroll para o card activo centrado
+        // ── Scroll para o card activo alinhado com o ecrã encolhido ──────────
+        // O ecrã encolhido está centrado horizontalmente.
+        // O card activo deve estar centrado no mesmo sítio.
+        // scrollX = posição do início do card activo - margem esquerda para centrar
         hScroll.post {
-            val activeIdx = tabs.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
-            val targetX   = (activeIdx * (cardW + cardGap) - (screenW - cardW) / 2f)
-                .coerceAtLeast(0f).toInt()
-            hScroll.scrollTo(targetX, 0)
+            val trackPaddingLeft = (screenW * 0.10f).toInt()
+            val rightPad         = ((screenW - cardW) / 2f).toInt()
+            // posição X do início do card activo dentro do track (sem o padding esquerdo)
+            val cardStartInTrack = trackPaddingLeft + activeIdx * (cardW + cardGap)
+            // queremos que o centro do card activo coincida com o centro do ecrã
+            val targetScrollX = cardStartInTrack - ((screenW - cardW) / 2f).toInt()
+            hScroll.scrollTo(targetScrollX.coerceAtLeast(0), 0)
         }
 
-        // Fade-in do fundo escuro
-        dimBg.animate()
-            .alpha(1f)
-            .setDuration(260)
-            .setInterpolator(DecelerateInterpolator(1.5f))
-            .start()
-
-        // Toque no fundo fecha
-        dimBg.setOnClickListener { closeWithAnimation() }
+        // Fade-in do fundo e botões
+        dimBg.animate().alpha(1f).setDuration(260).setInterpolator(DecelerateInterpolator(1.5f)).start()
+        btnClose.animate().alpha(1f).setStartDelay(120).setDuration(220).start()
+        btnNew.animate().alpha(1f).setStartDelay(120).setDuration(220).start()
     }
 
     private fun buildCard(
@@ -189,7 +212,8 @@ class TabsActivity : AppCompatActivity() {
         cardGap: Int,
         dp: Float,
         blue: Int,
-        iconSec: Int
+        iconSec: Int,
+        dimBg: View
     ): FrameLayout {
         val ctx = this
 
@@ -204,12 +228,12 @@ class TabsActivity : AppCompatActivity() {
                 if (isActive) setStroke((2 * dp).toInt(), blue)
             }
             clipToOutline = true
-            elevation = if (isActive) 14f * dp else 5f * dp
-            // Entrada de baixo
-            alpha    = 0f
-            scaleX   = 0.88f
-            scaleY   = 0.88f
-            translationY = 64f * dp
+            elevation = if (isActive) 16f * dp else 5f * dp
+            // Entrada de baixo com overshoot
+            alpha        = 0f
+            scaleX       = 0.88f
+            scaleY       = 0.88f
+            translationY = 70f * dp
         }
 
         // Preview
@@ -217,7 +241,7 @@ class TabsActivity : AppCompatActivity() {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
-            ).also { it.topMargin = (52 * dp).toInt() }
+            ).also { it.topMargin = (50 * dp).toInt() }
             scaleType = ImageView.ScaleType.CENTER_CROP
             setBackgroundColor(ContextCompat.getColor(ctx, R.color.background))
         }
@@ -227,7 +251,7 @@ class TabsActivity : AppCompatActivity() {
         val header = LinearLayout(ctx).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                (52 * dp).toInt(),
+                (50 * dp).toInt(),
                 Gravity.TOP
             )
             orientation = LinearLayout.HORIZONTAL
@@ -247,9 +271,9 @@ class TabsActivity : AppCompatActivity() {
         }
 
         val closeIv = ImageView(ctx).apply {
-            val sz = (34 * dp).toInt()
+            val sz = (36 * dp).toInt()
             layoutParams = LinearLayout.LayoutParams(sz, sz)
-            setPadding((7 * dp).toInt(), (7 * dp).toInt(), (7 * dp).toInt(), (7 * dp).toInt())
+            setPadding((8 * dp).toInt(), (8 * dp).toInt(), (8 * dp).toInt(), (8 * dp).toInt())
             setImageDrawable(svgDrawable("icons/svg/close.svg", 16, iconSec))
             isClickable = true; isFocusable = true
             setOnClickListener {
@@ -277,16 +301,13 @@ class TabsActivity : AppCompatActivity() {
         // Animação de entrada
         card.post {
             card.animate()
-                .alpha(1f)
-                .scaleX(1f)
-                .scaleY(1f)
-                .translationY(0f)
+                .alpha(1f).scaleX(1f).scaleY(1f).translationY(0f)
                 .setDuration(380)
                 .setInterpolator(OvershootInterpolator(0.65f))
                 .start()
         }
 
-        // Clique: expandir até cobrir o ecrã → fechar e activar o tab
+        // Clique: expande para cobrir o ecrã e fecha
         card.setOnClickListener {
             val loc = IntArray(2)
             card.getLocationOnScreen(loc)
@@ -301,7 +322,7 @@ class TabsActivity : AppCompatActivity() {
                 .scaleX(sx).scaleY(sy)
                 .translationX(-loc[0].toFloat())
                 .translationY(-loc[1].toFloat())
-                .alpha(0.55f)
+                .alpha(0.5f)
                 .setDuration(280)
                 .setInterpolator(DecelerateInterpolator(2.5f))
                 .withEndAction {
@@ -315,14 +336,12 @@ class TabsActivity : AppCompatActivity() {
         return card
     }
 
-    private fun closeWithAnimation() {
-        // Fade-out do fundo e fecha
-        val dimBg = (contentView() as? FrameLayout)?.getChildAt(0)
-        dimBg?.animate()
-            ?.alpha(0f)
-            ?.setDuration(200)
-            ?.setInterpolator(DecelerateInterpolator(1.5f))
-            ?.start()
+    private fun closeWithAnimation(dimBg: View) {
+        dimBg.animate()
+            .alpha(0f)
+            .setDuration(200)
+            .setInterpolator(DecelerateInterpolator(1.5f))
+            .start()
         finish()
         overridePendingTransition(0, 0)
     }
@@ -336,15 +355,6 @@ class TabsActivity : AppCompatActivity() {
         })
         finish()
         overridePendingTransition(0, 0)
-    }
-
-    private fun contentView(): View? =
-        window.decorView.findViewById(android.R.id.content)
-
-    private fun applyTheme() {
-        val isLight = !resources.configuration.isNightModeActive
-        insetsController.isAppearanceLightStatusBars = isLight
-        window.statusBarColor = Color.TRANSPARENT
     }
 
     override fun finish() {
@@ -361,8 +371,5 @@ class TabsActivity : AppCompatActivity() {
             svg.documentHeight = px.toFloat()
             svg.renderToCanvas(Canvas(bmp))
         } catch (_: Exception) {}
-        val drawable = BitmapDrawable(resources, bmp)
-        drawable.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
-        return drawable
+        return BitmapDrawable(resources, bmp).also { it.setColorFilter(tint, PorterDuff.Mode.SRC_IN) }
     }
-}
