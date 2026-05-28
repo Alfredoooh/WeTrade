@@ -95,6 +95,7 @@ class BrowserResponseActivity : AppCompatActivity() {
         binding = ActivityBrowserResponseBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Edge-to-edge desligado — o sistema gere as insets normalmente
         WindowCompat.setDecorFitsSystemWindows(window, true)
         insetsController = WindowInsetsControllerCompat(window, window.decorView)
         applyStatusBarTheme()
@@ -162,6 +163,7 @@ class BrowserResponseActivity : AppCompatActivity() {
             adapter = historyAdapter
         }
 
+        // WebView scroll → animar bottomBar; também ajusta margem inferior do WebView
         binding.webView.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
             val dy = scrollY - oldScrollY
             if (dy > 8 && bottomBarVisible && scrollY > 100) hideBottomBar()
@@ -176,13 +178,14 @@ class BrowserResponseActivity : AppCompatActivity() {
         updateTabsCount()
     }
 
+    // Status bar igual a todos os outros Activities — cor do tema, ícones claros/escuros
     private fun applyStatusBarTheme() {
         val isLight = !resources.configuration.isNightModeActive
         window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         insetsController.isAppearanceLightStatusBars = isLight
     }
 
-    // ─── captureAndOpenTabs — uma só fase, scale-down direto ─────────────────
+    // ─── captureAndOpenTabs ───────────────────────────────────────────────────
 
     private fun captureAndOpenTabs() {
         TabManager.save(this)
@@ -191,61 +194,20 @@ class BrowserResponseActivity : AppCompatActivity() {
         val h  = wv.height
 
         if (w <= 0 || h <= 0) {
-            goToTabsActivity()
+            startActivity(Intent(this, TabsActivity::class.java))
+            overridePendingTransition(0, 0)
             return
         }
 
         val targetW = 600
         val targetH = (h.toFloat() / w.toFloat() * targetW).toInt().coerceAtMost(900)
 
-        fun saveAndAnimate(src: Bitmap) {
+        fun saveAndOpen(src: Bitmap) {
             val scaled = Bitmap.createScaledBitmap(src, targetW, targetH, true)
             src.recycle()
             TabScreenshots.save(this, currentTabId, scaled)
-
-            // Calcula posição destino do card no grid (2 colunas, margem 12dp)
-            val dp       = resources.displayMetrics.density
-            val screenW  = resources.displayMetrics.widthPixels
-            val screenH  = resources.displayMetrics.heightPixels
-            val cardW    = (screenW / 2) - (24 * dp).toInt()
-            val cardH    = (cardW * 1.5f).toInt()
-            val tabs     = TabManager.getTabs()
-            val idx      = tabs.indexOfFirst { it.id == currentTabId }.coerceAtLeast(0)
-            val col      = idx % 2
-            val row      = idx / 2
-            val topBarH  = (52 * dp).toInt() + (1 * dp).toInt() + (44 * dp).toInt() + (12 * dp).toInt()
-            val destX    = (12 * dp).toInt() + col * (cardW + (12 * dp).toInt())
-            val destY    = topBarH + row * (cardH + (40 * dp).toInt() + (12 * dp).toInt())
-
-            // Overlay que vai receber o "card voador"
-            val rootDecor = window.decorView as FrameLayout
-
-            // Snapshot da webview como ImageView para animar
-            val snap = ImageView(this).apply {
-                setImageBitmap(scaled)
-                scaleType = ImageView.ScaleType.CENTER_CROP
-                layoutParams = FrameLayout.LayoutParams(w, h)
-            }
-            rootDecor.addView(snap)
-
-            // Escala e translação destino
-            val scaleX   = cardW.toFloat() / w.toFloat()
-            val scaleY   = cardH.toFloat() / h.toFloat()
-            val pivotOffX = destX - (w * (1f - scaleX) / 2f)
-            val pivotOffY = destY - (h * (1f - scaleY) / 2f)
-
-            snap.animate()
-                .scaleX(scaleX)
-                .scaleY(scaleY)
-                .translationX(pivotOffX)
-                .translationY(pivotOffY)
-                .setDuration(320)
-                .setInterpolator(DecelerateInterpolator(2.2f))
-                .withEndAction {
-                    rootDecor.removeView(snap)
-                    goToTabsActivity()
-                }
-                .start()
+            startActivity(Intent(this, TabsActivity::class.java))
+            overridePendingTransition(0, 0)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -255,7 +217,7 @@ class BrowserResponseActivity : AppCompatActivity() {
             val rect = Rect(loc[0], loc[1], loc[0] + w, loc[1] + h)
             PixelCopy.request(window, rect, bitmap, { result ->
                 if (result == PixelCopy.SUCCESS) {
-                    saveAndAnimate(bitmap)
+                    saveAndOpen(bitmap)
                 } else {
                     bitmap.recycle()
                     try {
@@ -263,10 +225,11 @@ class BrowserResponseActivity : AppCompatActivity() {
                         val fb = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
                         wv.draw(Canvas(fb))
                         wv.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-                        saveAndAnimate(fb)
+                        saveAndOpen(fb)
                     } catch (_: Exception) {
                         wv.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-                        goToTabsActivity()
+                        startActivity(Intent(this, TabsActivity::class.java))
+                        overridePendingTransition(0, 0)
                     }
                 }
             }, Handler(Looper.getMainLooper()))
@@ -276,17 +239,13 @@ class BrowserResponseActivity : AppCompatActivity() {
                 val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
                 wv.draw(Canvas(bmp))
                 wv.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-                saveAndAnimate(bmp)
+                saveAndOpen(bmp)
             } catch (_: Exception) {
                 wv.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-                goToTabsActivity()
+                startActivity(Intent(this, TabsActivity::class.java))
+                overridePendingTransition(0, 0)
             }
         }
-    }
-
-    private fun goToTabsActivity() {
-        startActivity(Intent(this, TabsActivity::class.java))
-        overridePendingTransition(0, 0)
     }
 
     // ─── FindBar ──────────────────────────────────────────────────────────────
@@ -507,22 +466,25 @@ class BrowserResponseActivity : AppCompatActivity() {
         }
     }
 
-    // ─── Bottom bar ───────────────────────────────────────────────────────────
+    // ─── Bottom bar — animação sequencial com WebView ─────────────────────────
 
     private fun hideBottomBar() {
         if (!bottomBarVisible) return
         bottomBarVisible = false
         val barH = binding.bottomBar.height.toFloat()
+        // bottomBar desce
         binding.bottomBar.animate()
             .translationY(barH)
             .setDuration(220)
             .setInterpolator(DecelerateInterpolator(2f))
             .start()
+        // WebView expande sequencialmente — margem inferior vai a 0
         binding.webView.animate()
             .translationY(0f)
             .setDuration(220)
             .setInterpolator(DecelerateInterpolator(2f))
             .withStartAction {
+                // Remove margem via layoutParams para o WebView usar o espaço todo
                 val lp = binding.webView.layoutParams as? ViewGroup.MarginLayoutParams
                 lp?.bottomMargin = 0
                 binding.webView.layoutParams = lp
@@ -534,9 +496,11 @@ class BrowserResponseActivity : AppCompatActivity() {
         if (bottomBarVisible) return
         bottomBarVisible = true
         val barH = binding.bottomBar.height.toFloat()
+        // Restaura margem do WebView primeiro, depois anima tudo junto
         val lp = binding.webView.layoutParams as? ViewGroup.MarginLayoutParams
         lp?.bottomMargin = barH.toInt()
         binding.webView.layoutParams = lp
+
         binding.bottomBar.animate()
             .translationY(0f)
             .setDuration(220)
@@ -762,18 +726,19 @@ class BrowserResponseActivity : AppCompatActivity() {
             PopupItem("icons/svg/external.svg",getString(R.string.open_in_browser)) { openExternal() },
         )
 
+        // Âncora: canto superior do botão "mais" — popup abre ACIMA dele
         val loc = IntArray(2)
         binding.btnMore.getLocationOnScreen(loc)
         showAnimatedPopupAt(
             items, iconTint, bgColor, textColor,
             anchorX = loc[0] + binding.btnMore.width / 2,
-            anchorY = loc[1],
+            anchorY = loc[1],          // topo do botão — popup calcula para abrir acima
             fromBottomBar = true,
             showClose = true
         )
     }
 
-    // ─── Popup animado ────────────────────────────────────────────────────────
+    // ─── Popup animado — acima do âncora, nunca em frente ────────────────────
 
     private fun showAnimatedPopupAt(
         items: List<PopupItem>,
@@ -851,8 +816,11 @@ class BrowserResponseActivity : AppCompatActivity() {
         ).apply {
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             elevation = 20f
+            // Popup abre acima do âncora — o sistema resolve automaticamente com showAsDropDown
+            // mas como usamos showAtLocation precisamos calcular manualmente
         }
 
+        // Medir o popup para saber a altura exacta antes de posicionar
         menuView.measure(
             View.MeasureSpec.makeMeasureSpec(menuWidthPx, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
@@ -860,7 +828,9 @@ class BrowserResponseActivity : AppCompatActivity() {
         val popH = menuView.measuredHeight
 
         val screenW = resources.displayMetrics.widthPixels
+        // X: alinhado à direita do âncora, sem sair do ecrã
         val xPos = (anchorX - menuWidthPx).coerceAtLeast(8).coerceAtMost(screenW - menuWidthPx - 8)
+        // Y: popup termina ACIMA do botão âncora — anchorY é o topo do botão
         val yPos = anchorY - popH - (8 * dp).toInt()
 
         pop.showAtLocation(binding.root, Gravity.NO_GRAVITY, xPos, yPos.coerceAtLeast(0))
@@ -950,26 +920,25 @@ class BrowserResponseActivity : AppCompatActivity() {
         drawable.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
         return drawable
     }
-
     override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        val query = intent.getStringExtra(EXTRA_QUERY) ?: ""
-        val tabId = intent.getStringExtra(EXTRA_TAB_ID)
+    super.onNewIntent(intent)
+    setIntent(intent)
+    val query = intent.getStringExtra(EXTRA_QUERY) ?: ""
+    val tabId = intent.getStringExtra(EXTRA_TAB_ID)
 
-        if (tabId != null && TabManager.getTabs().any { it.id == tabId }) {
-            currentTabId = tabId
-            TabManager.setCurrentId(tabId)
-            val tab = TabManager.getTabs().find { it.id == tabId }
-            if (tab != null && tab.url.isNotEmpty()) {
-                binding.webView.loadUrl(tab.url)
-            }
-        } else if (query.isNotEmpty()) {
-            addToHistory(query)
-            binding.webView.loadUrl(buildUrl(query))
+    if (tabId != null && TabManager.getTabs().any { it.id == tabId }) {
+        currentTabId = tabId
+        TabManager.setCurrentId(tabId)
+        val tab = TabManager.getTabs().find { it.id == tabId }
+        if (tab != null && tab.url.isNotEmpty()) {
+            binding.webView.loadUrl(tab.url)
         }
-        updateTabsCount()
+    } else if (query.isNotEmpty()) {
+        addToHistory(query)
+        binding.webView.loadUrl(buildUrl(query))
     }
+    updateTabsCount()
+  }
 }
 
 // ─── HistoryModalAdapter ──────────────────────────────────────────────────────
