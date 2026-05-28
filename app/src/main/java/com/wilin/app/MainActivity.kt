@@ -3,7 +3,6 @@ package com.wilin.app
 import android.animation.ValueAnimator
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
@@ -13,20 +12,10 @@ import android.graphics.PorterDuff
 import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
-import android.view.Gravity
-import android.view.MotionEvent
 import android.view.View
-import android.view.ViewGroup
 import android.view.ViewOutlineProvider
 import android.view.animation.DecelerateInterpolator
-import android.view.animation.OvershootInterpolator
-import android.widget.FrameLayout
-import android.widget.HorizontalScrollView
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
@@ -38,17 +27,13 @@ import androidx.fragment.app.Fragment
 import com.caverock.androidsvg.SVG
 import com.wilin.app.databinding.ActivityMainBinding
 import com.wilin.app.ui.AiSearchActivity
-import com.wilin.app.ui.BrowserResponseActivity
-import com.wilin.app.ui.BrowserTab
 import com.wilin.app.ui.HomeFragment
 import com.wilin.app.ui.HomeScrollCallback
 import com.wilin.app.ui.SearchActivity
 import com.wilin.app.ui.SearchFragment
 import com.wilin.app.ui.SettingsActivity
 import com.wilin.app.ui.TabManager
-import com.wilin.app.ui.TabScreenshots
-import java.io.File
-import java.io.FileOutputStream
+import com.wilin.app.ui.TabsActivity
 
 class MainActivity : AppCompatActivity(), HomeScrollCallback {
 
@@ -64,9 +49,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     private var bottomNavOffset    = 0f
     private var maxAppBarOffset    = 0f
     private var maxBottomNavOffset = 0f
-
-    // Tab switcher state
-    private var switcherOpen = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -88,7 +70,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         applyStatusBarTheme()
 
         TabManager.init(this)
-        TabScreenshots.init(this)
 
         binding.appBarLayout.post {
             maxAppBarOffset    = binding.appBarLayout.height.toFloat()
@@ -162,15 +143,9 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
             }
         }
 
-        binding.tabHome.setOnClickListener   {
-            if (switcherOpen) closeSwitcher() else selectTab(R.id.tabHome)
-        }
-        binding.tabSearch.setOnClickListener {
-            if (switcherOpen) closeSwitcher() else selectTab(R.id.tabSearch)
-        }
-        binding.tabTabs.setOnClickListener   {
-            if (switcherOpen) closeSwitcher() else openSwitcher()
-        }
+        binding.tabHome.setOnClickListener   { selectTab(R.id.tabHome) }
+        binding.tabSearch.setOnClickListener { selectTab(R.id.tabSearch) }
+        binding.tabTabs.setOnClickListener   { openTabsWithTransform() }
 
         supportFragmentManager.beginTransaction()
             .add(R.id.container, homeFragment, "home")
@@ -185,14 +160,12 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     // ── HomeScrollCallback ────────────────────────────────────────────────────
 
     override fun onHomeScrollDown(dy: Int) {
-        if (switcherOpen) return
         appBarOffset    = (appBarOffset + dy).coerceIn(0f, maxAppBarOffset)
         bottomNavOffset = (bottomNavOffset + dy).coerceIn(0f, maxBottomNavOffset)
         applyScrollOffsets()
     }
 
     override fun onHomeScrollUp(dy: Int) {
-        if (switcherOpen) return
         appBarOffset    = (appBarOffset - dy).coerceIn(0f, maxAppBarOffset)
         bottomNavOffset = (bottomNavOffset - dy).coerceIn(0f, maxBottomNavOffset)
         applyScrollOffsets()
@@ -226,39 +199,35 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         applyStatusBarTheme()
         updateTabsBadge()
         revealBars()
+        // Restaurar a aparência do root após voltar da TabsActivity
+        restoreRootTransform()
     }
 
-    // ── Tab Switcher in-place (estilo HTML) ───────────────────────────────────
+    // ── Animação de abertura do Tabs Switcher ─────────────────────────────────
+    // O root encolhe + arredonda, depois lança TabsActivity translúcida por cima.
+    // Como TabsActivity é translúcida, o utilizador vê o root encolhido por baixo
+    // dos cards — dá a ilusão de que é tudo na mesma tela.
 
-    private fun openSwitcher() {
-        if (switcherOpen) return
-        switcherOpen = true
-
-        val dp       = resources.displayMetrics.density
-        val screenW  = resources.displayMetrics.widthPixels.toFloat()
-        val screenH  = resources.displayMetrics.heightPixels.toFloat()
-        val overlay  = binding.tabSwitcherOverlay
-        overlay.removeAllViews()
-        overlay.visibility = View.VISIBLE
-
-        // Fundo escuro atrás do main encolhido
-        overlay.setBackgroundColor(Color.parseColor("#1C1C1E"))
-
-        // ── 1. Encolher o mainContent ────────────────────────────────────────
-        val main = binding.mainContent
-        main.clipToOutline = true
-        main.pivotX = main.width / 2f
-        main.pivotY = main.height / 2f
-
+    private fun openTabsWithTransform() {
+        val root = binding.root
+        val dp   = resources.displayMetrics.density
+        val screenH = resources.displayMetrics.heightPixels.toFloat()
         val targetScale = 0.84f
 
-        // Animar border-radius do main
+        // Fundo escuro visível nos cantos arredondados
+        window.setBackgroundDrawable(ColorDrawable(Color.parseColor("#1C1C1E")))
+
+        root.pivotX = root.width / 2f
+        root.pivotY = root.height / 2f
+        root.clipToOutline = true
+
+        // Animar border-radius 0 → 22dp
         ValueAnimator.ofFloat(0f, 22f * dp).apply {
-            duration = 360
+            duration = 340
             interpolator = DecelerateInterpolator(2.5f)
             addUpdateListener { anim ->
                 val r = anim.animatedValue as Float
-                main.outlineProvider = object : ViewOutlineProvider() {
+                root.outlineProvider = object : ViewOutlineProvider() {
                     override fun getOutline(view: View, outline: Outline) {
                         outline.setRoundRect(0, 0, view.width, view.height, r)
                     }
@@ -266,309 +235,54 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
             }
         }.start()
 
-        main.animate()
+        // Encolher
+        root.animate()
             .scaleX(targetScale)
             .scaleY(targetScale)
             .translationY(-(screenH * 0.04f))
-            .setDuration(360)
-            .setInterpolator(DecelerateInterpolator(2.5f))
-            .start()
-
-        // ── 2. Construir track de cards ──────────────────────────────────────
-        val tabs      = TabManager.getTabs()
-        val currentId = TabManager.getCurrentId()
-
-        // Dimensões dos cards laterais
-        val cardW    = (screenW * 0.72f).toInt()
-        val cardH    = (screenH * 0.68f).toInt()
-        val cardGap  = (20 * dp).toInt()
-
-        val trackWrapper = FrameLayout(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-            alpha = 0f
-        }
-
-        val hScroll = HorizontalScrollView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-            isHorizontalScrollBarEnabled = false
-            isFillViewport = false
-        }
-
-        val track = LinearLayout(this).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-            orientation = LinearLayout.HORIZONTAL
-            gravity     = Gravity.CENTER_VERTICAL
-            setPadding((screenW * 0.14f).toInt(), 0, (screenW * 0.14f).toInt(), 0)
-        }
-
-        hScroll.addView(track)
-        trackWrapper.addView(hScroll)
-
-        // Botão fechar no fundo
-        val closeBtn = TextView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                (44 * dp).toInt(),
-                Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-            ).also { it.bottomMargin = (32 * dp).toInt() }
-            text = "Fechar"
-            textSize = 15f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-            setPadding((28 * dp).toInt(), 0, (28 * dp).toInt(), 0)
-            background = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                cornerRadius = 22 * dp
-                setColor(Color.argb(180, 255, 255, 255))
-            }
-            isClickable = true; isFocusable = true
-            setTextColor(Color.BLACK)
-            setOnClickListener { closeSwitcher() }
-        }
-        trackWrapper.addView(closeBtn)
-
-        // Cards para cada tab existente
-        tabs.forEach { tab ->
-            val isActive = tab.id == currentId
-            val preview  = TabScreenshots.get(this, tab.id)
-            val card     = buildSwitcherCard(tab, isActive, preview, cardW, cardH, cardGap, dp) {
-                // Ao clicar num card: troca de tab e fecha
-                TabManager.setCurrentId(tab.id)
-                TabManager.save(this)
-                updateTabsBadge()
-                closeSwitcher()
-            }
-            track.addView(card)
-        }
-
-        overlay.addView(trackWrapper)
-
-        // Fade-in do track
-        trackWrapper.animate()
-            .alpha(1f)
-            .setStartDelay(80)
-            .setDuration(240)
-            .setInterpolator(DecelerateInterpolator(1.5f))
-            .start()
-
-        // Scroll para o card activo centrado
-        hScroll.post {
-            val activeIdx = tabs.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
-            val targetX   = (activeIdx * (cardW + cardGap) - (screenW - cardW) / 2).coerceAtLeast(0f)
-            hScroll.scrollTo(targetX.toInt(), 0)
-        }
-
-        // Toque no fundo (fora dos cards) fecha o switcher
-        overlay.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_UP) {
-                // Verificar se o toque foi fora de qualquer card
-                var hitCard = false
-                for (i in 0 until track.childCount) {
-                    val child = track.getChildAt(i)
-                    val loc = IntArray(2); child.getLocationOnScreen(loc)
-                    if (event.rawX >= loc[0] && event.rawX <= loc[0] + child.width &&
-                        event.rawY >= loc[1] && event.rawY <= loc[1] + child.height) {
-                        hitCard = true; break
-                    }
-                }
-                if (!hitCard) closeSwitcher()
-            }
-            false // passa os eventos para o HScrollView
-        }
-    }
-
-    private fun buildSwitcherCard(
-        tab: BrowserTab,
-        isActive: Boolean,
-        preview: Bitmap?,
-        cardW: Int,
-        cardH: Int,
-        cardGap: Int,
-        dp: Float,
-        onTap: () -> Unit
-    ): FrameLayout {
-        val blue = ContextCompat.getColor(this, R.color.colorPrimary)
-        val ctx  = this
-
-        val card = FrameLayout(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(cardW, cardH).also {
-                it.marginEnd = cardGap
-            }
-            background = GradientDrawable().apply {
-                shape        = GradientDrawable.RECTANGLE
-                cornerRadius = 18 * dp
-                setColor(ContextCompat.getColor(ctx, R.color.card_background))
-                if (isActive) setStroke((2 * dp).toInt(), blue)
-            }
-            clipToOutline = true
-            elevation = if (isActive) 12f * dp else 4f * dp
-            // Entrada: de baixo com overshoot
-            alpha     = 0f
-            scaleX    = 0.90f
-            scaleY    = 0.90f
-            translationY = 60f * dp
-        }
-
-        // Preview
-        val previewIv = ImageView(ctx).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            ).also { it.topMargin = (50 * dp).toInt() }
-            scaleType = ImageView.ScaleType.CENTER_CROP
-            setBackgroundColor(ContextCompat.getColor(ctx, R.color.background))
-        }
-        preview?.let { previewIv.setImageBitmap(it) }
-
-        // Header
-        val header = LinearLayout(ctx).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                (50 * dp).toInt(),
-                Gravity.TOP
-            )
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding((14 * dp).toInt(), 0, (10 * dp).toInt(), 0)
-            setBackgroundColor(ContextCompat.getColor(ctx, R.color.card_background))
-        }
-
-        val titleTv = TextView(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            text = tab.title.ifEmpty { if (tab.url.isEmpty()) "Nova aba" else tab.url }
-            textSize = 13f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
-        }
-
-        val closeIv = ImageView(ctx).apply {
-            val sz = (34 * dp).toInt()
-            layoutParams = LinearLayout.LayoutParams(sz, sz)
-            setPadding((7 * dp).toInt(), (7 * dp).toInt(), (7 * dp).toInt(), (7 * dp).toInt())
-            setImageDrawable(svgDrawable("icons/svg/close.svg", 16,
-                ContextCompat.getColor(ctx, R.color.icon_tint_secondary)))
-            isClickable = true; isFocusable = true
-            setOnClickListener {
-                // Fechar este tab
-                card.animate()
-                    .translationY(card.height.toFloat() + 40f)
-                    .scaleX(0.85f).scaleY(0.85f)
-                    .alpha(0f)
-                    .setDuration(220)
-                    .setInterpolator(DecelerateInterpolator(2f))
-                    .withEndAction {
-                        (card.parent as? ViewGroup)?.removeView(card)
-                        TabScreenshots.remove(ctx, tab.id)
-                        TabManager.closeTab(tab.id)
-                        TabManager.save(ctx)
-                        updateTabsBadge()
-                        if (TabManager.count() == 0) {
-                            closeSwitcher()
-                            TabManager.newTab()
-                            TabManager.save(ctx)
-                        }
-                    }.start()
-            }
-        }
-
-        header.addView(titleTv)
-        header.addView(closeIv)
-        card.addView(previewIv)
-        card.addView(header)
-
-        // Animação de entrada
-        card.post {
-            card.animate()
-                .alpha(1f)
-                .scaleX(1f)
-                .scaleY(1f)
-                .translationY(0f)
-                .setDuration(380)
-                .setInterpolator(OvershootInterpolator(0.7f))
-                .start()
-        }
-
-        // Toque: expandir e abrir
-        card.setOnClickListener {
-            val loc = IntArray(2)
-            card.getLocationOnScreen(loc)
-            val sw = resources.displayMetrics.widthPixels.toFloat()
-            val sh = resources.displayMetrics.heightPixels.toFloat()
-            val sx = sw / card.width.toFloat()
-            val sy = sh / card.height.toFloat()
-
-            card.pivotX = 0f
-            card.pivotY = 0f
-            card.animate()
-                .scaleX(sx).scaleY(sy)
-                .translationX(-loc[0].toFloat())
-                .translationY(-loc[1].toFloat())
-                .alpha(0.6f)
-                .setDuration(300)
-                .setInterpolator(DecelerateInterpolator(2.5f))
-                .withEndAction { onTap() }
-                .start()
-        }
-
-        return card
-    }
-
-    private fun closeSwitcher() {
-        if (!switcherOpen) return
-        switcherOpen = false
-
-        val main = binding.mainContent
-        val overlay = binding.tabSwitcherOverlay
-
-        // Fade out do track
-        val trackWrapper = overlay.getChildAt(0)
-        trackWrapper?.animate()
-            ?.alpha(0f)
-            ?.setDuration(200)
-            ?.setInterpolator(DecelerateInterpolator(1.5f))
-            ?.start()
-
-        // Restaurar main
-        main.animate()
-            .scaleX(1f)
-            .scaleY(1f)
-            .translationY(0f)
-            .setDuration(320)
+            .setDuration(340)
             .setInterpolator(DecelerateInterpolator(2.5f))
             .withEndAction {
-                main.clipToOutline = false
-                main.outlineProvider = ViewOutlineProvider.BACKGROUND
-                overlay.visibility = View.GONE
-                overlay.removeAllViews()
-                overlay.setBackgroundColor(Color.TRANSPARENT)
+                // Lançar TabsActivity translúcida — o root encolhido fica visível por baixo
+                startActivity(Intent(this, TabsActivity::class.java))
+                overridePendingTransition(0, 0)
             }
             .start()
+    }
 
-        // Limpar border-radius
-        ValueAnimator.ofFloat(22f * resources.displayMetrics.density, 0f).apply {
-            duration = 320
-            interpolator = DecelerateInterpolator(2.5f)
+    // Restaura o root quando a TabsActivity fecha (onResume)
+    private fun restoreRootTransform() {
+        val root = binding.root
+        if (root.scaleX == 1f && root.scaleY == 1f) return
+
+        val dp = resources.displayMetrics.density
+        ValueAnimator.ofFloat(22f * dp, 0f).apply {
+            duration = 300
+            interpolator = DecelerateInterpolator(2f)
             addUpdateListener { anim ->
                 val r = anim.animatedValue as Float
-                main.outlineProvider = object : ViewOutlineProvider() {
+                root.outlineProvider = object : ViewOutlineProvider() {
                     override fun getOutline(view: View, outline: Outline) {
-                        outline.setRoundRect(0, 0, main.width, main.height, r)
+                        outline.setRoundRect(0, 0, root.width, root.height, r)
                     }
                 }
             }
         }.start()
+
+        root.animate()
+            .scaleX(1f)
+            .scaleY(1f)
+            .translationY(0f)
+            .setDuration(300)
+            .setInterpolator(DecelerateInterpolator(2f))
+            .withEndAction {
+                root.clipToOutline = false
+                root.outlineProvider = ViewOutlineProvider.BACKGROUND
+                window.setBackgroundDrawable(
+                    ColorDrawable(ContextCompat.getColor(this, R.color.background))
+                )
+            }
+            .start()
     }
 
     private fun updateTabsBadge() {
@@ -577,7 +291,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     }
 
     override fun onBackPressed() {
-        if (switcherOpen) { closeSwitcher(); return }
         if (binding.drawerLayout.isDrawerOpen(GravityCompat.END)) {
             binding.drawerLayout.closeDrawer(GravityCompat.END)
             return
@@ -626,3 +339,4 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
             .hide(homeFragment).hide(searchFragment)
             .show(fragment).commit()
     }
+}

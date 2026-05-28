@@ -85,7 +85,7 @@
         <activity
             android:name=".ui.TabsActivity"
             android:exported="false"
-            android:theme="@style/Theme.wilin"
+            android:theme="@style/Theme.wilin.Translucent"
             android:windowSoftInputMode="adjustResize" />
 
         <activity

@@ -13,8 +13,8 @@ data class BrowserTab(
 
 object TabManager {
 
-    private const val PREFS = "wilin_tabs"
-    private const val KEY   = "tabs"
+    private const val PREFS       = "wilin_tabs"
+    private const val KEY         = "tabs"
     private const val KEY_CURRENT = "current_tab"
 
     private val tabs = mutableListOf<BrowserTab>()
@@ -53,6 +53,13 @@ object TabManager {
     fun setCurrentId(id: String) { currentTabId = id }
 
     fun getCurrentId(): String = currentTabId
+
+    /** Troca para o tab com o id dado e persiste. */
+    fun switchToTab(context: Context, id: String) {
+        if (tabs.none { it.id == id }) return
+        currentTabId = id
+        save(context)
+    }
 
     fun newTab(url: String = "https://duckduckgo.com"): BrowserTab {
         val t = BrowserTab(

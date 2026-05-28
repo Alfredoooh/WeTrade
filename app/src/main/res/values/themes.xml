@@ -34,4 +34,11 @@
         <item name="windowSplashScreenIconBackgroundColor">@color/splash_background_light</item>
         <item name="postSplashScreenTheme">@style/Theme.wilin</item>
     </style>
+
+    <!-- Tema translúcido para TabsActivity — permite ver a MainActivity por baixo -->
+    <style name="Theme.wilin.Translucent" parent="Theme.wilin">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
 </resources>
