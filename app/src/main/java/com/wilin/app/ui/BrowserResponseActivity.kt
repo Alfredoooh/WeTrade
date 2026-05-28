@@ -920,6 +920,25 @@ class BrowserResponseActivity : AppCompatActivity() {
         drawable.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
         return drawable
     }
+    override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    val query = intent.getStringExtra(EXTRA_QUERY) ?: ""
+    val tabId = intent.getStringExtra(EXTRA_TAB_ID)
+
+    if (tabId != null && TabManager.getTabs().any { it.id == tabId }) {
+        currentTabId = tabId
+        TabManager.setCurrentId(tabId)
+        val tab = TabManager.getTabs().find { it.id == tabId }
+        if (tab != null && tab.url.isNotEmpty()) {
+            binding.webView.loadUrl(tab.url)
+        }
+    } else if (query.isNotEmpty()) {
+        addToHistory(query)
+        binding.webView.loadUrl(buildUrl(query))
+    }
+    updateTabsCount()
+  }
 }
 
 // ─── HistoryModalAdapter ──────────────────────────────────────────────────────

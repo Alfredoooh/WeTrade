@@ -69,11 +69,12 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".ui.BrowserResponseActivity"
-            android:exported="false"
-            android:theme="@style/Theme.wilin"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:windowSoftInputMode="adjustResize" />
+    android:name=".ui.BrowserResponseActivity"
+    android:exported="false"
+    android:theme="@style/Theme.wilin"
+    android:launchMode="singleTop"
+    android:configChanges="orientation|screenSize|keyboardHidden"
+    android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".ui.IncognitoActivity"

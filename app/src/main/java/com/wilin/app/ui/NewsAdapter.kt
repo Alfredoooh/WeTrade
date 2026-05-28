@@ -4,12 +4,11 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.view.Gravity
-import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.palette.graphics.Palette
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,10 +29,11 @@ class NewsAdapter(
         .build()
 
     inner class VH(val root: LinearLayout) : RecyclerView.ViewHolder(root) {
-        val thumb: ImageView  = root.findViewWithTag("thumb")
-        val title: TextView   = root.findViewWithTag("title")
-        val desc: TextView    = root.findViewWithTag("desc")
-        val source: TextView  = root.findViewWithTag("source")
+        val thumb: ImageView = root.findViewWithTag("thumb")
+        val title: TextView  = root.findViewWithTag("title")
+        val desc: TextView   = root.findViewWithTag("desc")
+        val source: TextView = root.findViewWithTag("source")
+        val textWrap: LinearLayout = root.findViewWithTag("textWrap")
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -52,30 +52,33 @@ class NewsAdapter(
             orientation = LinearLayout.VERTICAL
             background = android.graphics.drawable.GradientDrawable().apply {
                 shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
-                cornerRadius = 12 * dp
+                cornerRadius = 14 * dp
                 setColor(Color.WHITE)
             }
-            elevation = 2 * dp
+            elevation     = 3 * dp
             clipToOutline = true
-            isClickable = true; isFocusable = true
+            isClickable   = true
+            isFocusable   = true
         }
 
         val thumb = ImageView(ctx).apply {
             tag = "thumb"
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, (180 * dp).toInt()
+                LinearLayout.LayoutParams.MATCH_PARENT, (190 * dp).toInt()
             )
             scaleType = ImageView.ScaleType.CENTER_CROP
             setBackgroundColor(Color.parseColor("#F2F2F7"))
         }
 
         val textWrap = LinearLayout(ctx).apply {
+            tag = "textWrap"
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
             orientation = LinearLayout.VERTICAL
-            setPadding((12 * dp).toInt(), (10 * dp).toInt(), (12 * dp).toInt(), (12 * dp).toInt())
+            setPadding((14 * dp).toInt(), (12 * dp).toInt(), (14 * dp).toInt(), (14 * dp).toInt())
+            setBackgroundColor(Color.WHITE)
         }
 
         val titleTv = TextView(ctx).apply {
@@ -125,8 +128,17 @@ class NewsAdapter(
         vh.title.text  = item.title
         vh.desc.text   = item.description
         vh.source.text = item.sourceName
+
+        // Reset para defaults enquanto carrega
         vh.thumb.setImageBitmap(null)
         vh.thumb.setBackgroundColor(Color.parseColor("#F2F2F7"))
+        vh.textWrap.setBackgroundColor(Color.WHITE)
+        vh.title.setTextColor(Color.parseColor("#1C1C1E"))
+        vh.desc.setTextColor(Color.parseColor("#636366"))
+        vh.source.setTextColor(Color.parseColor("#8E8E93"))
+
+        val cardBg = vh.root.background as? android.graphics.drawable.GradientDrawable
+        cardBg?.setColor(Color.WHITE)
 
         if (item.imageUrl.isNotEmpty()) {
             CoroutineScope(Dispatchers.IO).launch {
@@ -134,9 +146,43 @@ class NewsAdapter(
                     val req  = Request.Builder().url(item.imageUrl).build()
                     val resp = http.newCall(req).execute()
                     val bmp  = resp.body?.byteStream()?.let { BitmapFactory.decodeStream(it) }
-                    withContext(Dispatchers.Main) {
-                        if (vh.adapterPosition == position) {
-                            vh.thumb.setImageBitmap(bmp)
+
+                    if (bmp != null) {
+                        // Palette — extrai cor dominante
+                        val palette = Palette.from(bmp).generate()
+                        val dominant = palette.getDominantColor(Color.WHITE)
+                        val vibrant  = palette.getVibrantColor(dominant)
+                        val muted    = palette.getMutedColor(dominant)
+                        val base     = if (vibrant != dominant) vibrant else muted
+
+                        // Versão clara do base para o fundo do textWrap
+                        val r = Color.red(base); val g = Color.green(base); val b = Color.blue(base)
+                        // Mistura com branco a 88% para ficar subtil
+                        val bgColor = Color.rgb(
+                            (r * 0.12f + 255 * 0.88f).toInt(),
+                            (g * 0.12f + 255 * 0.88f).toInt(),
+                            (b * 0.12f + 255 * 0.88f).toInt()
+                        )
+                        // Cor do texto: se fundo escuro usa branco, se claro usa escuro
+                        val luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+                        val titleColor  = if (luminance < 0.35) Color.WHITE else Color.parseColor("#1C1C1E")
+                        val descColor   = if (luminance < 0.35) Color.argb(200, 255, 255, 255) else Color.parseColor("#636366")
+                        val sourceColor = if (luminance < 0.35) Color.argb(160, 255, 255, 255) else Color.parseColor("#8E8E93")
+                        // Accent para a borda esquerda do source
+                        val accentColor = base
+
+                        withContext(Dispatchers.Main) {
+                            if (vh.adapterPosition == position) {
+                                vh.thumb.setImageBitmap(bmp)
+                                // Card bg com a cor base muito suave
+                                cardBg?.setColor(bgColor)
+                                vh.textWrap.setBackgroundColor(bgColor)
+                                vh.title.setTextColor(titleColor)
+                                vh.desc.setTextColor(descColor)
+                                vh.source.setTextColor(sourceColor)
+                                // Accent strip à esquerda do source via paddingStart e linha de cor
+                                vh.source.setShadowLayer(0f, 0f, 0f, accentColor)
+                            }
                         }
                     }
                 } catch (_: Exception) {}

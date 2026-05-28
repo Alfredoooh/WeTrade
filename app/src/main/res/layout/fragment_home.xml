@@ -19,7 +19,6 @@
             android:paddingTop="0dp"
             android:paddingBottom="32dp">
 
-            <!-- Apps section: paddingTop mínimo para ficar perto da AppBar -->
             <LinearLayout
                 android:id="@+id/sitesCarouselContainer"
                 android:layout_width="match_parent"
@@ -35,25 +34,13 @@
                 android:layout_marginTop="8dp"
                 android:background="@color/divider" />
 
-            <!-- Secção sticky: "Notícias" + toggles -->
+            <!-- Secção sticky: apenas toggles, sem título -->
             <LinearLayout
                 android:id="@+id/stickyToggleSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="@color/background">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:layout_marginBottom="6dp"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="Notícias"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_primary" />
 
                 <HorizontalScrollView
                     android:layout_width="match_parent"
@@ -67,7 +54,7 @@
                         android:orientation="horizontal"
                         android:paddingStart="16dp"
                         android:paddingEnd="16dp"
-                        android:paddingTop="2dp"
+                        android:paddingTop="10dp"
                         android:paddingBottom="8dp" />
 
                 </HorizontalScrollView>
@@ -85,7 +72,7 @@
 
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Sticky overlay dos toggles — posicionado programaticamente -->
+    <!-- Sticky overlay — sem título -->
     <LinearLayout
         android:id="@+id/stickyToggleOverlay"
         android:layout_width="match_parent"
@@ -94,18 +81,6 @@
         android:background="@color/background"
         android:visibility="gone"
         android:elevation="4dp">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:layout_marginBottom="6dp"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:text="Notícias"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_primary" />
 
         <HorizontalScrollView
             android:layout_width="match_parent"
@@ -119,7 +94,7 @@
                 android:orientation="horizontal"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:paddingTop="2dp"
+                android:paddingTop="10dp"
                 android:paddingBottom="8dp" />
 
         </HorizontalScrollView>
