@@ -1,5 +1,6 @@
 package com.wilin.app.ui
 
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -10,7 +11,6 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.content.Intent
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
@@ -23,7 +23,6 @@ import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.wilin.app.MainActivity
 import com.wilin.app.R
 import com.wilin.app.databinding.FragmentHomeBinding
 import kotlinx.coroutines.CoroutineScope
@@ -82,30 +81,30 @@ class HomeFragment : Fragment() {
     private val extraSections = mutableListOf<MutableList<SiteItem>>()
 
     private val availableApps = listOf(
-        AppItem("Gmail",        "https://mail.google.com",      "icons/png/google.png",    "Google"),
-        AppItem("Drive",        "https://drive.google.com",     "icons/png/google.png",    "Google"),
-        AppItem("Maps",         "https://maps.google.com",      "icons/png/google.png",    "Google"),
-        AppItem("Docs",         "https://docs.google.com",      "icons/png/google.png",    "Google"),
-        AppItem("LinkedIn",     "https://linkedin.com",         "icons/png/x.png",         "Social"),
-        AppItem("Telegram",     "https://web.telegram.org",     "icons/png/whatsapp.png",  "Social"),
-        AppItem("Discord",      "https://discord.com/app",      "icons/png/reddit.png",    "Social"),
-        AppItem("Pinterest",    "https://pinterest.com",        "icons/png/instagram.png", "Social"),
-        AppItem("Twitch",       "https://twitch.tv",            "icons/png/youtube.png",   "Entretenimento"),
-        AppItem("Netflix",      "https://netflix.com",          "icons/png/youtube.png",   "Entretenimento"),
-        AppItem("Spotify",      "https://open.spotify.com",     "icons/png/youtube.png",   "Entretenimento"),
-        AppItem("Amazon",       "https://amazon.com",           "icons/png/google.png",    "Compras"),
-        AppItem("AliExpress",   "https://aliexpress.com",       "icons/png/google.png",    "Compras"),
-        AppItem("Shein",        "https://shein.com",            "icons/png/instagram.png", "Compras"),
-        AppItem("GitHub",       "https://github.com",           "icons/png/x.png",         "Dev"),
-        AppItem("StackOverflow","https://stackoverflow.com",    "icons/png/reddit.png",    "Dev"),
-        AppItem("Gemini",       "https://gemini.google.com",    "icons/png/google.png",    "IA"),
-        AppItem("Claude",       "https://claude.ai",            "icons/png/chatgpt.png",   "IA"),
-        AppItem("Perplexity",   "https://perplexity.ai",        "icons/png/x.png",         "IA"),
-        AppItem("Copilot",      "https://copilot.microsoft.com","icons/png/x.png",         "IA"),
+        AppItem("Gmail",         "https://mail.google.com",       "icons/png/google.png",    "Google"),
+        AppItem("Drive",         "https://drive.google.com",      "icons/png/google.png",    "Google"),
+        AppItem("Maps",          "https://maps.google.com",       "icons/png/google.png",    "Google"),
+        AppItem("Docs",          "https://docs.google.com",       "icons/png/google.png",    "Google"),
+        AppItem("LinkedIn",      "https://linkedin.com",          "icons/png/x.png",         "Social"),
+        AppItem("Telegram",      "https://web.telegram.org",      "icons/png/whatsapp.png",  "Social"),
+        AppItem("Discord",       "https://discord.com/app",       "icons/png/reddit.png",    "Social"),
+        AppItem("Pinterest",     "https://pinterest.com",         "icons/png/instagram.png", "Social"),
+        AppItem("Twitch",        "https://twitch.tv",             "icons/png/youtube.png",   "Entretenimento"),
+        AppItem("Netflix",       "https://netflix.com",           "icons/png/youtube.png",   "Entretenimento"),
+        AppItem("Spotify",       "https://open.spotify.com",      "icons/png/youtube.png",   "Entretenimento"),
+        AppItem("Amazon",        "https://amazon.com",            "icons/png/google.png",    "Compras"),
+        AppItem("AliExpress",    "https://aliexpress.com",        "icons/png/google.png",    "Compras"),
+        AppItem("Shein",         "https://shein.com",             "icons/png/instagram.png", "Compras"),
+        AppItem("GitHub",        "https://github.com",            "icons/png/x.png",         "Dev"),
+        AppItem("StackOverflow", "https://stackoverflow.com",     "icons/png/reddit.png",    "Dev"),
+        AppItem("Gemini",        "https://gemini.google.com",     "icons/png/google.png",    "IA"),
+        AppItem("Claude",        "https://claude.ai",             "icons/png/chatgpt.png",   "IA"),
+        AppItem("Perplexity",    "https://perplexity.ai",         "icons/png/x.png",         "IA"),
+        AppItem("Copilot",       "https://copilot.microsoft.com", "icons/png/x.png",         "IA"),
     )
 
-    private val newsCategories   = listOf("Mundo","Tecnologia","Saúde","Desporto","Ciência","Entretenimento")
-    private val newsCategoryKeys = listOf("world","technology","health","sports","science","entertainment")
+    private val newsCategories   = listOf("Mundo", "Tecnologia", "Saúde", "Desporto", "Ciência", "Entretenimento")
+    private val newsCategoryKeys = listOf("world", "technology", "health", "sports", "science", "entertainment")
     private var selectedCategoryIndex = 0
     private val newsItems = mutableListOf<NewsItem>()
     private lateinit var newsAdapter: NewsAdapter
@@ -148,51 +147,51 @@ class HomeFragment : Fragment() {
         fetchNews(newsCategoryKeys[0])
     }
 
-    // ── Sticky scroll + hook para MainActivity ────────────────────────────────
+    // ── Sticky scroll ──────────────────────────────────────────────────────────
 
     private fun setupStickyScroll() {
         binding.homeScrollView.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
             val dy = scrollY - oldScrollY
 
-            // Notificar MainActivity para animar AppBar + BottomNav
-            (activity as? MainActivity)?.onHomeScrolled(dy, scrollY)
+            // Notifica MainActivity para esconder/mostrar AppBar + BottomNav 1:1 com o scroll
+            when {
+                dy > 3  -> (activity as? HomeScrollCallback)?.onHomeScrollDown(dy)
+                dy < -3 -> (activity as? HomeScrollCallback)?.onHomeScrollUp(-dy)
+            }
 
-            val stickySection = binding.stickyToggleSection
-            val overlayLayout = binding.stickyToggleOverlay
-
-            val location = IntArray(2)
-            stickySection.getLocationInWindow(location)
+            // Sticky dos category toggles
+            val stickySection  = binding.stickyToggleSection
+            val overlayLayout  = binding.stickyToggleOverlay
+            val location       = IntArray(2)
             val parentLocation = IntArray(2)
+            stickySection.getLocationInWindow(location)
             binding.homeScrollView.getLocationInWindow(parentLocation)
-
             val stickyTop = location[1] - parentLocation[1]
 
             if (stickyTop <= 0) {
                 if (overlayLayout.visibility != View.VISIBLE) {
                     overlayLayout.visibility = View.VISIBLE
                     syncStickyChips()
-                    // Sincronizar translationY com a posição actual da AppBar
-                    val appBarTransY = (activity as? MainActivity)
-                        ?.binding?.appBarLayout?.translationY ?: 0f
-                    overlayLayout.translationY = appBarTransY
                 }
             } else {
-                overlayLayout.visibility = View.GONE
+                if (overlayLayout.visibility != View.GONE) {
+                    overlayLayout.visibility = View.GONE
+                }
             }
         })
     }
 
-    /**
-     * Chamado pela MainActivity quando a AppBar anima (esconde/mostra).
-     * O overlay sticky segue a AppBar para não ficar "suspense" no ar:
-     *   - AppBar visível (translationY=0)      → overlay na posição normal (0)
-     *   - AppBar escondida (translationY=-Hdp) → overlay sobe o mesmo valor
-     *     ficando colado ao status bar
-     */
-    fun updateStickyOverlayTranslation(appBarTransY: Float) {
-        if (_binding == null) return
-        // Aplica sempre, independente da visibilidade, para estar pronto quando aparecer
-        binding.stickyToggleOverlay.translationY = appBarTransY
+    // Sincroniza o estado dos chips entre scroll normal e sticky
+    private fun syncStickyChips() {
+        val dp = requireContext().resources.displayMetrics.density
+        binding.categoryToggleContainerSticky.removeAllViews()
+        stickyToggleChips.clear()
+        newsCategories.forEachIndexed { i, label ->
+            val chip = makeChip(label, i == selectedCategoryIndex, dp)
+            chip.setOnClickListener { selectCategory(i) }
+            stickyToggleChips.add(chip)
+            binding.categoryToggleContainerSticky.addView(chip)
+        }
     }
 
     // ── Carrossel ──────────────────────────────────────────────────────────────
@@ -236,16 +235,15 @@ class HomeFragment : Fragment() {
     }
 
     private fun renderPages() {
-        val ctx = requireContext()
-        val dp  = ctx.resources.displayMetrics.density
+        val ctx     = requireContext()
+        val dp      = ctx.resources.displayMetrics.density
         val screenW = resources.displayMetrics.widthPixels
 
         sitesRowContainer.removeAllViews()
         dotsContainer.removeAllViews()
 
         val page1Items = mainSites.toMutableList()
-        val page1HasSpace = mainSites.size < ITEMS_PER_PAGE
-        if (page1HasSpace || extraSections.isEmpty()) {
+        if (mainSites.size < ITEMS_PER_PAGE || extraSections.isEmpty()) {
             page1Items.add(SiteItem("Mais", "", "", isMore = true))
         }
         sitesRowContainer.addView(buildPage(page1Items, screenW, dp, pageIndex = 0))
@@ -270,8 +268,10 @@ class HomeFragment : Fragment() {
                     }
                     background = android.graphics.drawable.GradientDrawable().apply {
                         shape = android.graphics.drawable.GradientDrawable.OVAL
-                        setColor(if (i == currentPage) ContextCompat.getColor(ctx, R.color.colorPrimary)
-                                 else ContextCompat.getColor(ctx, R.color.divider))
+                        setColor(
+                            if (i == currentPage) ContextCompat.getColor(ctx, R.color.colorPrimary)
+                            else ContextCompat.getColor(ctx, R.color.divider)
+                        )
                     }
                 }
                 dotsContainer.addView(dot)
@@ -298,7 +298,7 @@ class HomeFragment : Fragment() {
                     orientation = LinearLayout.HORIZONTAL
                     row.forEach { addView(buildCell(it, dp, screenW / 5, pageIndex)) }
                     repeat(5 - row.size) {
-                        addView(View(ctx).apply { layoutParams = LinearLayout.LayoutParams(screenW/5, 1) })
+                        addView(View(ctx).apply { layoutParams = LinearLayout.LayoutParams(screenW / 5, 1) })
                     }
                 })
             }
@@ -311,18 +311,18 @@ class HomeFragment : Fragment() {
             layoutParams = LinearLayout.LayoutParams(width, LinearLayout.LayoutParams.WRAP_CONTENT)
             orientation = LinearLayout.VERTICAL
             gravity     = Gravity.CENTER_HORIZONTAL
-            setPadding(0, (10*dp).toInt(), 0, (10*dp).toInt())
+            setPadding(0, (10 * dp).toInt(), 0, (10 * dp).toInt())
             isClickable = true; isFocusable = true
             background  = ContextCompat.getDrawable(ctx, R.drawable.ripple_item)
 
-            val iconSz = (40*dp).toInt()
+            val iconSz = (40 * dp).toInt()
             val container = FrameLayout(ctx).apply {
-                layoutParams = LinearLayout.LayoutParams((48*dp).toInt(), (48*dp).toInt())
+                layoutParams = LinearLayout.LayoutParams((48 * dp).toInt(), (48 * dp).toInt())
                 background = android.graphics.drawable.GradientDrawable().apply {
                     shape = android.graphics.drawable.GradientDrawable.OVAL
                     setColor(Color.WHITE)
                 }
-                elevation = 2*dp
+                elevation = 2 * dp
             }
             val icon = ImageView(ctx).apply {
                 layoutParams = FrameLayout.LayoutParams(iconSz, iconSz, Gravity.CENTER)
@@ -346,7 +346,7 @@ class HomeFragment : Fragment() {
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
-                ).also { it.topMargin = (5*dp).toInt() }
+                ).also { it.topMargin = (5 * dp).toInt() }
                 text = item.label; textSize = 10f; maxLines = 1
                 gravity   = Gravity.CENTER_HORIZONTAL
                 ellipsize = android.text.TextUtils.TruncateAt.END
@@ -399,8 +399,10 @@ class HomeFragment : Fragment() {
         val ctx = requireContext()
         for (i in 0 until dotsContainer.childCount) {
             (dotsContainer.getChildAt(i).background as? android.graphics.drawable.GradientDrawable)
-                ?.setColor(if (i == currentPage) ContextCompat.getColor(ctx, R.color.colorPrimary)
-                           else ContextCompat.getColor(ctx, R.color.divider))
+                ?.setColor(
+                    if (i == currentPage) ContextCompat.getColor(ctx, R.color.colorPrimary)
+                    else ContextCompat.getColor(ctx, R.color.divider)
+                )
         }
     }
 
@@ -429,7 +431,7 @@ class HomeFragment : Fragment() {
             orientation = LinearLayout.VERTICAL
             background  = android.graphics.drawable.GradientDrawable().apply {
                 shape       = android.graphics.drawable.GradientDrawable.RECTANGLE
-                cornerRadii = floatArrayOf(cornerR,cornerR,cornerR,cornerR,0f,0f,0f,0f)
+                cornerRadii = floatArrayOf(cornerR, cornerR, cornerR, cornerR, 0f, 0f, 0f, 0f)
                 setColor(ContextCompat.getColor(ctx, R.color.surface))
             }
             translationY = sheetH.toFloat()
@@ -437,14 +439,14 @@ class HomeFragment : Fragment() {
 
         val handleWrap = FrameLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, (28*dp).toInt()
+                LinearLayout.LayoutParams.MATCH_PARENT, (28 * dp).toInt()
             )
         }
         handleWrap.addView(View(ctx).apply {
-            layoutParams = FrameLayout.LayoutParams((40*dp).toInt(), (4*dp).toInt(), Gravity.CENTER)
+            layoutParams = FrameLayout.LayoutParams((40 * dp).toInt(), (4 * dp).toInt(), Gravity.CENTER)
             background = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-                cornerRadius = 2*dp
+                cornerRadius = 2 * dp
                 setColor(ContextCompat.getColor(ctx, R.color.divider))
             }
         })
@@ -453,7 +455,7 @@ class HomeFragment : Fragment() {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.marginStart=(20*dp).toInt(); it.bottomMargin=(16*dp).toInt() }
+            ).also { it.marginStart = (20 * dp).toInt(); it.bottomMargin = (16 * dp).toInt() }
             text = "Adicionar App"; textSize = 20f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
             setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
@@ -470,17 +472,17 @@ class HomeFragment : Fragment() {
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
             orientation = LinearLayout.VERTICAL
-            setPadding((16*dp).toInt(), 0, (16*dp).toInt(), (32*dp).toInt())
+            setPadding((16 * dp).toInt(), 0, (16 * dp).toInt(), (32 * dp).toInt())
         }
 
-        val appW = (resources.displayMetrics.widthPixels - (32*dp).toInt()) / 4
+        val appW = (resources.displayMetrics.widthPixels - (32 * dp).toInt()) / 4
 
         availableApps.groupBy { it.category }.forEach { (cat, apps) ->
             content.addView(TextView(ctx).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
-                ).also { it.topMargin=(16*dp).toInt(); it.bottomMargin=(10*dp).toInt() }
+                ).also { it.topMargin = (16 * dp).toInt(); it.bottomMargin = (10 * dp).toInt() }
                 text = cat; textSize = 13f
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
                 setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
@@ -524,11 +526,13 @@ class HomeFragment : Fragment() {
 
     private fun addAppToCorrectSection(app: AppItem) {
         val newItem = SiteItem(app.label, app.url, app.iconAsset)
+
         val allUrls = mainSites.map { it.url } + extraSections.flatten().map { it.url }
         if (allUrls.contains(app.url)) {
             Toast.makeText(requireContext(), "${app.label} já adicionado", Toast.LENGTH_SHORT).show()
             return
         }
+
         if (mainSites.size < ITEMS_PER_PAGE) {
             mainSites.add(newItem)
             currentPage = 0
@@ -540,6 +544,7 @@ class HomeFragment : Fragment() {
             }
             currentPage = extraSections.size
         }
+
         renderPages()
         sitesHScroll.post {
             sitesHScroll.smoothScrollTo(currentPage * resources.displayMetrics.widthPixels, 0)
@@ -555,19 +560,19 @@ class HomeFragment : Fragment() {
             layoutParams = LinearLayout.LayoutParams(width, LinearLayout.LayoutParams.WRAP_CONTENT)
             orientation = LinearLayout.VERTICAL
             gravity     = Gravity.CENTER_HORIZONTAL
-            setPadding(0, (8*dp).toInt(), 0, (8*dp).toInt())
+            setPadding(0, (8 * dp).toInt(), 0, (8 * dp).toInt())
             isClickable = !added; isFocusable = !added
             alpha = if (added) 0.45f else 1f
             if (!added) background = ContextCompat.getDrawable(ctx, R.drawable.ripple_item)
 
-            val iconSz = (36*dp).toInt()
+            val iconSz = (36 * dp).toInt()
             val container = FrameLayout(ctx).apply {
-                layoutParams = LinearLayout.LayoutParams((46*dp).toInt(), (46*dp).toInt())
+                layoutParams = LinearLayout.LayoutParams((46 * dp).toInt(), (46 * dp).toInt())
                 background = android.graphics.drawable.GradientDrawable().apply {
                     shape = android.graphics.drawable.GradientDrawable.OVAL
                     setColor(Color.WHITE)
                 }
-                elevation = 2*dp
+                elevation = 2 * dp
             }
             val icon = ImageView(ctx).apply {
                 layoutParams = FrameLayout.LayoutParams(iconSz, iconSz, Gravity.CENTER)
@@ -581,7 +586,7 @@ class HomeFragment : Fragment() {
 
             if (added) {
                 container.addView(View(ctx).apply {
-                    val bsz = (14*dp).toInt()
+                    val bsz = (14 * dp).toInt()
                     layoutParams = FrameLayout.LayoutParams(bsz, bsz, Gravity.BOTTOM or Gravity.END)
                     background = android.graphics.drawable.GradientDrawable().apply {
                         shape = android.graphics.drawable.GradientDrawable.OVAL
@@ -596,7 +601,7 @@ class HomeFragment : Fragment() {
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
-                ).also { it.topMargin = (4*dp).toInt() }
+                ).also { it.topMargin = (4 * dp).toInt() }
                 text = app.label; textSize = 10f; maxLines = 1
                 gravity   = Gravity.CENTER_HORIZONTAL
                 ellipsize = android.text.TextUtils.TruncateAt.END
@@ -621,7 +626,7 @@ class HomeFragment : Fragment() {
         val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         Paint(Paint.ANTI_ALIAS_FLAG).also {
             it.color = Color.parseColor("#E5E5EA")
-            Canvas(bmp).drawCircle(size/2f, size/2f, size/2f, it)
+            Canvas(bmp).drawCircle(size / 2f, size / 2f, size / 2f, it)
         }
         return bmp
     }
@@ -631,11 +636,11 @@ class HomeFragment : Fragment() {
         val c = Canvas(bmp)
         val p = Paint(Paint.ANTI_ALIAS_FLAG)
         p.color = Color.parseColor("#E5E5EA")
-        c.drawCircle(size/2f, size/2f, size/2f, p)
+        c.drawCircle(size / 2f, size / 2f, size / 2f, p)
         p.color = Color.parseColor("#888888")
-        val dotR = size*0.08f; val off = size*0.25f
+        val dotR = size * 0.08f; val off = size * 0.25f
         for (row in 0..1) for (col in 0..1)
-            c.drawCircle(size/2f - off + col*off*2, size/2f - off + row*off*2, dotR, p)
+            c.drawCircle(size / 2f - off + col * off * 2, size / 2f - off + row * off * 2, dotR, p)
         return bmp
     }
 
@@ -654,26 +659,14 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun syncStickyChips() {
-        val dp = requireContext().resources.displayMetrics.density
-        binding.categoryToggleContainerSticky.removeAllViews()
-        stickyToggleChips.clear()
-        newsCategories.forEachIndexed { i, label ->
-            val chip = makeChip(label, i == selectedCategoryIndex, dp)
-            chip.setOnClickListener { selectCategory(i) }
-            stickyToggleChips.add(chip)
-            binding.categoryToggleContainerSticky.addView(chip)
-        }
-    }
-
     private fun makeChip(label: String, selected: Boolean, dp: Float): TextView {
         val ctx = requireContext()
         return TextView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, (32*dp).toInt()
-            ).also { it.marginEnd = (8*dp).toInt() }
+                LinearLayout.LayoutParams.WRAP_CONTENT, (32 * dp).toInt()
+            ).also { it.marginEnd = (8 * dp).toInt() }
             text = label; textSize = 13f; gravity = Gravity.CENTER
-            setPadding((14*dp).toInt(), 0, (14*dp).toInt(), 0)
+            setPadding((14 * dp).toInt(), 0, (14 * dp).toInt(), 0)
             isClickable = true; isFocusable = true
             applyChipStyle(this, selected, dp)
         }
@@ -683,7 +676,7 @@ class HomeFragment : Fragment() {
         val ctx = requireContext()
         chip.background = android.graphics.drawable.GradientDrawable().apply {
             shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-            cornerRadius = 16*dp
+            cornerRadius = 16 * dp
             if (selected) setColor(ContextCompat.getColor(ctx, R.color.colorPrimary))
             else { setColor(0); setStroke(1, ContextCompat.getColor(ctx, R.color.divider)) }
         }
