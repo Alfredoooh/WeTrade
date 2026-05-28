@@ -1,151 +1,191 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="@color/background">
 
-    <WebView
-        android:id="@+id/webView"
+    <!-- Toolbar padrão igual a Settings/History/etc -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginBottom="52dp" />
+        android:layout_height="wrap_content"
+        android:background="@color/appbar_background"
+        app:elevation="0dp">
 
-    <View
-        android:id="@+id/progressBar"
-        android:layout_width="0dp"
-        android:layout_height="3dp"
-        android:layout_gravity="bottom"
-        android:layout_marginBottom="52dp"
-        android:background="@drawable/progress_gradient"
-        android:visibility="gone" />
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/appbar_background"
+            app:navigationIconTint="@color/icon_tint">
 
+            <!-- URL bar no centro da toolbar -->
+            <LinearLayout
+                android:id="@+id/urlBar"
+                android:layout_width="0dp"
+                android:layout_height="34dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/search_pill_bg"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="10dp"
+                android:paddingEnd="8dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/faviconImg"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginEnd="6dp" />
+
+                <ImageView
+                    android:id="@+id/lockIcon"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_marginEnd="4dp" />
+
+                <TextView
+                    android:id="@+id/urlText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_primary"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:hint="@string/search_hint"
+                    android:textColorHint="@color/text_hint" />
+
+                <ImageView
+                    android:id="@+id/btnReload"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginStart="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+            </LinearLayout>
+
+            <!-- Tabs badge -->
+            <FrameLayout
+                android:id="@+id/btnTabs"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/ripple_circle"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/tabsIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center" />
+
+                <TextView
+                    android:id="@+id/tabsCount"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@drawable/badge_bg"
+                    android:gravity="center"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/icon_tint"
+                    android:visibility="gone" />
+
+            </FrameLayout>
+
+            <ImageView
+                android:id="@+id/btnMore"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true" />
+
+        </com.google.android.material.appbar.MaterialToolbar>
+
+        <!-- Linha de progresso abaixo da toolbar -->
+        <View
+            android:id="@+id/progressBar"
+            android:layout_width="0dp"
+            android:layout_height="3dp"
+            android:background="@drawable/progress_gradient"
+            android:visibility="gone" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- WebView ocupa o resto todo -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <WebView
+            android:id="@+id/webView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
+
+    <!-- Bottom bar: back/forward igual ao Chrome -->
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:layout_gravity="bottom"
+        android:layout_height="48dp"
         android:background="@color/appbar_background"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingStart="4dp"
         android:paddingEnd="4dp">
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/divider"
+            android:layout_gravity="top" />
+
         <ImageView
             android:id="@+id/btnBack"
-            android:layout_width="40dp"
+            android:layout_width="0dp"
             android:layout_height="40dp"
-            android:padding="8dp"
+            android:layout_weight="1"
+            android:padding="10dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true" />
 
         <ImageView
             android:id="@+id/btnForward"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:padding="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true" />
-
-        <LinearLayout
-            android:id="@+id/urlBar"
             android:layout_width="0dp"
-            android:layout_height="34dp"
+            android:layout_height="40dp"
             android:layout_weight="1"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"
-            android:background="@drawable/search_pill_bg"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="10dp"
-            android:paddingEnd="8dp"
-            android:clickable="true"
-            android:focusable="true">
-
-            <ImageView
-                android:id="@+id/faviconImg"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:layout_marginEnd="6dp" />
-
-            <ImageView
-                android:id="@+id/lockIcon"
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:layout_marginEnd="4dp" />
-
-            <TextView
-                android:id="@+id/urlText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="13sp"
-                android:textColor="@color/text_primary"
-                android:maxLines="1"
-                android:ellipsize="end"
-                android:hint="@string/search_hint"
-                android:textColorHint="@color/text_hint" />
-
-            <ImageView
-                android:id="@+id/btnReload"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_marginStart="4dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true" />
-
-        </LinearLayout>
-
-        <!-- Tabs: ícone circular -->
-        <FrameLayout
-            android:id="@+id/btnTabs"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@drawable/ripple_circle"
-            android:clickable="true"
-            android:focusable="true">
-
-            <ImageView
-                android:id="@+id/tabsIcon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="center" />
-
-            <TextView
-                android:id="@+id/tabsCount"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:layout_gravity="top|end"
-                android:layout_marginTop="2dp"
-                android:layout_marginEnd="2dp"
-                android:background="@drawable/badge_red_bg"
-                android:textColor="#FFFFFF"
-                android:textSize="8sp"
-                android:gravity="center"
-                android:visibility="gone" />
-
-        </FrameLayout>
-
-        <ImageView
-            android:id="@+id/btnMore"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:padding="8dp"
+            android:padding="10dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true" />
+
+        <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+        <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+        <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
 
     </LinearLayout>
 
-    <!-- Modal de pesquisa -->
+    <!-- Search modal overlay -->
     <FrameLayout
         android:id="@+id/searchModal"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#80000000"
+        android:background="#CC000000"
         android:visibility="gone"
         android:clickable="true"
         android:focusable="true">
@@ -154,35 +194,25 @@
             android:id="@+id/modalContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
+            android:layout_gravity="top"
             android:orientation="vertical"
-            android:background="@drawable/modal_top_rounded"
-            android:paddingTop="8dp"
-            android:paddingBottom="16dp">
-
-            <View
-                android:layout_width="36dp"
-                android:layout_height="4dp"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="8dp"
-                android:background="@color/divider" />
+            android:background="@color/surface"
+            android:paddingTop="12dp"
+            android:paddingBottom="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:background="@drawable/search_pill_bg"
+                android:layout_height="40dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:paddingStart="12dp"
-                android:paddingEnd="8dp">
+                android:paddingEnd="12dp">
 
                 <ImageView
                     android:id="@+id/modalSearchIcon"
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:layout_marginEnd="8dp" />
+                    android:layout_marginEnd="10dp" />
 
                 <EditText
                     android:id="@+id/modalSearchInput"
@@ -192,43 +222,38 @@
                     android:background="@null"
                     android:textSize="15sp"
                     android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_hint"
                     android:hint="@string/search_hint"
-                    android:inputType="textUri"
+                    android:textColorHint="@color/text_hint"
                     android:imeOptions="actionGo"
-                    android:maxLines="1"
+                    android:inputType="textUri|textNoSuggestions"
                     android:singleLine="true" />
 
                 <ImageView
                     android:id="@+id/modalClearBtn"
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:layout_marginStart="4dp"
+                    android:layout_marginStart="8dp"
+                    android:visibility="gone"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:visibility="gone" />
+                    android:clickable="true"
+                    android:focusable="true" />
 
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/modalHistoryLabel"
+            <View
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/recent"
-                android:textSize="12sp"
-                android:textColor="@color/text_secondary" />
+                android:layout_height="0.5dp"
+                android:layout_marginTop="8dp"
+                android:background="@color/divider" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/modalHistoryList"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:maxHeight="240dp"
-                android:nestedScrollingEnabled="false" />
+                android:maxHeight="240dp" />
 
         </LinearLayout>
 
     </FrameLayout>
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+</LinearLayout>

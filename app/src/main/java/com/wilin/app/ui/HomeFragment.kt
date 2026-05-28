@@ -9,6 +9,7 @@ import android.graphics.Paint
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -63,7 +64,6 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
-    // Todos os apps numa lista plana — a lógica de páginas é calculada dinamicamente
     private val allApps = mutableListOf(
         SiteItem("Google",    "https://google.com",       "icons/png/google.png"),
         SiteItem("YouTube",   "https://youtube.com",      "icons/png/youtube.png"),
@@ -76,8 +76,8 @@ class HomeFragment : Fragment() {
         SiteItem("Reddit",    "https://reddit.com",       "icons/png/reddit.png"),
     )
 
-    // Quantos apps cabem por página (excluindo o botão "Mais")
-    private val ITEMS_PER_PAGE = 8 // 8 apps + 1 botão "Mais" = 9 células por página de 2 linhas
+    // 9 apps por página + 1 botão "Mais" = 10 células por página
+    private val ITEMS_PER_PAGE = 9
 
     private val availableApps = listOf(
         AppItem("Gmail",         "https://mail.google.com",       "icons/png/google.png",    "Google"),
@@ -146,8 +146,6 @@ class HomeFragment : Fragment() {
         fetchNews(newsCategoryKeys[0])
     }
 
-    // ── Sticky scroll ──────────────────────────────────────────────────────────
-
     private fun setupStickyScroll() {
         binding.homeScrollView.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
             val dy = scrollY - oldScrollY
@@ -189,12 +187,12 @@ class HomeFragment : Fragment() {
         }
     }
 
-    // ── Carrossel ──────────────────────────────────────────────────────────────
-
     private fun buildSitesCarousel() {
         val ctx = requireContext()
         val dp  = ctx.resources.displayMetrics.density
         binding.sitesCarouselContainer.removeAllViews()
+
+        val screenW = resources.displayMetrics.widthPixels
 
         sitesHScroll = HorizontalScrollView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -204,6 +202,24 @@ class HomeFragment : Fragment() {
             isHorizontalScrollBarEnabled = false
             isSmoothScrollingEnabled = true
             overScrollMode = View.OVER_SCROLL_NEVER
+
+            setOnTouchListener { v, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        v.performClick()
+                        val pageCount = getPages().size.coerceAtLeast(1)
+                        val targetPage = ((sitesHScroll.scrollX + (screenW / 2f)) / screenW)
+                            .toInt()
+                            .coerceIn(0, pageCount - 1)
+
+                        currentPage = targetPage
+                        smoothScrollTo(targetPage * screenW, 0)
+                        updateDots()
+                        true
+                    }
+                    else -> false
+                }
+            }
         }
 
         sitesRowContainer = LinearLayout(ctx).apply {
@@ -230,31 +246,29 @@ class HomeFragment : Fragment() {
         renderPages()
     }
 
-    // Divide allApps em páginas de ITEMS_PER_PAGE, com botão "Mais" sempre no fim
     private fun getPages(): List<List<SiteItem>> {
+        if (allApps.isEmpty()) return listOf(emptyList())
         val pages = mutableListOf<List<SiteItem>>()
         var idx = 0
-        while (idx < allApps.size || pages.isEmpty()) {
-            val chunk = allApps.subList(idx, minOf(idx + ITEMS_PER_PAGE, allApps.size))
-            pages.add(chunk)
+        while (idx < allApps.size) {
+            pages.add(allApps.subList(idx, minOf(idx + ITEMS_PER_PAGE, allApps.size)))
             idx += ITEMS_PER_PAGE
-            if (idx >= allApps.size) break
         }
         return pages
     }
 
     private fun renderPages() {
-        val ctx     = requireContext()
-        val dp      = ctx.resources.displayMetrics.density
+        val ctx = requireContext()
+        val dp = ctx.resources.displayMetrics.density
         val screenW = resources.displayMetrics.widthPixels
 
         sitesRowContainer.removeAllViews()
         dotsContainer.removeAllViews()
 
         val pages = getPages()
+        currentPage = currentPage.coerceIn(0, pages.size - 1)
 
         pages.forEachIndexed { pageIdx, pageApps ->
-            // Na última página, adiciona o botão "Mais" no fim
             val items = pageApps.toMutableList()
             if (pageIdx == pages.size - 1) {
                 items.add(SiteItem("Mais", "", "", isMore = true))
@@ -262,58 +276,53 @@ class HomeFragment : Fragment() {
             sitesRowContainer.addView(buildPage(items, screenW, dp))
         }
 
-        val pageCount = pages.size
-        if (pageCount > 1) {
-            for (i in 0 until pageCount) {
-                val dot = View(ctx).apply {
-                    val sz = (6 * dp).toInt()
-                    layoutParams = LinearLayout.LayoutParams(sz, sz).also {
-                        it.marginStart = (4 * dp).toInt()
-                        it.marginEnd   = (4 * dp).toInt()
-                    }
-                    background = android.graphics.drawable.GradientDrawable().apply {
-                        shape = android.graphics.drawable.GradientDrawable.OVAL
-                        setColor(
-                            if (i == currentPage) ContextCompat.getColor(ctx, R.color.colorPrimary)
-                            else ContextCompat.getColor(ctx, R.color.divider)
-                        )
-                    }
-                }
-                dotsContainer.addView(dot)
-            }
+        repeat(pages.size) { i ->
+            dotsContainer.addView(makeDot(i == currentPage, dp))
+        }
 
-            // Snap por página ao soltar o scroll
-            sitesHScroll.viewTreeObserver.addOnScrollChangedListener {
-                val newPage = (sitesHScroll.scrollX + screenW / 2) / screenW
-                val clampedPage = newPage.coerceIn(0, pageCount - 1)
-                if (clampedPage != currentPage) {
-                    currentPage = clampedPage
-                    updateDots()
-                }
-            }
+        updateDots()
+
+        sitesHScroll.post {
+            sitesHScroll.scrollTo(currentPage * screenW, 0)
         }
     }
 
     private fun buildPage(items: List<SiteItem>, screenW: Int, dp: Float): LinearLayout {
         val ctx = requireContext()
-        // 5 colunas por linha, 2 linhas por página (máx 10 células, 8 apps + 1 botão + 1 vazia)
+        val cellW = screenW / 5
+
         return LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(screenW, LinearLayout.LayoutParams.WRAP_CONTENT)
             orientation = LinearLayout.VERTICAL
-            items.chunked(5).forEach { row ->
+
+            val rows = items.take(10).chunked(5)
+
+            rows.forEach { row ->
                 addView(LinearLayout(ctx).apply {
                     layoutParams = LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT
                     )
                     orientation = LinearLayout.HORIZONTAL
-                    row.forEach { addView(buildCell(it, dp, screenW / 5)) }
-                    // Preenche células vazias na última linha
+
+                    row.forEach { item ->
+                        addView(buildCell(item, dp, cellW))
+                    }
+
                     repeat(5 - row.size) {
                         addView(View(ctx).apply {
-                            layoutParams = LinearLayout.LayoutParams(screenW / 5, 1)
+                            layoutParams = LinearLayout.LayoutParams(cellW, (80 * dp).toInt())
                         })
                     }
+                })
+            }
+
+            if (rows.size < 2) {
+                addView(LinearLayout(ctx).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        (80 * dp).toInt()
+                    )
                 })
             }
         }
@@ -324,10 +333,11 @@ class HomeFragment : Fragment() {
         return LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(width, LinearLayout.LayoutParams.WRAP_CONTENT)
             orientation = LinearLayout.VERTICAL
-            gravity     = Gravity.CENTER_HORIZONTAL
+            gravity = Gravity.CENTER_HORIZONTAL
             setPadding(0, (10 * dp).toInt(), 0, (10 * dp).toInt())
-            isClickable = true; isFocusable = true
-            background  = ContextCompat.getDrawable(ctx, R.drawable.ripple_item)
+            isClickable = true
+            isFocusable = true
+            background = ContextCompat.getDrawable(ctx, R.drawable.ripple_item)
 
             val iconSz = (40 * dp).toInt()
             val container = FrameLayout(ctx).apply {
@@ -340,7 +350,7 @@ class HomeFragment : Fragment() {
             }
             val icon = ImageView(ctx).apply {
                 layoutParams = FrameLayout.LayoutParams(iconSz, iconSz, Gravity.CENTER)
-                scaleType    = ImageView.ScaleType.FIT_CENTER
+                scaleType = ImageView.ScaleType.FIT_CENTER
             }
             when {
                 item.isMore -> icon.setImageBitmap(makeMoreBmp(iconSz))
@@ -348,7 +358,8 @@ class HomeFragment : Fragment() {
                     icon.setImageBitmap(makePlaceholderBmp(iconSz))
                     try {
                         val s = ctx.assets.open(item.iconAsset)
-                        val bmp = BitmapFactory.decodeStream(s); s.close()
+                        val bmp = BitmapFactory.decodeStream(s)
+                        s.close()
                         icon.setImageBitmap(Bitmap.createScaledBitmap(bmp, iconSz, iconSz, true))
                     } catch (_: Exception) {}
                 }
@@ -361,12 +372,15 @@ class HomeFragment : Fragment() {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).also { it.topMargin = (5 * dp).toInt() }
-                text = item.label; textSize = 10f; maxLines = 1
-                gravity   = Gravity.CENTER_HORIZONTAL
+                text = item.label
+                textSize = 10f
+                maxLines = 1
+                gravity = Gravity.CENTER_HORIZONTAL
                 ellipsize = android.text.TextUtils.TruncateAt.END
                 setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
             }
-            addView(container); addView(label)
+            addView(container)
+            addView(label)
 
             setOnClickListener {
                 if (item.isMore) showMoreModal()
@@ -410,13 +424,11 @@ class HomeFragment : Fragment() {
         }
     }
 
-    // ── Modal Mais Apps ────────────────────────────────────────────────────────
-
     private fun showMoreModal() {
-        val ctx     = requireContext()
-        val dp      = ctx.resources.displayMetrics.density
+        val ctx = requireContext()
+        val dp = ctx.resources.displayMetrics.density
         val rootView = requireActivity().window.decorView as FrameLayout
-        val sheetH  = (resources.displayMetrics.heightPixels * 0.72f).toInt()
+        val sheetH = (resources.displayMetrics.heightPixels * 0.72f).toInt()
         val cornerR = 28 * dp
 
         val overlay = FrameLayout(ctx).apply {
@@ -425,7 +437,8 @@ class HomeFragment : Fragment() {
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
             setBackgroundColor(Color.argb(140, 0, 0, 0))
-            isClickable = true; isFocusable = true
+            isClickable = true
+            isFocusable = true
         }
 
         val sheet = LinearLayout(ctx).apply {
@@ -433,8 +446,8 @@ class HomeFragment : Fragment() {
                 FrameLayout.LayoutParams.MATCH_PARENT, sheetH, Gravity.BOTTOM
             )
             orientation = LinearLayout.VERTICAL
-            background  = android.graphics.drawable.GradientDrawable().apply {
-                shape       = android.graphics.drawable.GradientDrawable.RECTANGLE
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
                 cornerRadii = floatArrayOf(cornerR, cornerR, cornerR, cornerR, 0f, 0f, 0f, 0f)
                 setColor(ContextCompat.getColor(ctx, R.color.surface))
             }
@@ -460,7 +473,8 @@ class HomeFragment : Fragment() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).also { it.marginStart = (20 * dp).toInt(); it.bottomMargin = (16 * dp).toInt() }
-            text = "Adicionar App"; textSize = 20f
+            text = "Adicionar App"
+            textSize = 20f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
             setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
         }
@@ -487,7 +501,8 @@ class HomeFragment : Fragment() {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).also { it.topMargin = (16 * dp).toInt(); it.bottomMargin = (10 * dp).toInt() }
-                text = cat; textSize = 13f
+                text = cat
+                textSize = 13f
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
                 setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
             })
@@ -528,31 +543,20 @@ class HomeFragment : Fragment() {
         overlay.setOnClickListener { dismissModal(overlay, sheet, sheetH, rootView) }
     }
 
-    // REGRA CORRIGIDA:
-    // - O app vai sempre para a primeira posição disponível na lista (sequencial)
-    // - Páginas são calculadas dinamicamente: allApps[0..7] = pág1, allApps[8..15] = pág2, etc.
-    // - O botão "Mais" fica sempre no último slot da última página
-    // - Ao adicionar, vai para a primeira página que ainda tem espaço (< ITEMS_PER_PAGE)
     private fun addApp(app: AppItem) {
         val alreadyAdded = allApps.any { it.url == app.url }
         if (alreadyAdded) {
             Toast.makeText(requireContext(), "${app.label} já adicionado", Toast.LENGTH_SHORT).show()
             return
         }
-        // Adiciona sempre ao fim da lista — a paginação trata do resto
+
         allApps.add(SiteItem(app.label, app.url, app.iconAsset))
 
-        // Calcula em que página ficou o novo app
-        val newPageIdx = (allApps.size - 1) / ITEMS_PER_PAGE
-        currentPage = newPageIdx
-
+        currentPage = (allApps.size - 1) / ITEMS_PER_PAGE
         renderPages()
 
-        // Scroll para a página onde foi adicionado
-        sitesHScroll.post {
-            val screenW = resources.displayMetrics.widthPixels
-            sitesHScroll.smoothScrollTo(currentPage * screenW, 0)
-        }
+        val screenW = resources.displayMetrics.widthPixels
+        sitesHScroll.post { sitesHScroll.smoothScrollTo(currentPage * screenW, 0) }
 
         Toast.makeText(requireContext(), "${app.label} adicionado", Toast.LENGTH_SHORT).show()
     }
@@ -563,9 +567,10 @@ class HomeFragment : Fragment() {
         return LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(width, LinearLayout.LayoutParams.WRAP_CONTENT)
             orientation = LinearLayout.VERTICAL
-            gravity     = Gravity.CENTER_HORIZONTAL
+            gravity = Gravity.CENTER_HORIZONTAL
             setPadding(0, (8 * dp).toInt(), 0, (8 * dp).toInt())
-            isClickable = !added; isFocusable = !added
+            isClickable = !added
+            isFocusable = !added
             alpha = if (added) 0.45f else 1f
             if (!added) background = ContextCompat.getDrawable(ctx, R.drawable.ripple_item)
 
@@ -586,7 +591,9 @@ class HomeFragment : Fragment() {
                 val s = ctx.assets.open(app.iconAsset)
                 icon.setImageBitmap(Bitmap.createScaledBitmap(BitmapFactory.decodeStream(s), iconSz, iconSz, true))
                 s.close()
-            } catch (_: Exception) { icon.setImageBitmap(makePlaceholderBmp(iconSz)) }
+            } catch (_: Exception) {
+                icon.setImageBitmap(makePlaceholderBmp(iconSz))
+            }
 
             if (added) {
                 container.addView(View(ctx).apply {
@@ -606,8 +613,10 @@ class HomeFragment : Fragment() {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).also { it.topMargin = (4 * dp).toInt() }
-                text = app.label; textSize = 10f; maxLines = 1
-                gravity   = Gravity.CENTER_HORIZONTAL
+                text = app.label
+                textSize = 10f
+                maxLines = 1
+                gravity = Gravity.CENTER_HORIZONTAL
                 ellipsize = android.text.TextUtils.TruncateAt.END
                 setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
             })
@@ -623,8 +632,6 @@ class HomeFragment : Fragment() {
             .withEndAction { root.removeView(overlay) }
             .start()
     }
-
-    // ── Bitmap helpers ─────────────────────────────────────────────────────────
 
     private fun makePlaceholderBmp(size: Int): Bitmap {
         val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
@@ -642,17 +649,16 @@ class HomeFragment : Fragment() {
         p.color = Color.parseColor("#E5E5EA")
         c.drawCircle(size / 2f, size / 2f, size / 2f, p)
         p.color = Color.parseColor("#888888")
-        val dotR = size * 0.08f; val off = size * 0.25f
+        val dotR = size * 0.08f
+        val off = size * 0.25f
         for (row in 0..1) for (col in 0..1)
             c.drawCircle(size / 2f - off + col * off * 2, size / 2f - off + row * off * 2, dotR, p)
         return bmp
     }
 
-    // ── Category toggles ───────────────────────────────────────────────────────
-
     private fun buildCategoryToggles() {
         val ctx = requireContext()
-        val dp  = ctx.resources.displayMetrics.density
+        val dp = ctx.resources.displayMetrics.density
         mainToggleChips.clear()
         binding.categoryToggleContainer.removeAllViews()
         newsCategories.forEachIndexed { i, label ->
@@ -669,9 +675,12 @@ class HomeFragment : Fragment() {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, (32 * dp).toInt()
             ).also { it.marginEnd = (8 * dp).toInt() }
-            text = label; textSize = 13f; gravity = Gravity.CENTER
+            text = label
+            textSize = 13f
+            gravity = Gravity.CENTER
             setPadding((14 * dp).toInt(), 0, (14 * dp).toInt(), 0)
-            isClickable = true; isFocusable = true
+            isClickable = true
+            isFocusable = true
             applyChipStyle(this, selected, dp)
         }
     }
@@ -682,7 +691,10 @@ class HomeFragment : Fragment() {
             shape = android.graphics.drawable.GradientDrawable.RECTANGLE
             cornerRadius = 16 * dp
             if (selected) setColor(ContextCompat.getColor(ctx, R.color.colorPrimary))
-            else { setColor(0); setStroke(1, ContextCompat.getColor(ctx, R.color.divider)) }
+            else {
+                setColor(0)
+                setStroke(1, ContextCompat.getColor(ctx, R.color.divider))
+            }
         }
         chip.setTextColor(if (selected) Color.WHITE else ContextCompat.getColor(ctx, R.color.text_secondary))
         chip.setTypeface(chip.typeface, if (selected) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
@@ -696,41 +708,46 @@ class HomeFragment : Fragment() {
         if (stickyToggleChips.size > selectedCategoryIndex) applyChipStyle(stickyToggleChips[selectedCategoryIndex], false, dp)
         if (stickyToggleChips.size > index) applyChipStyle(stickyToggleChips[index], true, dp)
         selectedCategoryIndex = index
-        newsItems.clear(); newsAdapter.notifyDataSetChanged()
+        newsItems.clear()
+        newsAdapter.notifyDataSetChanged()
         fetchNews(newsCategoryKeys[index])
     }
-
-    // ── Fetch notícias ─────────────────────────────────────────────────────────
 
     private fun fetchNews(category: String) {
         CoroutineScope(Dispatchers.IO).launch {
             val fetched = mutableListOf<NewsItem>()
             try {
-                val req  = Request.Builder().url("$NEWS_API_BASE/news?category=$category&limit=20").build()
+                val req = Request.Builder().url("$NEWS_API_BASE/news?category=$category&limit=20").build()
                 val resp = httpClient.newCall(req).execute()
                 if (resp.isSuccessful) {
                     val arr = JSONArray(resp.body?.string() ?: "[]")
                     for (i in 0 until arr.length()) {
                         val o = arr.getJSONObject(i)
-                        fetched.add(NewsItem(
-                            title       = o.optString("title"),
-                            description = o.optString("description"),
-                            imageUrl    = o.optString("image_url"),
-                            sourceUrl   = o.optString("url"),
-                            sourceName  = o.optString("source_name"),
-                            faviconUrl  = o.optString("favicon_url"),
-                            category    = o.optString("category")
-                        ))
+                        fetched.add(
+                            NewsItem(
+                                title = o.optString("title"),
+                                description = o.optString("description"),
+                                imageUrl = o.optString("image_url"),
+                                sourceUrl = o.optString("url"),
+                                sourceName = o.optString("source_name"),
+                                faviconUrl = o.optString("favicon_url"),
+                                category = o.optString("category")
+                            )
+                        )
                     }
                 }
             } catch (_: Exception) {}
 
             withContext(Dispatchers.Main) {
-                newsItems.clear(); newsItems.addAll(fetched)
+                newsItems.clear()
+                newsItems.addAll(fetched)
                 newsAdapter.notifyDataSetChanged()
             }
         }
     }
 
-    override fun onDestroyView() { super.onDestroyView(); _binding = null }
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
 }
