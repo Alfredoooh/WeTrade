@@ -1,4 +1,3 @@
-// TabsActivity.kt — ficheiro completo
 package com.wilin.app.ui
 
 import android.animation.AnimatorSet
@@ -11,7 +10,6 @@ import android.graphics.Color
 import android.graphics.Outline
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
@@ -19,7 +17,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewOutlineProvider
 import android.view.animation.DecelerateInterpolator
-import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.GridLayout
 import android.widget.ImageView
@@ -46,7 +43,6 @@ class TabsActivity : AppCompatActivity() {
     private var cardH    = 0
     private var dp       = 1f
 
-    // Recebe da MainActivity o tamanho/posição da janela de origem
     private var srcWidth  = 0
     private var srcHeight = 0
     private var srcX      = 0f
@@ -82,7 +78,7 @@ class TabsActivity : AppCompatActivity() {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             orientation  = LinearLayout.VERTICAL
             setBackgroundColor(bgColor)
-            alpha = 0f  // começa invisível — aparece durante a animação
+            alpha = 0f
         }
 
         // ── Top bar ──────────────────────────────────────────────────────────
@@ -92,30 +88,32 @@ class TabsActivity : AppCompatActivity() {
         }
 
         val btnSearch = ImageView(this).apply {
-            layoutParams = FrameLayout.LayoutParams((44 * dp).toInt(), (44 * dp).toInt(), Gravity.CENTER_VERTICAL or Gravity.START).also {
-                (it as FrameLayout.LayoutParams).marginStart = (8 * dp).toInt()
-            }
+            val lp = FrameLayout.LayoutParams((44 * dp).toInt(), (44 * dp).toInt(), Gravity.CENTER_VERTICAL or Gravity.START)
+            lp.marginStart = (8 * dp).toInt()
+            layoutParams = lp
             setPadding((10 * dp).toInt(), (10 * dp).toInt(), (10 * dp).toInt(), (10 * dp).toInt())
             setImageDrawable(svgDrawable("icons/svg/magnifying_glass_filled.svg", 22, iconTint))
-            isClickable = true; isFocusable = true
+            isClickable = true
+            isFocusable = true
             background  = ContextCompat.getDrawable(this@TabsActivity, R.drawable.ripple_circle)
         }
 
         val btnIncognito = ImageView(this).apply {
-            layoutParams = FrameLayout.LayoutParams((44 * dp).toInt(), (44 * dp).toInt(), Gravity.CENTER_VERTICAL or Gravity.START).also {
-                (it as FrameLayout.LayoutParams).marginStart = (52 * dp).toInt()
-            }
+            val lp = FrameLayout.LayoutParams((44 * dp).toInt(), (44 * dp).toInt(), Gravity.CENTER_VERTICAL or Gravity.START)
+            lp.marginStart = (52 * dp).toInt()
+            layoutParams = lp
             setPadding((10 * dp).toInt(), (10 * dp).toInt(), (10 * dp).toInt(), (10 * dp).toInt())
             setImageDrawable(svgDrawable("icons/svg/incognito.svg", 22, iconTint))
-            isClickable = true; isFocusable = true
+            isClickable = true
+            isFocusable = true
             background  = ContextCompat.getDrawable(this@TabsActivity, R.drawable.ripple_circle)
         }
 
-        val pillBg = GradientDrawable().apply {
-            shape        = GradientDrawable.RECTANGLE
-            cornerRadius = 20 * dp
-            setColor(ContextCompat.getColor(this@TabsActivity, R.color.input_background))
-        }
+        val pillBg = GradientDrawable()
+        pillBg.shape        = GradientDrawable.RECTANGLE
+        pillBg.cornerRadius = 20 * dp
+        pillBg.setColor(ContextCompat.getColor(this, R.color.input_background))
+
         val selectorPill = FrameLayout(this).apply {
             layoutParams = FrameLayout.LayoutParams((160 * dp).toInt(), (34 * dp).toInt(), Gravity.CENTER)
             background   = pillBg
@@ -131,12 +129,13 @@ class TabsActivity : AppCompatActivity() {
         selectorPill.addView(titleTv)
 
         val btnDesktop = ImageView(this).apply {
-            layoutParams = FrameLayout.LayoutParams((44 * dp).toInt(), (44 * dp).toInt(), Gravity.CENTER_VERTICAL or Gravity.END).also {
-                (it as FrameLayout.LayoutParams).marginEnd = (8 * dp).toInt()
-            }
+            val lp = FrameLayout.LayoutParams((44 * dp).toInt(), (44 * dp).toInt(), Gravity.CENTER_VERTICAL or Gravity.END)
+            lp.marginEnd = (8 * dp).toInt()
+            layoutParams = lp
             setPadding((10 * dp).toInt(), (10 * dp).toInt(), (10 * dp).toInt(), (10 * dp).toInt())
             setImageDrawable(svgDrawable("icons/svg/desktop.svg", 22, iconTint))
-            isClickable = true; isFocusable = true
+            isClickable = true
+            isFocusable = true
             background  = ContextCompat.getDrawable(this@TabsActivity, R.drawable.ripple_circle)
         }
 
@@ -152,7 +151,7 @@ class TabsActivity : AppCompatActivity() {
 
         // ── ScrollView com Grid ───────────────────────────────────────────────
         scrollView = ScrollView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+            layoutParams   = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
             overScrollMode = View.OVER_SCROLL_NEVER
         }
         gridLayout = GridLayout(this).apply {
@@ -167,6 +166,7 @@ class TabsActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (60 * dp).toInt())
             setBackgroundColor(bgColor)
         }
+
         val dividerBottom = View(this).apply {
             layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, (1 * dp).toInt(), Gravity.TOP)
             setBackgroundColor(ContextCompat.getColor(this@TabsActivity, R.color.divider))
@@ -174,26 +174,29 @@ class TabsActivity : AppCompatActivity() {
         bottomBar.addView(dividerBottom)
 
         val btnEdit = TextView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL or Gravity.START).also {
-                (it as FrameLayout.LayoutParams).marginStart = (16 * dp).toInt()
-            }
-            text = "Edit"; textSize = 17f
+            val lp = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL or Gravity.START)
+            lp.marginStart = (16 * dp).toInt()
+            layoutParams = lp
+            text = "Edit"
+            textSize = 17f
             setTextColor(blue)
-            isClickable = true; isFocusable = true
+            isClickable = true
+            isFocusable = true
             background  = ContextCompat.getDrawable(this@TabsActivity, R.drawable.ripple_item)
             setPadding((8 * dp).toInt(), (8 * dp).toInt(), (8 * dp).toInt(), (8 * dp).toInt())
         }
 
+        val newTabOval = GradientDrawable()
+        newTabOval.shape = GradientDrawable.OVAL
+        newTabOval.setColor(blue)
+
         val btnNewTab = FrameLayout(this).apply {
-    layoutParams = FrameLayout.LayoutParams((48 * dp).toInt(), (48 * dp).toInt(), Gravity.CENTER)
-    val oval = GradientDrawable()
-    oval.shape = GradientDrawable.OVAL
-    oval.setColor(blue)
-    background = oval
-    isClickable = true
-    isFocusable = true
-    elevation   = 6 * dp
-}
+            layoutParams = FrameLayout.LayoutParams((48 * dp).toInt(), (48 * dp).toInt(), Gravity.CENTER)
+            background   = newTabOval
+            isClickable  = true
+            isFocusable  = true
+            elevation    = 6 * dp
+        }
         val plusIv = ImageView(this).apply {
             layoutParams = FrameLayout.LayoutParams((22 * dp).toInt(), (22 * dp).toInt(), Gravity.CENTER)
             setImageDrawable(svgDrawable("icons/svg/add.svg", 22, Color.WHITE))
@@ -201,13 +204,15 @@ class TabsActivity : AppCompatActivity() {
         btnNewTab.addView(plusIv)
 
         val btnDone = TextView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL or Gravity.END).also {
-                (it as FrameLayout.LayoutParams).marginEnd = (16 * dp).toInt()
-            }
-            text = "Done"; textSize = 17f
+            val lp = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL or Gravity.END)
+            lp.marginEnd = (16 * dp).toInt()
+            layoutParams = lp
+            text = "Done"
+            textSize = 17f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
             setTextColor(blue)
-            isClickable = true; isFocusable = true
+            isClickable = true
+            isFocusable = true
             background  = ContextCompat.getDrawable(this@TabsActivity, R.drawable.ripple_item)
             setPadding((8 * dp).toInt(), (8 * dp).toInt(), (8 * dp).toInt(), (8 * dp).toInt())
         }
@@ -238,9 +243,8 @@ class TabsActivity : AppCompatActivity() {
             startActivity(Intent(this, IncognitoActivity::class.java))
             overridePendingTransition(0, 0)
         }
-        btnDesktop.setOnClickListener   { /* reservado */ }
+        btnDesktop.setOnClickListener { /* reservado */ }
 
-        // Arranca a animação de entrada depois do layout estar pronto
         if (srcWidth > 0) {
             rootLayout.post { runEnterAnimation() }
         } else {
@@ -248,44 +252,35 @@ class TabsActivity : AppCompatActivity() {
         }
     }
 
-    // ── Animação de entrada: ghost card encolhe para o card activo no grid ──
+    // ── Animação de entrada ───────────────────────────────────────────────────
 
     private fun runEnterAnimation() {
-        val screenW = resources.displayMetrics.widthPixels.toFloat()
-        val screenH = resources.displayMetrics.heightPixels.toFloat()
-
-        // Índice da tab activa no grid
         val tabs      = TabManager.getTabs()
         val currentId = TabManager.getCurrentId()
         val activeIdx = tabs.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
 
-        // Posição destino do card activo no grid
         val col       = activeIdx % 2
         val row       = activeIdx / 2
-        val padH      = (12 * dp)
-        val gapH      = (12 * dp)
-        val cardFullH = cardH + (40 * dp)
+        val padH      = 12 * dp
+        val gapH      = 12 * dp
+        val cardFullH = cardH + 40 * dp
+        val topBarH   = 53 * dp
 
-        // Top bar + divider height ≈ 53dp
-        val topBarH = (53 * dp)
-        val destX   = padH + col * (cardW + gapH * 2)
-        val destY   = topBarH + padH + row * (cardFullH + gapH * 2)
-        val destW   = cardW.toFloat()
-        val destH   = cardFullH
+        val destX = padH + col * (cardW + gapH * 2)
+        val destY = topBarH + padH + row * (cardFullH + gapH * 2)
+        val destW = cardW.toFloat()
+        val destH = cardFullH
 
-        // Ghost card: começa do tamanho full-screen, posição 0,0
-        val ghostBg = GradientDrawable().apply {
-            shape        = GradientDrawable.RECTANGLE
-            cornerRadius = 0f
-            setColor(ContextCompat.getColor(this, R.color.card_background))
-        }
+        val ghostBg = GradientDrawable()
+        ghostBg.shape        = GradientDrawable.RECTANGLE
+        ghostBg.cornerRadius = 0f
+        ghostBg.setColor(ContextCompat.getColor(this, R.color.card_background))
 
-        // Screenshot da tab activa como preview
         val previewBmp = TabScreenshots.get(this, currentId)
 
         val ghost = FrameLayout(this).apply {
-            background     = ghostBg
-            clipToOutline  = true
+            background      = ghostBg
+            clipToOutline   = true
             outlineProvider = object : ViewOutlineProvider() {
                 override fun getOutline(v: View, o: Outline) {
                     o.setRoundRect(0, 0, v.width, v.height, 0f)
@@ -302,14 +297,12 @@ class TabsActivity : AppCompatActivity() {
             ghost.addView(previewIv)
         }
 
-        // Overlay escuro do fundo da TabsActivity a aparecer gradualmente
         val overlay = View(this).apply {
             layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             setBackgroundColor(ContextCompat.getColor(this@TabsActivity, R.color.background))
             alpha = 0f
         }
 
-        // Container absoluto para o ghost por cima de tudo
         val ghostContainer = FrameLayout(this).apply {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         }
@@ -321,18 +314,15 @@ class TabsActivity : AppCompatActivity() {
         ghost.layoutParams = ghostLp
         ghostContainer.addView(ghost)
 
-        // Adiciona o container de ghost por cima do rootLayout
         val decorView = window.decorView as FrameLayout
         decorView.addView(ghostContainer)
 
         val duration = 420L
         val interp   = DecelerateInterpolator(2.2f)
 
-        // Anima o ghost de full-screen → card destino
         val scaleX = destW / srcWidth
         val scaleY = destH / srcHeight
 
-        // Usamos translationX/Y + scaleX/Y com pivot no centro do ghost
         ghost.pivotX = srcWidth / 2f
         ghost.pivotY = srcHeight / 2f
 
@@ -341,10 +331,9 @@ class TabsActivity : AppCompatActivity() {
         val translateX   = targetPivotX - (srcX + srcWidth / 2f)
         val translateY   = targetPivotY - (srcY + srcHeight / 2f)
 
-        // Anima corner radius 0 → 14dp
         val cornerAnimator = ValueAnimator.ofFloat(0f, 14 * dp).apply {
-            this.duration    = duration
-            interpolator     = interp
+            this.duration = duration
+            interpolator  = interp
             addUpdateListener { anim ->
                 val r = anim.animatedValue as Float
                 ghostBg.cornerRadius = r
@@ -356,28 +345,26 @@ class TabsActivity : AppCompatActivity() {
             }
         }
 
-        val animSet = AnimatorSet().apply {
-            playTogether(
-                ObjectAnimator.ofFloat(ghost, "translationX", 0f, translateX).apply { this.duration = duration; this.interpolator = interp },
-                ObjectAnimator.ofFloat(ghost, "translationY", 0f, translateY).apply { this.duration = duration; this.interpolator = interp },
-                ObjectAnimator.ofFloat(ghost, "scaleX", 1f, scaleX).apply { this.duration = duration; this.interpolator = interp },
-                ObjectAnimator.ofFloat(ghost, "scaleY", 1f, scaleY).apply { this.duration = duration; this.interpolator = interp },
-                ObjectAnimator.ofFloat(overlay, "alpha", 0f, 1f).apply { this.duration = duration; this.interpolator = interp },
-                ObjectAnimator.ofFloat(rootLayout, "alpha", 0f, 1f).apply { this.duration = duration; this.interpolator = interp },
-                cornerAnimator
-            )
-        }
+        val animSet = AnimatorSet()
+        animSet.playTogether(
+            ObjectAnimator.ofFloat(ghost, "translationX", 0f, translateX).apply { this.duration = duration; this.interpolator = interp },
+            ObjectAnimator.ofFloat(ghost, "translationY", 0f, translateY).apply { this.duration = duration; this.interpolator = interp },
+            ObjectAnimator.ofFloat(ghost, "scaleX", 1f, scaleX).apply { this.duration = duration; this.interpolator = interp },
+            ObjectAnimator.ofFloat(ghost, "scaleY", 1f, scaleY).apply { this.duration = duration; this.interpolator = interp },
+            ObjectAnimator.ofFloat(overlay, "alpha", 0f, 1f).apply { this.duration = duration; this.interpolator = interp },
+            ObjectAnimator.ofFloat(rootLayout, "alpha", 0f, 1f).apply { this.duration = duration; this.interpolator = interp },
+            cornerAnimator
+        )
         animSet.start()
         animSet.addListener(object : android.animation.AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: android.animation.Animator) {
                 decorView.removeView(ghostContainer)
-                // Re-renderiza o grid para o card activo ter o destaque correcto
                 renderGrid()
             }
         })
     }
 
-    // ── Renderiza o grid de tabs ──────────────────────────────────────────────
+    // ── Grid ─────────────────────────────────────────────────────────────────
 
     private fun renderGrid() {
         gridLayout.removeAllViews()
@@ -412,21 +399,20 @@ class TabsActivity : AppCompatActivity() {
     ): FrameLayout {
         val ctx = this
 
+        val cardBg = GradientDrawable()
+        cardBg.shape        = GradientDrawable.RECTANGLE
+        cardBg.cornerRadius = 14 * dp
+        cardBg.setColor(bgCard)
+        if (isActive) cardBg.setStroke((3 * dp).toInt(), blue)
+        else cardBg.setStroke((1 * dp).toInt(), Color.argb(30, 128, 128, 128))
+
         val card = FrameLayout(ctx).apply {
             clipToOutline = true
-            background = GradientDrawable().apply {
-                shape        = GradientDrawable.RECTANGLE
-                cornerRadius = 14 * dp
-                setColor(bgCard)
-                if (isActive) setStroke((3 * dp).toInt(), blue)
-                else setStroke((1 * dp).toInt(), Color.argb(30, 128, 128, 128))
-            }
-            elevation   = if (isActive) 8 * dp else 2 * dp
-            // Sem animação de entrada no card activo (já foi animado pelo ghost)
-            // Restantes cards animam normalmente
+            background    = cardBg
+            elevation     = if (isActive) 8 * dp else 2 * dp
             if (!isActive) { alpha = 0f; scaleX = 0.92f; scaleY = 0.92f }
-            isClickable = true
-            isFocusable = true
+            isClickable   = true
+            isFocusable   = true
         }
 
         val header = LinearLayout(ctx).apply {
@@ -438,7 +424,9 @@ class TabsActivity : AppCompatActivity() {
         }
 
         val faviconIv = ImageView(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams((16 * dp).toInt(), (16 * dp).toInt()).also { it.marginEnd = (6 * dp).toInt() }
+            val lp = LinearLayout.LayoutParams((16 * dp).toInt(), (16 * dp).toInt())
+            lp.marginEnd = (6 * dp).toInt()
+            layoutParams = lp
         }
 
         val titleTv = TextView(ctx).apply {
@@ -456,15 +444,17 @@ class TabsActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(closeBtnSz, closeBtnSz)
             setPadding((8 * dp).toInt(), (8 * dp).toInt(), (8 * dp).toInt(), (8 * dp).toInt())
             setImageDrawable(svgDrawable("icons/svg/close.svg", 14, textSec))
-            isClickable = true; isFocusable = true
+            isClickable = true
+            isFocusable = true
             background  = ContextCompat.getDrawable(ctx, R.drawable.ripple_circle)
         }
 
-        header.addView(faviconIv); header.addView(titleTv); header.addView(closeBtn)
+        header.addView(faviconIv)
+        header.addView(titleTv)
+        header.addView(closeBtn)
 
-        val previewLp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT).also {
-            it.topMargin = (38 * dp).toInt()
-        }
+        val previewLp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+        previewLp.topMargin = (38 * dp).toInt()
         val previewIv = ImageView(ctx).apply {
             layoutParams = previewLp
             scaleType    = ImageView.ScaleType.CENTER_CROP
@@ -484,8 +474,9 @@ class TabsActivity : AppCompatActivity() {
                 runCatching {
                     val host = android.net.Uri.parse(tab.url).host ?: return@runCatching
                     val conn = java.net.URL("https://www.google.com/s2/favicons?domain=$host&sz=16").openConnection() as java.net.HttpURLConnection
-                    conn.connectTimeout = 2000; conn.readTimeout = 2000
-                    val bmp  = android.graphics.BitmapFactory.decodeStream(conn.inputStream)
+                    conn.connectTimeout = 2000
+                    conn.readTimeout    = 2000
+                    val bmp = android.graphics.BitmapFactory.decodeStream(conn.inputStream)
                     conn.disconnect()
                     if (bmp != null) runOnUiThread { faviconIv.setImageBitmap(bmp) }
                 }
@@ -495,7 +486,6 @@ class TabsActivity : AppCompatActivity() {
         card.addView(previewIv)
         card.addView(header)
 
-        // Apenas os cards não-activos têm animação de entrada
         if (!isActive) {
             card.post {
                 card.animate().alpha(1f).scaleX(1f).scaleY(1f)
@@ -556,7 +546,10 @@ class TabsActivity : AppCompatActivity() {
         overridePendingTransition(0, android.R.anim.fade_out)
     }
 
-    override fun finish() { super.finish(); overridePendingTransition(0, 0) }
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(0, 0)
+    }
 
     private fun applyTheme() {
         val isLight = !resources.configuration.uiMode.let {
