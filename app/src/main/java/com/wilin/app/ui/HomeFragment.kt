@@ -32,7 +32,6 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
-import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 data class SiteItem(
@@ -64,7 +63,8 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
-    private val mainSites = mutableListOf(
+    // Todos os apps numa lista plana — a lógica de páginas é calculada dinamicamente
+    private val allApps = mutableListOf(
         SiteItem("Google",    "https://google.com",       "icons/png/google.png"),
         SiteItem("YouTube",   "https://youtube.com",      "icons/png/youtube.png"),
         SiteItem("Facebook",  "https://facebook.com",     "icons/png/facebook.png"),
@@ -76,9 +76,8 @@ class HomeFragment : Fragment() {
         SiteItem("Reddit",    "https://reddit.com",       "icons/png/reddit.png"),
     )
 
-    private val ITEMS_PER_PAGE = 9
-
-    private val extraSections = mutableListOf<MutableList<SiteItem>>()
+    // Quantos apps cabem por página (excluindo o botão "Mais")
+    private val ITEMS_PER_PAGE = 8 // 8 apps + 1 botão "Mais" = 9 células por página de 2 linhas
 
     private val availableApps = listOf(
         AppItem("Gmail",         "https://mail.google.com",       "icons/png/google.png",    "Google"),
@@ -152,14 +151,11 @@ class HomeFragment : Fragment() {
     private fun setupStickyScroll() {
         binding.homeScrollView.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
             val dy = scrollY - oldScrollY
-
-            // Notifica MainActivity para esconder/mostrar AppBar + BottomNav 1:1 com o scroll
             when {
                 dy > 3  -> (activity as? HomeScrollCallback)?.onHomeScrollDown(dy)
                 dy < -3 -> (activity as? HomeScrollCallback)?.onHomeScrollUp(-dy)
             }
 
-            // Sticky dos category toggles
             val stickySection  = binding.stickyToggleSection
             val overlayLayout  = binding.stickyToggleOverlay
             val location       = IntArray(2)
@@ -181,7 +177,6 @@ class HomeFragment : Fragment() {
         })
     }
 
-    // Sincroniza o estado dos chips entre scroll normal e sticky
     private fun syncStickyChips() {
         val dp = requireContext().resources.displayMetrics.density
         binding.categoryToggleContainerSticky.removeAllViews()
@@ -208,6 +203,7 @@ class HomeFragment : Fragment() {
             )
             isHorizontalScrollBarEnabled = false
             isSmoothScrollingEnabled = true
+            overScrollMode = View.OVER_SCROLL_NEVER
         }
 
         sitesRowContainer = LinearLayout(ctx).apply {
@@ -234,6 +230,19 @@ class HomeFragment : Fragment() {
         renderPages()
     }
 
+    // Divide allApps em páginas de ITEMS_PER_PAGE, com botão "Mais" sempre no fim
+    private fun getPages(): List<List<SiteItem>> {
+        val pages = mutableListOf<List<SiteItem>>()
+        var idx = 0
+        while (idx < allApps.size || pages.isEmpty()) {
+            val chunk = allApps.subList(idx, minOf(idx + ITEMS_PER_PAGE, allApps.size))
+            pages.add(chunk)
+            idx += ITEMS_PER_PAGE
+            if (idx >= allApps.size) break
+        }
+        return pages
+    }
+
     private fun renderPages() {
         val ctx     = requireContext()
         val dp      = ctx.resources.displayMetrics.density
@@ -242,26 +251,22 @@ class HomeFragment : Fragment() {
         sitesRowContainer.removeAllViews()
         dotsContainer.removeAllViews()
 
-        val page1Items = mainSites.toMutableList()
-        if (mainSites.size < ITEMS_PER_PAGE || extraSections.isEmpty()) {
-            page1Items.add(SiteItem("Mais", "", "", isMore = true))
-        }
-        sitesRowContainer.addView(buildPage(page1Items, screenW, dp, pageIndex = 0))
+        val pages = getPages()
 
-        extraSections.forEachIndexed { sIdx, section ->
-            val pageItems = section.toMutableList()
-            val isLastSection = sIdx == extraSections.size - 1
-            if (isLastSection) {
-                pageItems.add(SiteItem("Mais", "", "", isMore = true))
+        pages.forEachIndexed { pageIdx, pageApps ->
+            // Na última página, adiciona o botão "Mais" no fim
+            val items = pageApps.toMutableList()
+            if (pageIdx == pages.size - 1) {
+                items.add(SiteItem("Mais", "", "", isMore = true))
             }
-            sitesRowContainer.addView(buildPage(pageItems, screenW, dp, pageIndex = sIdx + 1))
+            sitesRowContainer.addView(buildPage(items, screenW, dp))
         }
 
-        val pageCount = 1 + extraSections.size
+        val pageCount = pages.size
         if (pageCount > 1) {
             for (i in 0 until pageCount) {
                 val dot = View(ctx).apply {
-                    val sz = (7 * dp).toInt()
+                    val sz = (6 * dp).toInt()
                     layoutParams = LinearLayout.LayoutParams(sz, sz).also {
                         it.marginStart = (4 * dp).toInt()
                         it.marginEnd   = (4 * dp).toInt()
@@ -276,16 +281,22 @@ class HomeFragment : Fragment() {
                 }
                 dotsContainer.addView(dot)
             }
+
+            // Snap por página ao soltar o scroll
             sitesHScroll.viewTreeObserver.addOnScrollChangedListener {
                 val newPage = (sitesHScroll.scrollX + screenW / 2) / screenW
                 val clampedPage = newPage.coerceIn(0, pageCount - 1)
-                if (clampedPage != currentPage) { currentPage = clampedPage; updateDots() }
+                if (clampedPage != currentPage) {
+                    currentPage = clampedPage
+                    updateDots()
+                }
             }
         }
     }
 
-    private fun buildPage(items: List<SiteItem>, screenW: Int, dp: Float, pageIndex: Int): LinearLayout {
+    private fun buildPage(items: List<SiteItem>, screenW: Int, dp: Float): LinearLayout {
         val ctx = requireContext()
+        // 5 colunas por linha, 2 linhas por página (máx 10 células, 8 apps + 1 botão + 1 vazia)
         return LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(screenW, LinearLayout.LayoutParams.WRAP_CONTENT)
             orientation = LinearLayout.VERTICAL
@@ -296,16 +307,19 @@ class HomeFragment : Fragment() {
                         LinearLayout.LayoutParams.WRAP_CONTENT
                     )
                     orientation = LinearLayout.HORIZONTAL
-                    row.forEach { addView(buildCell(it, dp, screenW / 5, pageIndex)) }
+                    row.forEach { addView(buildCell(it, dp, screenW / 5)) }
+                    // Preenche células vazias na última linha
                     repeat(5 - row.size) {
-                        addView(View(ctx).apply { layoutParams = LinearLayout.LayoutParams(screenW / 5, 1) })
+                        addView(View(ctx).apply {
+                            layoutParams = LinearLayout.LayoutParams(screenW / 5, 1)
+                        })
                     }
                 })
             }
         }
     }
 
-    private fun buildCell(item: SiteItem, dp: Float, width: Int, pageIndex: Int): LinearLayout {
+    private fun buildCell(item: SiteItem, dp: Float, width: Int): LinearLayout {
         val ctx = requireContext()
         return LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(width, LinearLayout.LayoutParams.WRAP_CONTENT)
@@ -363,32 +377,22 @@ class HomeFragment : Fragment() {
 
             if (!item.isMore) {
                 setOnLongClickListener {
-                    showRemoveConfirm(item, pageIndex)
+                    showRemoveConfirm(item)
                     true
                 }
             }
         }
     }
 
-    private fun showRemoveConfirm(item: SiteItem, pageIndex: Int) {
+    private fun showRemoveConfirm(item: SiteItem) {
         val ctx = requireContext()
         android.app.AlertDialog.Builder(ctx)
             .setTitle("Remover app")
-            .setMessage("Remover \"${item.label}\" da secção?")
+            .setMessage("Remover \"${item.label}\"?")
             .setPositiveButton("Remover") { _, _ ->
-                if (pageIndex == 0) {
-                    mainSites.removeAll { it.url == item.url }
-                } else {
-                    val sIdx = pageIndex - 1
-                    if (sIdx < extraSections.size) {
-                        extraSections[sIdx].removeAll { it.url == item.url }
-                        while (extraSections.isNotEmpty() && extraSections.last().isEmpty()) {
-                            extraSections.removeAt(extraSections.size - 1)
-                        }
-                    }
-                }
-                val totalPages = 1 + extraSections.size
-                if (currentPage >= totalPages) currentPage = totalPages - 1
+                allApps.removeAll { it.url == item.url }
+                val totalPages = getPages().size
+                if (currentPage >= totalPages) currentPage = (totalPages - 1).coerceAtLeast(0)
                 renderPages()
             }
             .setNegativeButton("Cancelar", null)
@@ -496,7 +500,7 @@ class HomeFragment : Fragment() {
                     orientation = LinearLayout.HORIZONTAL
                     row.forEach { app ->
                         addView(buildModalCell(app, appW.toInt(), dp) {
-                            addAppToCorrectSection(app)
+                            addApp(app)
                             dismissModal(overlay, sheet, sheetH, rootView)
                             showMoreModal()
                         })
@@ -524,38 +528,38 @@ class HomeFragment : Fragment() {
         overlay.setOnClickListener { dismissModal(overlay, sheet, sheetH, rootView) }
     }
 
-    private fun addAppToCorrectSection(app: AppItem) {
-        val newItem = SiteItem(app.label, app.url, app.iconAsset)
-
-        val allUrls = mainSites.map { it.url } + extraSections.flatten().map { it.url }
-        if (allUrls.contains(app.url)) {
+    // REGRA CORRIGIDA:
+    // - O app vai sempre para a primeira posição disponível na lista (sequencial)
+    // - Páginas são calculadas dinamicamente: allApps[0..7] = pág1, allApps[8..15] = pág2, etc.
+    // - O botão "Mais" fica sempre no último slot da última página
+    // - Ao adicionar, vai para a primeira página que ainda tem espaço (< ITEMS_PER_PAGE)
+    private fun addApp(app: AppItem) {
+        val alreadyAdded = allApps.any { it.url == app.url }
+        if (alreadyAdded) {
             Toast.makeText(requireContext(), "${app.label} já adicionado", Toast.LENGTH_SHORT).show()
             return
         }
+        // Adiciona sempre ao fim da lista — a paginação trata do resto
+        allApps.add(SiteItem(app.label, app.url, app.iconAsset))
 
-        if (mainSites.size < ITEMS_PER_PAGE) {
-            mainSites.add(newItem)
-            currentPage = 0
-        } else {
-            if (extraSections.isEmpty() || extraSections.last().size >= ITEMS_PER_PAGE) {
-                extraSections.add(mutableListOf(newItem))
-            } else {
-                extraSections.last().add(newItem)
-            }
-            currentPage = extraSections.size
-        }
+        // Calcula em que página ficou o novo app
+        val newPageIdx = (allApps.size - 1) / ITEMS_PER_PAGE
+        currentPage = newPageIdx
 
         renderPages()
+
+        // Scroll para a página onde foi adicionado
         sitesHScroll.post {
-            sitesHScroll.smoothScrollTo(currentPage * resources.displayMetrics.widthPixels, 0)
+            val screenW = resources.displayMetrics.widthPixels
+            sitesHScroll.smoothScrollTo(currentPage * screenW, 0)
         }
+
         Toast.makeText(requireContext(), "${app.label} adicionado", Toast.LENGTH_SHORT).show()
     }
 
     private fun buildModalCell(app: AppItem, width: Int, dp: Float, onAdd: () -> Unit): LinearLayout {
         val ctx = requireContext()
-        val allUrls = mainSites.map { it.url } + extraSections.flatten().map { it.url }
-        val added = allUrls.contains(app.url)
+        val added = allApps.any { it.url == app.url }
         return LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(width, LinearLayout.LayoutParams.WRAP_CONTENT)
             orientation = LinearLayout.VERTICAL

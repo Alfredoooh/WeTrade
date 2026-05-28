@@ -29,6 +29,7 @@ import com.caverock.androidsvg.SVG
 import com.google.android.material.behavior.HideBottomViewOnScrollBehavior
 import com.wilin.app.databinding.ActivityMainBinding
 import com.wilin.app.ui.AiSearchActivity
+import com.wilin.app.ui.BrowserResponseActivity
 import com.wilin.app.ui.HomeFragment
 import com.wilin.app.ui.HomeScrollCallback
 import com.wilin.app.ui.SearchActivity
@@ -46,7 +47,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     private val searchFragment = SearchFragment()
     private var currentTab     = R.id.tabHome
 
-    // Behaviour nativo do Material3 — usado para forçar slideUp ao voltar de outra activity
     private val bottomNavBehavior by lazy {
         val lp = binding.bottomNavWrapper.layoutParams as CoordinatorLayout.LayoutParams
         lp.behavior as? HideBottomViewOnScrollBehavior<*>
@@ -111,17 +111,18 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         updateTabsBadge()
 
         fun setIcons(activeTab: Int) {
+            // Ícones 20dp para o bottom bar compacto
             binding.tabHomeIcon.setImageDrawable(
                 if (activeTab == R.id.tabHome)
-                    svgDrawableGradient("icons/svg/home_filled.svg", 24)
+                    svgDrawableGradient("icons/svg/home_filled.svg", 20)
                 else
-                    svgDrawable("icons/svg/home_outline.svg", 24, iconSec)
+                    svgDrawable("icons/svg/home_outline.svg", 20, iconSec)
             )
             binding.tabSearchIcon.setImageDrawable(
                 if (activeTab == R.id.tabSearch)
-                    svgDrawableGradient("icons/svg/magnifying_glass_filled.svg", 24)
+                    svgDrawableGradient("icons/svg/magnifying_glass_filled.svg", 20)
                 else
-                    svgDrawable("icons/svg/magnifying_glass_outline.svg", 24, iconSec)
+                    svgDrawable("icons/svg/magnifying_glass_outline.svg", 20, iconSec)
             )
         }
 
@@ -163,14 +164,35 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
 
         setIcons(R.id.tabHome)
         updateAppBar(R.id.tabHome)
+
+        // Se foi lançado com intent de abrir browser (ex: atalho externo), redireciona
+        handleIncomingIntent(intent)
     }
 
-    // ── HomeScrollCallback — já não precisa de fazer nada, o CoordinatorLayout trata tudo ──
+    // Chamado quando a MainActivity já existe no stack e recebe um novo intent
+    // Isso resolve o bug: ao sair do browser e voltar ao app, o sistema
+    // faz onNewIntent na MainActivity (singleTask) em vez de criar nova instância
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingIntent(intent)
+    }
+
+    private fun handleIncomingIntent(intent: Intent?) {
+        // Se o intent tiver um tab_id ou query, abrir directamente o browser
+        val tabId = intent?.getStringExtra(BrowserResponseActivity.EXTRA_TAB_ID)
+        val query = intent?.getStringExtra(BrowserResponseActivity.EXTRA_QUERY)
+        if (!tabId.isNullOrEmpty() || !query.isNullOrEmpty()) {
+            val browserIntent = Intent(this, BrowserResponseActivity::class.java)
+            if (!tabId.isNullOrEmpty()) browserIntent.putExtra(BrowserResponseActivity.EXTRA_TAB_ID, tabId)
+            if (!query.isNullOrEmpty()) browserIntent.putExtra(BrowserResponseActivity.EXTRA_QUERY, query)
+            startActivity(browserIntent)
+        }
+    }
 
     override fun onHomeScrollDown(dy: Int) { /* CoordinatorLayout trata automaticamente */ }
     override fun onHomeScrollUp(dy: Int)   { /* CoordinatorLayout trata automaticamente */ }
 
-    // Força o bottomNav a aparecer (ao trocar de tab ou ao voltar de outra activity)
     @Suppress("UNCHECKED_CAST")
     fun showBottomNav() {
         val lp = binding.bottomNavWrapper.layoutParams as CoordinatorLayout.LayoutParams
@@ -185,8 +207,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         showBottomNav()
         restoreRootTransform()
     }
-
-    // ── Tab Switcher ──────────────────────────────────────────────────────────
 
     private fun openTabsWithTransform() {
         val root    = binding.root
