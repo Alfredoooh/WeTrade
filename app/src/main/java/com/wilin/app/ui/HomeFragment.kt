@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -28,6 +29,7 @@ import com.wilin.app.R
 import com.wilin.app.databinding.FragmentHomeBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -79,7 +81,6 @@ class HomeFragment : Fragment() {
         SiteItem("Reddit",    "https://reddit.com",       "icons/png/reddit.png"),
     )
 
-    // 9 apps por página + 1 botão "Mais" = 10 células por página
     private val ITEMS_PER_PAGE = 9
 
     private val availableApps = listOf(
@@ -106,15 +107,15 @@ class HomeFragment : Fragment() {
     )
 
     private val newsCategories   = listOf(
-    "Mundo", "Tecnologia", "Saúde", "Desporto", "Ciência",
-    "Entretenimento", "Negócios", "África", "Política",
-    "Gaming", "Finanças", "Ambiente", "Viagens", "Gastronomia"
-)
+        "Mundo", "Tecnologia", "Saúde", "Desporto", "Ciência",
+        "Entretenimento", "Negócios", "África", "Política",
+        "Gaming", "Finanças", "Ambiente", "Viagens", "Gastronomia"
+    )
     private val newsCategoryKeys = listOf(
-    "world", "technology", "health", "sports", "science",
-    "entertainment", "business", "africa", "politics",
-    "gaming", "finance", "environment", "travel", "food"
-)
+        "world", "technology", "health", "sports", "science",
+        "entertainment", "business", "africa", "politics",
+        "gaming", "finance", "environment", "travel", "food"
+    )
     private var selectedCategoryIndex = 0
     private val newsItems = mutableListOf<NewsItem>()
     private lateinit var newsAdapter: NewsAdapter
@@ -122,8 +123,8 @@ class HomeFragment : Fragment() {
     private val NEWS_API_BASE = "https://globeapiservice001.onrender.com"
 
     private val httpClient = OkHttpClient.Builder()
-        .connectTimeout(20, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
     private val mainToggleChips   = mutableListOf<TextView>()
@@ -132,6 +133,11 @@ class HomeFragment : Fragment() {
     private lateinit var sitesRowContainer: LinearLayout
     private lateinit var dotsContainer: LinearLayout
     private var currentPage = 0
+
+    // Views de estado injectadas programaticamente
+    private var loadingView: View? = null
+    private var errorView: View? = null
+    private var currentFetchCategory: String = ""
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
@@ -156,6 +162,258 @@ class HomeFragment : Fragment() {
 
         fetchNews(newsCategoryKeys[0])
     }
+
+    // ── Loading / Error state ─────────────────────────────────────────────────
+
+    private fun showLoading() {
+        val ctx = requireContext()
+        val dp  = ctx.resources.displayMetrics.density
+
+        removeStateViews()
+
+        val container = LinearLayout(ctx).apply {
+            tag = "stateView"
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding((16 * dp).toInt(), (24 * dp).toInt(), (16 * dp).toInt(), (24 * dp).toInt())
+        }
+
+        // 3 skeleton cards
+        repeat(3) {
+            container.addView(makeSkeletonCard(dp))
+        }
+
+        loadingView = container
+        insertStateView(container)
+    }
+
+    private fun makeSkeletonCard(dp: Float): View {
+        val ctx = requireContext()
+        val card = LinearLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).also { it.bottomMargin = (10 * dp).toInt() }
+            orientation = LinearLayout.VERTICAL
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                cornerRadius = 14 * dp
+                setColor(ContextCompat.getColor(ctx, R.color.surface))
+            }
+            elevation = 2 * dp
+            clipToOutline = true
+        }
+
+        // imagem placeholder
+        card.addView(View(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, (180 * dp).toInt()
+            )
+            setBackgroundColor(ContextCompat.getColor(ctx, R.color.divider))
+        })
+
+        val textWrap = LinearLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            orientation = LinearLayout.VERTICAL
+            setPadding((14 * dp).toInt(), (10 * dp).toInt(), (14 * dp).toInt(), (12 * dp).toInt())
+        }
+
+        // linha título
+        textWrap.addView(View(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                (220 * dp).toInt(), (14 * dp).toInt()
+            ).also { it.bottomMargin = (6 * dp).toInt() }
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                cornerRadius = 4 * dp
+                setColor(ContextCompat.getColor(ctx, R.color.divider))
+            }
+        })
+        // linha título 2ª
+        textWrap.addView(View(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                (160 * dp).toInt(), (14 * dp).toInt()
+            ).also { it.bottomMargin = (10 * dp).toInt() }
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                cornerRadius = 4 * dp
+                setColor(ContextCompat.getColor(ctx, R.color.divider))
+            }
+        })
+        // linha source
+        textWrap.addView(View(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                (80 * dp).toInt(), (10 * dp).toInt()
+            )
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                cornerRadius = 4 * dp
+                setColor(ContextCompat.getColor(ctx, R.color.divider))
+            }
+        })
+
+        card.addView(textWrap)
+        return card
+    }
+
+    private fun showError(category: String) {
+        val ctx = requireContext()
+        val dp  = ctx.resources.displayMetrics.density
+
+        removeStateViews()
+
+        val container = LinearLayout(ctx).apply {
+            tag = "stateView"
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding((16 * dp).toInt(), (48 * dp).toInt(), (16 * dp).toInt(), (48 * dp).toInt())
+        }
+
+        val icon = TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).also { it.gravity = Gravity.CENTER_HORIZONTAL; it.bottomMargin = (12 * dp).toInt() }
+            text = "📡"
+            textSize = 40f
+            gravity = Gravity.CENTER_HORIZONTAL
+        }
+
+        val msg = TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).also { it.bottomMargin = (20 * dp).toInt() }
+            text = "Não foi possível carregar as notícias.\nVerifica a tua ligação à internet."
+            textSize = 14f
+            gravity = Gravity.CENTER_HORIZONTAL
+            setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
+        }
+
+        val retryBtn = TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                (40 * dp).toInt()
+            ).also { it.gravity = Gravity.CENTER_HORIZONTAL }
+            text = "Tentar novamente"
+            textSize = 14f
+            gravity = Gravity.CENTER
+            setPadding((24 * dp).toInt(), 0, (24 * dp).toInt(), 0)
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextColor(Color.WHITE)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                cornerRadius = 20 * dp
+                setColor(ContextCompat.getColor(ctx, R.color.colorPrimary))
+            }
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                fetchNews(category)
+            }
+        }
+
+        container.addView(icon)
+        container.addView(msg)
+        container.addView(retryBtn)
+
+        errorView = container
+        insertStateView(container)
+    }
+
+    private fun insertStateView(v: View) {
+        // Insere antes do newsRecycler no parent LinearLayout
+        val recycler = binding.newsRecycler
+        val parent   = recycler.parent as? LinearLayout ?: return
+        val idx      = parent.indexOfChild(recycler)
+        parent.addView(v, idx)
+    }
+
+    private fun removeStateViews() {
+        val recycler = binding.newsRecycler
+        val parent   = recycler.parent as? LinearLayout ?: return
+        loadingView?.let { parent.removeView(it) }
+        errorView?.let   { parent.removeView(it) }
+        loadingView = null
+        errorView   = null
+    }
+
+    // ── Fetch com retry ───────────────────────────────────────────────────────
+
+    private fun fetchNews(category: String) {
+        currentFetchCategory = category
+
+        CoroutineScope(Dispatchers.Main).launch {
+            showLoading()
+
+            val fetched = withContext(Dispatchers.IO) {
+                var result: List<NewsItem> = emptyList()
+                val maxRetries = 3
+                for (attempt in 1..maxRetries) {
+                    try {
+                        val req  = Request.Builder()
+                            .url("$NEWS_API_BASE/news?category=$category&limit=20")
+                            .build()
+                        val resp = httpClient.newCall(req).execute()
+                        if (resp.isSuccessful) {
+                            val arr = JSONArray(resp.body?.string() ?: "[]")
+                            val list = mutableListOf<NewsItem>()
+                            for (i in 0 until arr.length()) {
+                                val o = arr.getJSONObject(i)
+                                list.add(
+                                    NewsItem(
+                                        title       = o.optString("title"),
+                                        description = o.optString("description"),
+                                        imageUrl    = o.optString("image_url"),
+                                        sourceUrl   = o.optString("url"),
+                                        sourceName  = o.optString("source_name"),
+                                        faviconUrl  = o.optString("favicon_url"),
+                                        category    = o.optString("category")
+                                    )
+                                )
+                            }
+                            if (list.isNotEmpty()) {
+                                result = list
+                                break
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("HomeFragment", "fetchNews attempt $attempt failed: ${e.message}")
+                    }
+                    if (attempt < maxRetries) delay(2000L)
+                }
+                result
+            }
+
+            // ignora resposta se o utilizador já mudou de categoria
+            if (currentFetchCategory != category) return@launch
+
+            removeStateViews()
+
+            if (fetched.isEmpty()) {
+                newsItems.clear()
+                newsAdapter.notifyDataSetChanged()
+                showError(category)
+            } else {
+                newsItems.clear()
+                newsItems.addAll(fetched)
+                newsAdapter.notifyDataSetChanged()
+            }
+        }
+    }
+
+    // ── Resto do código intacto ───────────────────────────────────────────────
 
     private fun setupStickyScroll() {
         binding.homeScrollView.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
@@ -741,39 +999,6 @@ class HomeFragment : Fragment() {
         newsItems.clear()
         newsAdapter.notifyDataSetChanged()
         fetchNews(newsCategoryKeys[index])
-    }
-
-    private fun fetchNews(category: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val fetched = mutableListOf<NewsItem>()
-            try {
-                val req = Request.Builder().url("$NEWS_API_BASE/news?category=$category&limit=20").build()
-                val resp = httpClient.newCall(req).execute()
-                if (resp.isSuccessful) {
-                    val arr = JSONArray(resp.body?.string() ?: "[]")
-                    for (i in 0 until arr.length()) {
-                        val o = arr.getJSONObject(i)
-                        fetched.add(
-                            NewsItem(
-                                title = o.optString("title"),
-                                description = o.optString("description"),
-                                imageUrl = o.optString("image_url"),
-                                sourceUrl = o.optString("url"),
-                                sourceName = o.optString("source_name"),
-                                faviconUrl = o.optString("favicon_url"),
-                                category = o.optString("category")
-                            )
-                        )
-                    }
-                }
-            } catch (_: Exception) {}
-
-            withContext(Dispatchers.Main) {
-                newsItems.clear()
-                newsItems.addAll(fetched)
-                newsAdapter.notifyDataSetChanged()
-            }
-        }
     }
 
     override fun onDestroyView() {
