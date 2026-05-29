@@ -190,7 +190,7 @@ class NewsDetailActivity : AppCompatActivity() {
             textSize = 20f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
             setTextColor(textPrim)
-            lineSpacingMultiplier = 1.2f
+            setLineSpacing(0f, 1.2f)
         }
 
         val metaTv = TextView(this).apply {
@@ -220,7 +220,7 @@ class NewsDetailActivity : AppCompatActivity() {
             text = if (descInit.isNotEmpty()) descInit else "A carregar..."
             textSize = 16f
             setTextColor(textPrim)
-            lineSpacingMultiplier = 1.6f
+            setLineSpacing(0f, 1.6f)
         }
 
         val btnFull = TextView(this).apply {
