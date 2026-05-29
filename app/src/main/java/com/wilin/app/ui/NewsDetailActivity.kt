@@ -153,7 +153,6 @@ class NewsDetailActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
         }
 
-        // Imagem de destaque
         val heroImage = ImageView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, (220 * dp).toInt()
@@ -162,7 +161,6 @@ class NewsDetailActivity : AppCompatActivity() {
             setBackgroundColor(if (isDark) Color.parseColor("#2C2C2E") else Color.parseColor("#F2F2F7"))
         }
 
-        // Padding do texto
         val textContent = LinearLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -204,7 +202,6 @@ class NewsDetailActivity : AppCompatActivity() {
             setTextColor(textSec)
         }
 
-        // Divider
         val divider = View(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, (1 * dp).toInt()
@@ -226,7 +223,6 @@ class NewsDetailActivity : AppCompatActivity() {
             lineSpacingMultiplier = 1.6f
         }
 
-        // Botão "Ler artigo completo no browser"
         val btnFull = TextView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, (48 * dp).toInt()
@@ -251,7 +247,6 @@ class NewsDetailActivity : AppCompatActivity() {
             overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
 
-        // Loading spinner simples
         val loadingTv = TextView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -315,7 +310,6 @@ class NewsDetailActivity : AppCompatActivity() {
                     }
                     bodyTv.text = bodyText
 
-                    // Carrega imagem se não havia ainda
                     if (imageInit.isEmpty() && detail.imageUrl.isNotEmpty()) {
                         CoroutineScope(Dispatchers.IO).launch {
                             try {

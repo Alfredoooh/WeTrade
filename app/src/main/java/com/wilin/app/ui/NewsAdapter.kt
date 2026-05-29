@@ -9,6 +9,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.wilin.app.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -78,7 +79,6 @@ class NewsAdapter(
             setBackgroundColor(if (isDark) Color.parseColor("#2C2C2E") else Color.parseColor("#F2F2F7"))
         }
 
-        // Linha de cor no topo do card (accent) — só aparece ao carregar imagem
         val accentBar = android.view.View(ctx).apply {
             tag = "accentBar"
             layoutParams = LinearLayout.LayoutParams(
@@ -157,7 +157,6 @@ class NewsAdapter(
         vh.thumb.setImageBitmap(null)
         vh.thumb.setBackgroundColor(placeholderColor)
 
-        // Reset accent bar
         val accentBar = vh.root.findViewWithTag<android.view.View>("accentBar")
         accentBar?.setBackgroundColor(Color.TRANSPARENT)
 
@@ -169,29 +168,23 @@ class NewsAdapter(
                     val bmp  = resp.body?.byteStream()?.let { BitmapFactory.decodeStream(it) }
 
                     if (bmp != null) {
-                        // Extrai cor dominante manualmente (sem Palette) — sample de pixels no centro
                         val accentColor = extractDominantColor(bmp)
 
                         withContext(Dispatchers.Main) {
                             if (vh.adapterPosition == position) {
                                 vh.thumb.setImageBitmap(bmp)
-
-                                // Linha de accent com a cor dominante
                                 accentBar?.setBackgroundColor(accentColor)
 
-                                // No modo escuro: fundo do textWrap adapta levemente com a cor
                                 if (isDark) {
                                     val r = Color.red(accentColor)
                                     val g = Color.green(accentColor)
                                     val b = Color.blue(accentColor)
-                                    // Mistura muito subtil com o fundo escuro
                                     val blendedBg = Color.rgb(
                                         (r * 0.06f + 28 * 0.94f).toInt(),
                                         (g * 0.06f + 28 * 0.94f).toInt(),
                                         (b * 0.06f + 28 * 0.94f).toInt()
                                     )
                                     vh.textWrap.setBackgroundColor(blendedBg)
-                                    // Card border com accent subtil
                                     val cardBg = vh.root.background as? android.graphics.drawable.GradientDrawable
                                     cardBg?.setStroke((1 * dp).toInt(), Color.argb(80,
                                         Color.red(accentColor),
@@ -207,21 +200,20 @@ class NewsAdapter(
         }
 
         vh.root.setOnClickListener {
-    val ctx = vh.root.context
-    val intent = android.content.Intent(ctx, NewsDetailActivity::class.java).apply {
-        putExtra(NewsDetailActivity.EXTRA_URL, item.sourceUrl)
-        putExtra(NewsDetailActivity.EXTRA_TITLE, item.title)
-        putExtra(NewsDetailActivity.EXTRA_IMAGE, item.imageUrl)
-        putExtra(NewsDetailActivity.EXTRA_SOURCE, item.sourceName)
-        putExtra(NewsDetailActivity.EXTRA_DESCRIPTION, item.description)
-    }
-    ctx.startActivity(intent)
-    (ctx as? androidx.appcompat.app.AppCompatActivity)
-        ?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
-}
+            val ctx = vh.root.context
+            val intent = android.content.Intent(ctx, NewsDetailActivity::class.java).apply {
+                putExtra(NewsDetailActivity.EXTRA_URL, item.sourceUrl)
+                putExtra(NewsDetailActivity.EXTRA_TITLE, item.title)
+                putExtra(NewsDetailActivity.EXTRA_IMAGE, item.imageUrl)
+                putExtra(NewsDetailActivity.EXTRA_SOURCE, item.sourceName)
+                putExtra(NewsDetailActivity.EXTRA_DESCRIPTION, item.description)
+            }
+            ctx.startActivity(intent)
+            (ctx as? androidx.appcompat.app.AppCompatActivity)
+                ?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+        }
     }
 
-    // Extrai cor dominante por sampling sem biblioteca externa
     private fun extractDominantColor(bmp: Bitmap): Int {
         val scaled = Bitmap.createScaledBitmap(bmp, 24, 24, true)
         val pixels = IntArray(24 * 24)
@@ -231,14 +223,12 @@ class NewsAdapter(
         var rSum = 0L; var gSum = 0L; var bSum = 0L; var count = 0
         for (px in pixels) {
             val r = Color.red(px); val g = Color.green(px); val b = Color.blue(px)
-            // Ignora pixels muito escuros ou muito claros
             val luminance = (0.299 * r + 0.587 * g + 0.114 * b)
             if (luminance > 30 && luminance < 225) {
                 rSum += r; gSum += g; bSum += b; count++
             }
         }
         if (count == 0) return Color.parseColor("#007AFF")
-        // Boost de saturação para a cor ficar mais viva
         val avgR = (rSum / count).toInt()
         val avgG = (gSum / count).toInt()
         val avgB = (bSum / count).toInt()
