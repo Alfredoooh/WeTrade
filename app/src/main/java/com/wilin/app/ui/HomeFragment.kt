@@ -43,13 +43,16 @@ data class SiteItem(
 )
 
 data class NewsItem(
-    val title: String,
-    val description: String,
-    val imageUrl: String,
-    val sourceUrl: String,
-    val sourceName: String,
-    val faviconUrl: String = "",
-    val category: String = ""
+    val title       : String,
+    val description : String,
+    val imageUrl    : String,
+    val sourceUrl   : String,
+    val sourceName  : String,
+    val faviconUrl  : String = "",
+    val category    : String = "",
+    val body        : String = "",
+    val author      : String = "",
+    val publishedAt : String = ""
 )
 
 data class AppItem(
@@ -102,8 +105,16 @@ class HomeFragment : Fragment() {
         AppItem("Copilot",       "https://copilot.microsoft.com", "icons/png/x.png",         "IA"),
     )
 
-    private val newsCategories   = listOf("Mundo", "Tecnologia", "Saúde", "Desporto", "Ciência", "Entretenimento")
-    private val newsCategoryKeys = listOf("world", "technology", "health", "sports", "science", "entertainment")
+    private val newsCategories   = listOf(
+    "Mundo", "Tecnologia", "Saúde", "Desporto", "Ciência",
+    "Entretenimento", "Negócios", "África", "Política",
+    "Gaming", "Finanças", "Ambiente", "Viagens", "Gastronomia"
+)
+    private val newsCategoryKeys = listOf(
+    "world", "technology", "health", "sports", "science",
+    "entertainment", "business", "africa", "politics",
+    "gaming", "finance", "environment", "travel", "food"
+)
     private var selectedCategoryIndex = 0
     private val newsItems = mutableListOf<NewsItem>()
     private lateinit var newsAdapter: NewsAdapter
@@ -111,8 +122,8 @@ class HomeFragment : Fragment() {
     private val NEWS_API_BASE = "https://globeapiservice001.onrender.com"
 
     private val httpClient = OkHttpClient.Builder()
-        .connectTimeout(8, TimeUnit.SECONDS)
-        .readTimeout(8, TimeUnit.SECONDS)
+        .connectTimeout(20, TimeUnit.SECONDS)
+        .readTimeout(20, TimeUnit.SECONDS)
         .build()
 
     private val mainToggleChips   = mutableListOf<TextView>()

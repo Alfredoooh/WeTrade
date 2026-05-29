@@ -20,17 +20,17 @@
         android:usesCleartextTraffic="true">
 
         <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:theme="@style/Theme.wilin.Splash"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:windowSoftInputMode="adjustResize"
-            android:launchMode="singleTask">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+    android:name=".MainActivity"
+    android:exported="true"
+    android:theme="@style/Theme.wilin.Splash"
+    android:configChanges="orientation|screenSize|keyboardHidden"
+    android:windowSoftInputMode="adjustResize"
+    android:launchMode="singleTop">
+    <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+    </intent-filter>
+</activity>
 
         <activity
             android:name=".ui.SearchActivity"
@@ -100,6 +100,11 @@
             android:exported="false"
             android:theme="@style/Theme.wilin"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+    android:name=".ui.NewsDetailActivity"
+    android:exported="false"
+    android:theme="@style/Theme.wilin"
+    android:windowSoftInputMode="adjustResize" />
 
     </application>
 </manifest>

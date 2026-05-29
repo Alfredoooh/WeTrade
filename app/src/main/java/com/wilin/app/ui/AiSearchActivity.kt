@@ -400,7 +400,7 @@ class AiSearchActivity : AppCompatActivity() {
             .setInterpolator(DecelerateInterpolator(2.5f)).start()
         // Ícone → filled
         val tint = ContextCompat.getColor(this, R.color.icon_tint)
-        btnSidePanel.setImageDrawable(svgDrawable("icons/svg/side_panel_filled.svg", 24, tint))
+        btnSidePanel.setImageDrawable(svgDrawable("icons/svg/side_panel_filled.svg", 16, tint))
     }
 
     private fun closeDrawer() {
@@ -413,7 +413,7 @@ class AiSearchActivity : AppCompatActivity() {
         }.start()
         // Ícone → normal
         val tint = ContextCompat.getColor(this, R.color.icon_tint)
-        btnSidePanel.setImageDrawable(svgDrawable("icons/svg/side_panel.svg", 24, tint))
+        btnSidePanel.setImageDrawable(svgDrawable("icons/svg/side_panel.svg", 16, tint))
     }
 
     // ─── Enviar mensagem ──────────────────────────────────────────────────────

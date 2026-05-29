@@ -198,12 +198,14 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     }
 
     override fun onResume() {
-        super.onResume()
-        applyStatusBarTheme()
-        updateTabsBadge()
-        showBottomNav()
-    }
-
+    super.onResume()
+    // Força a cor correcta da status bar sempre que voltamos
+    window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
+    val isLight = !resources.configuration.isNightModeActive
+    insetsController.isAppearanceLightStatusBars = isLight
+    updateTabsBadge()
+    showBottomNav()
+}
     private fun openTabsWithTransform() {
         val root = binding.root
 
@@ -236,10 +238,11 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     }
 
     private fun applyStatusBarTheme() {
-        val isLight = !resources.configuration.isNightModeActive
-        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
-        insetsController.isAppearanceLightStatusBars = isLight
-    }
+    val isLight = !resources.configuration.isNightModeActive
+    // Usa a mesma cor que a MainActivity para não haver flash ao voltar
+    window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
+    insetsController.isAppearanceLightStatusBars = isLight
+}
 
     fun svgDrawableGradient(path: String, sizeDp: Int): BitmapDrawable {
         val px  = (sizeDp * resources.displayMetrics.density).toInt()

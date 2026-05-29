@@ -206,7 +206,19 @@ class NewsAdapter(
             }
         }
 
-        vh.root.setOnClickListener { onClick(item.sourceUrl) }
+        vh.root.setOnClickListener {
+    val ctx = vh.root.context
+    val intent = android.content.Intent(ctx, NewsDetailActivity::class.java).apply {
+        putExtra(NewsDetailActivity.EXTRA_URL, item.sourceUrl)
+        putExtra(NewsDetailActivity.EXTRA_TITLE, item.title)
+        putExtra(NewsDetailActivity.EXTRA_IMAGE, item.imageUrl)
+        putExtra(NewsDetailActivity.EXTRA_SOURCE, item.sourceName)
+        putExtra(NewsDetailActivity.EXTRA_DESCRIPTION, item.description)
+    }
+    ctx.startActivity(intent)
+    (ctx as? androidx.appcompat.app.AppCompatActivity)
+        ?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+}
     }
 
     // Extrai cor dominante por sampling sem biblioteca externa
