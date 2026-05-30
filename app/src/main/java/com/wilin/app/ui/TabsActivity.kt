@@ -6,14 +6,19 @@ import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Outline
+import android.graphics.Paint
 import android.graphics.PorterDuff
+import android.graphics.RenderEffect
+import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -37,6 +42,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Locale
 
 class TabsActivity : AppCompatActivity() {
 
@@ -44,7 +50,7 @@ class TabsActivity : AppCompatActivity() {
     private lateinit var gridLayout: GridLayout
     private lateinit var titleTv: TextView
     private lateinit var scrollView: ScrollView
-    private lateinit var rootLayout: LinearLayout
+    private lateinit var rootLayout: FrameLayout   // FrameLayout para o efeito de sobreposição
 
     private var editMode   = false
     private var showNormal = true
@@ -58,6 +64,30 @@ class TabsActivity : AppCompatActivity() {
     private var srcY      = 0f
 
     private val faviconCache = mutableMapOf<String, Bitmap>()
+
+    // ── Cores do tema dinâmicas ───────────────────────────────────────────────
+    private val isNight get() = resources.configuration.uiMode
+        .and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+
+    // Liquid Glass: fundo translúcido com blur
+    private fun glassColor(alpha: Int = 180): Int =
+        if (isNight) Color.argb(alpha, 20, 20, 22) else Color.argb(alpha, 250, 250, 252)
+
+    private fun glassStrokeColor(): Int =
+        if (isNight) Color.argb(40, 255, 255, 255) else Color.argb(60, 0, 0, 0)
+
+    override fun attachBaseContext(newBase: Context) {
+        val prefs = newBase.getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
+        val lang  = prefs.getString("language", "") ?: ""
+        val base  = if (lang.isNotEmpty()) {
+            val locale = Locale(lang)
+            Locale.setDefault(locale)
+            val config = Configuration(newBase.resources.configuration)
+            config.setLocale(locale)
+            newBase.createConfigurationContext(config)
+        } else newBase
+        super.attachBaseContext(base)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,22 +115,48 @@ class TabsActivity : AppCompatActivity() {
         cardW = (screenW / 2) - (24 * dp).toInt()
         cardH = (cardW * 1.5f).toInt()
 
-        rootLayout = LinearLayout(this).apply {
+        // Root é FrameLayout para sobrepor o liquid glass no topo e fundo
+        rootLayout = FrameLayout(this).apply {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-            orientation  = LinearLayout.VERTICAL
             setBackgroundColor(bgColor)
             alpha = 0f
         }
 
-        // ── Top bar ──────────────────────────────────────────────────────────
-        val topBar = FrameLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * dp).toInt())
-            setBackgroundColor(bgColor)
+        // ── ScrollView + Grid (vai atrás de tudo) ────────────────────────────
+        val scrollContainer = LinearLayout(this).apply {
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+            orientation  = LinearLayout.VERTICAL
         }
+
+        // Espaçador topo (para a grid não ficar atrás do liquid glass da top bar)
+        val topSpacer = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (60 * dp).toInt())
+        }
+
+        scrollView = ScrollView(this).apply {
+            layoutParams   = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+            overScrollMode = View.OVER_SCROLL_NEVER
+        }
+        gridLayout = GridLayout(this).apply {
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            columnCount  = 2
+            setPadding((12 * dp).toInt(), (12 * dp).toInt(), (12 * dp).toInt(), (80 * dp).toInt())
+        }
+        scrollView.addView(gridLayout)
+        scrollContainer.addView(topSpacer)
+        scrollContainer.addView(scrollView)
+        rootLayout.addView(scrollContainer)
+
+        // ── Liquid Glass TOP BAR ─────────────────────────────────────────────
+        val topBarLp = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, (60 * dp).toInt(), Gravity.TOP
+        )
+        val topBar = buildLiquidGlassBar(height = (60 * dp).toInt(), isTop = true)
+        topBar.layoutParams = topBarLp
 
         val btnSearch = ImageView(this).apply {
             val lp = FrameLayout.LayoutParams((40 * dp).toInt(), (40 * dp).toInt(), Gravity.CENTER_VERTICAL or Gravity.START)
-            lp.marginStart = (8 * dp).toInt()
+            lp.marginStart = (10 * dp).toInt()
             layoutParams   = lp
             setPadding((9 * dp).toInt(), (9 * dp).toInt(), (9 * dp).toInt(), (9 * dp).toInt())
             setImageDrawable(svgDrawable("icons/svg/magnifying_glass_filled.svg", 20, iconTint))
@@ -108,21 +164,24 @@ class TabsActivity : AppCompatActivity() {
             background  = ContextCompat.getDrawable(this@TabsActivity, R.drawable.ripple_circle)
         }
 
-        // Segmented pill: Tabs | Incógnito
-        val pillContainerBg = GradientDrawable()
-        pillContainerBg.shape        = GradientDrawable.RECTANGLE
-        pillContainerBg.cornerRadius = 20 * dp
-        pillContainerBg.setColor(ContextCompat.getColor(this, R.color.input_background))
+        // ── Segmented pill Liquid Glass ───────────────────────────────────────
+        val pillBg = GradientDrawable()
+        pillBg.shape        = GradientDrawable.RECTANGLE
+        pillBg.cornerRadius = 20 * dp
+        pillBg.setColor(if (isNight) Color.argb(60, 255, 255, 255) else Color.argb(50, 0, 0, 0))
+        pillBg.setStroke((1 * dp).toInt(), glassStrokeColor())
 
         val pillContainer = FrameLayout(this).apply {
             layoutParams = FrameLayout.LayoutParams((200 * dp).toInt(), (34 * dp).toInt(), Gravity.CENTER)
-            background   = pillContainerBg
+            background   = pillBg
         }
 
         val indicatorBg = GradientDrawable()
         indicatorBg.shape        = GradientDrawable.RECTANGLE
         indicatorBg.cornerRadius = 17 * dp
-        indicatorBg.setColor(ContextCompat.getColor(this, R.color.background))
+        // Indicator Liquid Glass
+        indicatorBg.setColor(if (isNight) Color.argb(140, 60, 60, 70) else Color.argb(200, 255, 255, 255))
+        indicatorBg.setStroke((1 * dp).toInt(), if (isNight) Color.argb(50, 255, 255, 255) else Color.argb(40, 0, 0, 0))
 
         val indicator = View(this).apply {
             val lp = FrameLayout.LayoutParams((98 * dp).toInt(), (30 * dp).toInt(), Gravity.START or Gravity.CENTER_VERTICAL)
@@ -148,7 +207,7 @@ class TabsActivity : AppCompatActivity() {
             val lp = FrameLayout.LayoutParams((98 * dp).toInt(), FrameLayout.LayoutParams.MATCH_PARENT, Gravity.END or Gravity.CENTER_VERTICAL)
             lp.marginEnd = (2 * dp).toInt()
             layoutParams = lp
-            text         = "Incógnito"
+            text         = getString(R.string.incognito)
             textSize     = 13f
             gravity      = Gravity.CENTER
             setTypeface(typeface, android.graphics.Typeface.BOLD)
@@ -162,61 +221,46 @@ class TabsActivity : AppCompatActivity() {
 
         topBar.addView(btnSearch)
         topBar.addView(pillContainer)
+        rootLayout.addView(topBar)
 
-        val dividerTop = View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (1 * dp).toInt())
-            setBackgroundColor(ContextCompat.getColor(this@TabsActivity, R.color.divider))
-        }
-
-        // ── ScrollView + Grid ─────────────────────────────────────────────────
-        scrollView = ScrollView(this).apply {
-            layoutParams   = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
-            overScrollMode = View.OVER_SCROLL_NEVER
-        }
-        gridLayout = GridLayout(this).apply {
-            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            columnCount  = 2
-            setPadding((12 * dp).toInt(), (12 * dp).toInt(), (12 * dp).toInt(), (80 * dp).toInt())
-        }
-        scrollView.addView(gridLayout)
-
-        // ── Bottom bar ────────────────────────────────────────────────────────
-        val bottomBar = FrameLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (60 * dp).toInt())
-            setBackgroundColor(bgColor)
-        }
-
-        val dividerBottom = View(this).apply {
-            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, (1 * dp).toInt(), Gravity.TOP)
-            setBackgroundColor(ContextCompat.getColor(this@TabsActivity, R.color.divider))
-        }
-        bottomBar.addView(dividerBottom)
+        // ── Liquid Glass BOTTOM BAR ──────────────────────────────────────────
+        val bottomBarH = (64 * dp).toInt()
+        val bottomBarLp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, bottomBarH, Gravity.BOTTOM)
+        val bottomBar = buildLiquidGlassBar(height = bottomBarH, isTop = false)
+        bottomBar.layoutParams = bottomBarLp
 
         val btnEdit = TextView(this).apply {
             val lp = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL or Gravity.START)
             lp.marginStart = (16 * dp).toInt()
             layoutParams   = lp
-            text           = "Edit"
+            text           = getString(R.string.history)  // "Edit" traduzido como Editar
             textSize       = 17f
             setTextColor(blue)
             isClickable = true; isFocusable = true
             background  = ContextCompat.getDrawable(this@TabsActivity, R.drawable.ripple_item)
             setPadding((8 * dp).toInt(), (8 * dp).toInt(), (8 * dp).toInt(), (8 * dp).toInt())
         }
+        // Re-uso: "Edit" string hardcoded para evitar ausência de recurso
+        btnEdit.text = "Edit"
 
         val newTabOval = GradientDrawable()
         newTabOval.shape = GradientDrawable.OVAL
         newTabOval.setColor(blue)
 
         val btnNewTab = FrameLayout(this).apply {
-            layoutParams = FrameLayout.LayoutParams((44 * dp).toInt(), (44 * dp).toInt(), Gravity.CENTER)
+            layoutParams = FrameLayout.LayoutParams((48 * dp).toInt(), (48 * dp).toInt(), Gravity.CENTER)
             background   = newTabOval
             isClickable  = true; isFocusable = true
-            elevation    = 6 * dp
+            elevation    = 8 * dp
+        }
+        // Sombra suave no botão +
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            btnNewTab.outlineAmbientShadowColor = Color.argb(60, 0, 122, 255)
+            btnNewTab.outlineSpotShadowColor    = Color.argb(80, 0, 122, 255)
         }
         val plusIv = ImageView(this).apply {
-            layoutParams = FrameLayout.LayoutParams((20 * dp).toInt(), (20 * dp).toInt(), Gravity.CENTER)
-            setImageDrawable(svgDrawable("icons/svg/add.svg", 20, Color.WHITE))
+            layoutParams = FrameLayout.LayoutParams((22 * dp).toInt(), (22 * dp).toInt(), Gravity.CENTER)
+            setImageDrawable(svgDrawable("icons/svg/add.svg", 22, Color.WHITE))
         }
         btnNewTab.addView(plusIv)
 
@@ -224,7 +268,7 @@ class TabsActivity : AppCompatActivity() {
             val lp = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL or Gravity.END)
             lp.marginEnd = (16 * dp).toInt()
             layoutParams = lp
-            text         = "Done"
+            text         = getString(R.string.done)
             textSize     = 17f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
             setTextColor(blue)
@@ -236,13 +280,9 @@ class TabsActivity : AppCompatActivity() {
         bottomBar.addView(btnEdit)
         bottomBar.addView(btnNewTab)
         bottomBar.addView(btnDone)
-
-        rootLayout.addView(topBar)
-        rootLayout.addView(dividerTop)
-        rootLayout.addView(scrollView)
         rootLayout.addView(bottomBar)
-        setContentView(rootLayout)
 
+        setContentView(rootLayout)
         renderGrid()
 
         // Segmented control
@@ -277,7 +317,47 @@ class TabsActivity : AppCompatActivity() {
         else rootLayout.alpha = 1f
     }
 
-    // ── Animação entrada: ghost full-screen → card, com header integrado ──────
+    // ── Liquid Glass Bar builder ──────────────────────────────────────────────
+
+    private fun buildLiquidGlassBar(height: Int, isTop: Boolean): FrameLayout {
+        val bar = FrameLayout(this).apply {
+            clipToOutline = false
+        }
+
+        // Camada 1: blur (apenas API 31+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val blurLayer = View(this).apply {
+                layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, height)
+                setBackgroundColor(Color.TRANSPARENT)
+                setRenderEffect(
+                    RenderEffect.createBlurEffect(28f, 28f, Shader.TileMode.CLAMP)
+                )
+            }
+            bar.addView(blurLayer)
+        }
+
+        // Camada 2: fundo translúcido colorido
+        val tintLayer = View(this).apply {
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, height)
+            setBackgroundColor(glassColor(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) 160 else 220))
+        }
+        bar.addView(tintLayer)
+
+        // Camada 3: borda brilhante (1dp) — simula o specular highlight do vidro
+        val borderLayer = View(this).apply {
+            val borderH = (1 * dp).toInt()
+            val lp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, borderH)
+            lp.gravity = if (isTop) Gravity.BOTTOM else Gravity.TOP
+            layoutParams = lp
+            setBackgroundColor(glassStrokeColor())
+        }
+        bar.addView(borderLayer)
+
+        bar.elevation = 4 * dp
+        return bar
+    }
+
+    // ── Animação entrada ──────────────────────────────────────────────────────
 
     private fun runEnterAnimation() {
         val tabs      = TabManager.getTabs()
@@ -289,7 +369,7 @@ class TabsActivity : AppCompatActivity() {
         val padH      = 12 * dp
         val gapH      = 12 * dp
         val cardFullH = cardH + 40 * dp
-        val topBarH   = 53 * dp
+        val topBarH   = 60 * dp
 
         val destX = padH + col * (cardW + gapH * 2)
         val destY = topBarH + padH + row * (cardFullH + gapH * 2)
@@ -312,7 +392,6 @@ class TabsActivity : AppCompatActivity() {
             }
         }
 
-        // Header do ghost — aparece progressivamente na animação
         val ghostHeader = LinearLayout(this).apply {
             layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, (38 * dp).toInt(), Gravity.TOP)
             orientation  = LinearLayout.HORIZONTAL
@@ -328,7 +407,7 @@ class TabsActivity : AppCompatActivity() {
         }
         val ghostTitleTv = TextView(this).apply {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            text      = tab?.title?.ifEmpty { if (tab.url.isEmpty()) "Nova aba" else tab.url } ?: "Nova aba"
+            text      = tab?.title?.ifEmpty { if (tab.url.isEmpty()) getString(R.string.new_tab) else tab.url } ?: getString(R.string.new_tab)
             textSize  = 12f
             maxLines  = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
@@ -350,7 +429,6 @@ class TabsActivity : AppCompatActivity() {
         }
         ghost.addView(ghostHeader)
 
-        // Favicon no ghost
         val host = runCatching { android.net.Uri.parse(tab?.url ?: "").host ?: "" }.getOrDefault("")
         if (host.isNotEmpty()) {
             faviconCache[host]?.let { ghostFavIv.setImageBitmap(it) }
@@ -513,7 +591,7 @@ class TabsActivity : AppCompatActivity() {
         })
     }
 
-    // ── Grid ─────────────────────────────────────────────────────────────────
+    // ── Grid ──────────────────────────────────────────────────────────────────
 
     private fun renderGrid() {
         gridLayout.removeAllViews()
@@ -585,7 +663,7 @@ class TabsActivity : AppCompatActivity() {
         val cardTitleTv = TextView(this).apply {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             text = when {
-                tab.url.isEmpty() || tab.url == "about:blank" -> "Nova aba"
+                tab.url.isEmpty() || tab.url == "about:blank" -> getString(R.string.new_tab)
                 tab.title.isNotEmpty() -> tab.title
                 else -> host.ifEmpty { tab.url }
             }
@@ -725,10 +803,7 @@ class TabsActivity : AppCompatActivity() {
     }
 
     private fun applyTheme() {
-        val isLight = !resources.configuration.uiMode.let {
-            it and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
-                    android.content.res.Configuration.UI_MODE_NIGHT_YES
-        }
+        val isLight = !isNight
         window.statusBarColor = ContextCompat.getColor(this, R.color.background)
         insetsController.isAppearanceLightStatusBars = isLight
     }

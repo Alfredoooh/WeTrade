@@ -9,7 +9,7 @@
     <string name="privacy">Privacy</string>
     <string name="version">Version</string>
     <string name="general">General</string>
-    <string name="search_hint">Search...</string>
+    <string name="search_hint">Search or enter URL…</string>
     <string name="search_empty">Search something to get started</string>
     <string name="nav_home">Home</string>
     <string name="nav_search">Search</string>
@@ -48,5 +48,15 @@
     <string name="private_tabs">Private tabs</string>
     <string name="normal_tabs">Normal tabs</string>
     <string name="done">Done</string>
+    <string name="close">Close</string>
     <string name="search_container_transition">search_container_transition</string>
+    <string name="clara_hint">Type a message…</string>
+    <string name="clara_conversations">Conversations</string>
+    <string name="clara_new">New conversation</string>
+    <string name="clear_history_title">Clear history</string>
+    <string name="clear_history_message">All history records will be permanently deleted.</string>
+    <string name="clear_history_warning">⚠ This action cannot be undone.</string>
+    <string name="no_connection">No connection</string>
+    <string name="retry">Try again</string>
+    <string name="edit">Edit</string>
 </resources>

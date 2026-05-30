@@ -16,111 +16,106 @@
         app:elevation="0dp"
         app:liftOnScroll="false">
 
-        <com.google.android.material.appbar.MaterialToolbar
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:background="@color/appbar_background"
-            app:contentInsetStart="0dp"
-            app:contentInsetEnd="0dp">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="4dp"
+            android:paddingEnd="8dp">
 
+            <!-- Botão voltar -->
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:padding="10dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <!-- Campo de pesquisa: ocupa todo o espaço disponível -->
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:id="@+id/searchInputContainer"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:background="@drawable/search_input_bg"
+                android:transitionName="@string/search_container_transition"
+                android:stateListAnimator="@null"
+                android:elevation="0dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingStart="4dp"
+                android:paddingStart="12dp"
                 android:paddingEnd="8dp">
 
                 <ImageView
-                    android:id="@+id/btnBack"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:padding="10dp"
+                    android:id="@+id/searchIcon"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/searchInput"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:textSize="15sp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_hint"
+                    android:hint="@string/search_hint"
+                    android:inputType="textUri"
+                    android:imeOptions="actionSearch"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:importantForAutofill="no" />
+
+                <ImageView
+                    android:id="@+id/btnClear"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:padding="7dp"
+                    android:visibility="gone"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true" />
 
-                <LinearLayout
-                    android:id="@+id/searchInputContainer"
-                    android:layout_width="0dp"
-                    android:layout_height="36dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/search_input_bg"
-                    android:transitionName="@string/search_container_transition"
-                    android:stateListAnimator="@null"
-                    android:elevation="0dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="8dp">
+            </LinearLayout>
 
-                    <ImageView
-                        android:id="@+id/searchIcon"
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:layout_marginEnd="8dp" />
+            <!-- Ask AI à direita -->
+            <LinearLayout
+                android:id="@+id/btnAskAi"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/ask_ai_pill_bg"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:layout_marginStart="8dp"
+                android:clickable="true"
+                android:focusable="true">
 
-                    <EditText
-                        android:id="@+id/searchInput"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:background="@null"
-                        android:textSize="14sp"
-                        android:textColor="@color/text_primary"
-                        android:textColorHint="@color/text_hint"
-                        android:hint="@string/search_hint"
-                        android:inputType="textUri"
-                        android:imeOptions="actionSearch"
-                        android:maxLines="1"
-                        android:singleLine="true" />
-
-                    <ImageView
-                        android:id="@+id/btnClear"
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:visibility="gone"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:clickable="true"
-                        android:focusable="true" />
-
-                </LinearLayout>
-
-                <!-- Ask AI à direita do input -->
-                <LinearLayout
-                    android:id="@+id/btnAskAi"
+                <TextView
                     android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:background="@drawable/ask_ai_pill_bg"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp"
-                    android:layout_marginStart="6dp"
-                    android:clickable="true"
-                    android:focusable="true">
+                    android:layout_height="wrap_content"
+                    android:text="AI"
+                    android:textSize="12sp"
+                    android:textColor="@color/colorPrimary"
+                    android:textStyle="bold"
+                    android:layout_marginEnd="4dp" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Ask AI"
-                        android:textSize="12sp"
-                        android:textColor="@color/colorPrimary"
-                        android:textStyle="bold"
-                        android:layout_marginEnd="5dp" />
-
-                    <ImageView
-                        android:id="@+id/askAiIcon"
-                        android:layout_width="15dp"
-                        android:layout_height="15dp"
-                        android:clickable="false"
-                        android:focusable="false" />
-
-                </LinearLayout>
+                <ImageView
+                    android:id="@+id/askAiIcon"
+                    android:layout_width="15dp"
+                    android:layout_height="15dp"
+                    android:clickable="false"
+                    android:focusable="false" />
 
             </LinearLayout>
 
-        </com.google.android.material.appbar.MaterialToolbar>
+        </LinearLayout>
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -129,18 +124,22 @@
         android:layout_height="0.5dp"
         android:background="@color/divider" />
 
+    <!-- Label "Recente" / "Pesquisar" -->
     <TextView
         android:id="@+id/recentLabel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/recent"
         android:textSize="12sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.05"
         android:textColor="@color/text_secondary"
         android:paddingStart="20dp"
-        android:paddingTop="16dp"
-        android:paddingBottom="4dp"
+        android:paddingTop="18dp"
+        android:paddingBottom="6dp"
         android:visibility="gone" />
 
+    <!-- Lista de sugestões / histórico -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/suggestionsList"
         android:layout_width="match_parent"

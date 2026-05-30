@@ -2,18 +2,19 @@
 package com.wilin.app
 
 import android.animation.ValueAnimator
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Outline
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
+import android.os.Build
 import android.os.Bundle
 import android.view.View
-import android.view.ViewOutlineProvider
 import android.view.animation.DecelerateInterpolator
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -37,6 +38,7 @@ import com.wilin.app.ui.SettingsActivity
 import com.wilin.app.ui.TabManager
 import com.wilin.app.ui.TabScreenshots
 import com.wilin.app.ui.TabsActivity
+import java.util.Locale
 
 class MainActivity : AppCompatActivity(), HomeScrollCallback {
 
@@ -50,6 +52,20 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     private val bottomNavBehavior by lazy {
         val lp = binding.bottomNavWrapper.layoutParams as CoordinatorLayout.LayoutParams
         lp.behavior as? HideBottomViewOnScrollBehavior<*>
+    }
+
+    override fun attachBaseContext(newBase: Context) {
+        // Aplica o locale guardado antes de inflar qualquer view
+        val prefs  = newBase.getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
+        val lang   = prefs.getString("language", "") ?: ""
+        val base   = if (lang.isNotEmpty()) {
+            val locale = Locale(lang)
+            Locale.setDefault(locale)
+            val config = Configuration(newBase.resources.configuration)
+            config.setLocale(locale)
+            newBase.createConfigurationContext(config)
+        } else newBase
+        super.attachBaseContext(base)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,10 +82,12 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Edge-to-edge mas com barra de sistema gerida manualmente
         WindowCompat.setDecorFitsSystemWindows(window, true)
         insetsController = WindowInsetsControllerCompat(window, window.decorView)
-        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
-        applyStatusBarTheme()
+
+        // Aplica o tema da status bar DEPOIS de a view estar pronta
+        binding.root.post { applyStatusBarTheme() }
 
         TabManager.init(this)
         TabScreenshots.init(this)
@@ -199,9 +217,16 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
 
     override fun onResume() {
         super.onResume()
-        applyStatusBarTheme()
+        // Garante que ao voltar do browser/settings a statusBar fica correcta
+        binding.root.post { applyStatusBarTheme() }
         updateTabsBadge()
         showBottomNav()
+    }
+
+    // Chamado sempre que a janela recupera o foco (ex.: após voltar de outra Activity)
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) applyStatusBarTheme()
     }
 
     private fun openTabsWithTransform() {
@@ -233,6 +258,7 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         super.onBackPressed()
     }
 
+    // ── StatusBar: sempre consistente com o tema actual ───────────────────────
     private fun applyStatusBarTheme() {
         val isLight = !resources.configuration.isNightModeActive
         window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)

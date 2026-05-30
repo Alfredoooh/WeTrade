@@ -1,7 +1,9 @@
+// SettingsActivity.kt
 package com.wilin.app.ui
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.PorterDuff
@@ -71,6 +73,19 @@ class SettingsActivity : AppCompatActivity() {
     private val themeOptions = arrayOf("Sistema", "Claro", "Escuro")
     private val themeValues  = arrayOf("system", "light", "dark")
 
+    override fun attachBaseContext(newBase: Context) {
+        val prefs  = newBase.getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
+        val lang   = prefs.getString("language", "") ?: ""
+        val base   = if (lang.isNotEmpty()) {
+            val locale = Locale(lang)
+            Locale.setDefault(locale)
+            val config = Configuration(newBase.resources.configuration)
+            config.setLocale(locale)
+            newBase.createConfigurationContext(config)
+        } else newBase
+        super.attachBaseContext(base)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
@@ -78,11 +93,11 @@ class SettingsActivity : AppCompatActivity() {
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
         val insetsController = WindowInsetsControllerCompat(window, window.decorView)
-        window.decorView.post {
+        binding.root.post {
             val isLight = !resources.configuration.isNightModeActive
             insetsController.isAppearanceLightStatusBars = isLight
         }
-     
+
         val iconTint    = ContextCompat.getColor(this, R.color.icon_tint)
         val chevronTint = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
@@ -147,6 +162,11 @@ class SettingsActivity : AppCompatActivity() {
                     else    -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
                 }
                 dialog.dismiss()
+                // Reinicia a MainActivity para aplicar novo tema em toda a app
+                val intent = Intent(this, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                startActivity(intent)
             }
             .show()
     }
@@ -155,13 +175,11 @@ class SettingsActivity : AppCompatActivity() {
         getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
             .edit().putString("language", langCode).apply()
 
-        val locale = Locale(langCode)
-        Locale.setDefault(locale)
-        val config = resources.configuration
-        config.setLocale(locale)
-        @Suppress("DEPRECATION")
-        resources.updateConfiguration(config, resources.displayMetrics)
-        recreate()
+        // Reinicia a stack completa para aplicar o locale em todas as Activities
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
     }
 
     private fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
