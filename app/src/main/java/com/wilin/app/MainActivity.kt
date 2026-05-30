@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
+import androidx.core.os.LocaleListCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.GravityCompat
 import androidx.core.view.WindowCompat
@@ -54,6 +55,7 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
+        applySavedLocale()
 
         val prefs = getSharedPreferences("wilin_prefs", MODE_PRIVATE)
         when (prefs.getString("theme", "system")) {
@@ -199,9 +201,51 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
 
     override fun onResume() {
         super.onResume()
+        refreshThemeUi()
+    }
+
+
+    private fun applySavedLocale() {
+        val prefs = getSharedPreferences("wilin_prefs", MODE_PRIVATE)
+        val langCode = prefs.getString("language", "")?.trim().orEmpty()
+        if (langCode.isNotEmpty()) {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(langCode))
+        }
+    }
+
+    private fun refreshThemeUi() {
         applyStatusBarTheme()
         updateTabsBadge()
         showBottomNav()
+
+        val isNight  = resources.configuration.isNightModeActive
+        val active   = if (isNight) Color.WHITE else Color.BLACK
+        val inactive = Color.parseColor("#888888")
+
+        binding.tabHomeIcon.setImageDrawable(
+            if (currentTab == R.id.tabHome)
+                svgDrawable("icons/svg/home_filled.svg", 24, active)
+            else
+                svgDrawable("icons/svg/home_outline.svg", 24, inactive)
+        )
+        binding.tabSearchIcon.setImageDrawable(
+            if (currentTab == R.id.tabSearch)
+                svgDrawable("icons/svg/magnifying_glass_filled.svg", 24, active)
+            else
+                svgDrawable("icons/svg/magnifying_glass_outline.svg", 24, inactive)
+        )
+
+        if (currentTab == R.id.tabSearch) {
+            binding.toolbarTitle.visibility = View.GONE
+            binding.btnMenu.visibility      = View.GONE
+            binding.btnAskAi.visibility     = View.GONE
+            binding.searchPill.visibility   = View.VISIBLE
+        } else {
+            binding.searchPill.visibility   = View.GONE
+            binding.toolbarTitle.visibility = View.VISIBLE
+            binding.btnMenu.visibility      = View.VISIBLE
+            binding.btnAskAi.visibility     = View.VISIBLE
+        }
     }
 
     private fun openTabsWithTransform() {

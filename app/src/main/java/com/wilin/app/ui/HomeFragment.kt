@@ -280,14 +280,13 @@ class HomeFragment : Fragment() {
             setPadding((16 * dp).toInt(), (48 * dp).toInt(), (16 * dp).toInt(), (48 * dp).toInt())
         }
 
-        val icon = TextView(ctx).apply {
+        val icon = ImageView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                (80 * dp).toInt(),
+                (80 * dp).toInt()
             ).also { it.gravity = Gravity.CENTER_HORIZONTAL; it.bottomMargin = (12 * dp).toInt() }
-            text = "📡"
-            textSize = 40f
-            gravity = Gravity.CENTER_HORIZONTAL
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            loadAssetBitmap("icons/png/no_connection.png", (80 * dp).toInt())?.let { setImageBitmap(it) }
         }
 
         val msg = TextView(ctx).apply {
@@ -330,6 +329,18 @@ class HomeFragment : Fragment() {
 
         errorView = container
         insertStateView(container)
+    }
+
+
+    private fun loadAssetBitmap(assetPath: String, sizePx: Int): Bitmap? {
+        return try {
+            requireContext().assets.open(assetPath).use { input ->
+                val bmp = BitmapFactory.decodeStream(input) ?: return null
+                Bitmap.createScaledBitmap(bmp, sizePx, sizePx, true)
+            }
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun insertStateView(v: View) {

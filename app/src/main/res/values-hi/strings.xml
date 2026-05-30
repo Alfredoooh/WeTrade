@@ -49,4 +49,11 @@
     <string name="normal_tabs">Normal tabs</string>
     <string name="done">Done</string>
     <string name="search_container_transition">search_container_transition</string>
+    <string name="close">Close</string>
+    <string name="clara_hint">Type a message…</string>
+    <string name="clara_conversations">Conversations</string>
+    <string name="clara_new">New conversation</string>
+    <string name="clear_history_title">Clear history</string>
+    <string name="clear_history_message">All history records will be permanently deleted.</string>
+    <string name="clear_history_warning">⚠ This action cannot be undone.</string>
 </resources>
