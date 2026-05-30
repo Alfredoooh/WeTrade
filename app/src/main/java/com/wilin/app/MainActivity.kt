@@ -1,21 +1,16 @@
 // MainActivity.kt
 package com.wilin.app
 
-import android.animation.ValueAnimator
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.ColorDrawable
-import android.os.Build
 import android.os.Bundle
 import android.view.View
-import android.view.animation.DecelerateInterpolator
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.coordinatorlayout.widget.CoordinatorLayout
@@ -49,16 +44,21 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     private val searchFragment = SearchFragment()
     private var currentTab     = R.id.tabHome
 
-    private val bottomNavBehavior by lazy {
-        val lp = binding.bottomNavWrapper.layoutParams as CoordinatorLayout.LayoutParams
-        lp.behavior as? HideBottomViewOnScrollBehavior<*>
-    }
+    // ── Cor activa dos ícones: lida do sistema no momento do uso ──────────────
+    private val isNightMode: Boolean
+        get() = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                Configuration.UI_MODE_NIGHT_YES
+
+    private val activeIconColor: Int
+        get() = if (isNightMode) Color.WHITE else Color.BLACK
+
+    private val inactiveIconColor: Int
+        get() = Color.parseColor("#888888")
 
     override fun attachBaseContext(newBase: Context) {
-        // Aplica o locale guardado antes de inflar qualquer view
-        val prefs  = newBase.getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
-        val lang   = prefs.getString("language", "") ?: ""
-        val base   = if (lang.isNotEmpty()) {
+        val prefs = newBase.getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
+        val lang  = prefs.getString("language", "") ?: ""
+        val base  = if (lang.isNotEmpty()) {
             val locale = Locale(lang)
             Locale.setDefault(locale)
             val config = Configuration(newBase.resources.configuration)
@@ -82,22 +82,32 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Edge-to-edge mas com barra de sistema gerida manualmente
+        // NÃO usar edge-to-edge — mantém o sistema a gerir insets normalmente
         WindowCompat.setDecorFitsSystemWindows(window, true)
         insetsController = WindowInsetsControllerCompat(window, window.decorView)
 
-        // Aplica o tema da status bar DEPOIS de a view estar pronta
-        binding.root.post { applyStatusBarTheme() }
+        // Aplica tema da status bar imediatamente, sem post{}
+        applyStatusBarTheme()
 
         TabManager.init(this)
         TabScreenshots.init(this)
 
+        setupDrawer()
+        setupSearchPill()
+        setupBottomTabs()
+        updateTabsBadge()
+        handleIncomingIntent(intent)
+    }
+
+    // ── Drawer ────────────────────────────────────────────────────────────────
+    private fun setupDrawer() {
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
 
         binding.btnAskAiIcon.setImageDrawable(svgDrawable("icons/svg/ai.svg", 13, iconSec))
-        binding.btnAskAi.setOnClickListener { startActivity(Intent(this, AiSearchActivity::class.java)) }
-
+        binding.btnAskAi.setOnClickListener {
+            startActivity(Intent(this, AiSearchActivity::class.java))
+        }
         binding.btnMenu.setImageDrawable(svgDrawable("icons/svg/menu.svg", 16, iconTint))
         binding.btnMenu.setOnClickListener {
             if (binding.drawerLayout.isDrawerOpen(GravityCompat.END))
@@ -105,18 +115,10 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
             else
                 binding.drawerLayout.openDrawer(GravityCompat.END)
         }
-
-        binding.searchPillIcon.setImageDrawable(
-            svgDrawable("icons/svg/magnifying_glass_outline.svg", 18, iconSec))
-        binding.searchPill.setOnClickListener {
-            startActivity(Intent(this, SearchActivity::class.java))
-        }
-
         binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 16, iconTint))
         binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 16, iconTint))
         binding.drawerChevronSettings.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 14, iconSec))
         binding.drawerChevronAbout.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 14, iconSec))
-
         binding.drawerItemSettings.setOnClickListener {
             binding.drawerLayout.closeDrawer(GravityCompat.END)
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -124,70 +126,141 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         binding.drawerItemAbout.setOnClickListener {
             binding.drawerLayout.closeDrawer(GravityCompat.END)
         }
+    }
 
-        updateTabsBadge()
-
-        fun setIcons(activeTab: Int) {
-            val isNight  = resources.configuration.isNightModeActive
-            val active   = if (isNight) Color.WHITE else Color.BLACK
-            val inactive = Color.parseColor("#888888")
-
-            binding.tabHomeIcon.setImageDrawable(
-                if (activeTab == R.id.tabHome)
-                    svgDrawable("icons/svg/home_filled.svg", 24, active)
-                else
-                    svgDrawable("icons/svg/home_outline.svg", 24, inactive)
-            )
-            binding.tabSearchIcon.setImageDrawable(
-                if (activeTab == R.id.tabSearch)
-                    svgDrawable("icons/svg/magnifying_glass_filled.svg", 24, active)
-                else
-                    svgDrawable("icons/svg/magnifying_glass_outline.svg", 24, inactive)
-            )
+    // ── Search pill (tab Search) ──────────────────────────────────────────────
+    private fun setupSearchPill() {
+        val iconSec = ContextCompat.getColor(this, R.color.icon_tint_secondary)
+        binding.searchPillIcon.setImageDrawable(
+            svgDrawable("icons/svg/magnifying_glass_outline.svg", 18, iconSec))
+        binding.searchPill.setOnClickListener {
+            startActivity(Intent(this, SearchActivity::class.java))
         }
+    }
 
-        fun updateAppBar(tabId: Int) {
-            if (tabId == R.id.tabSearch) {
-                binding.toolbarTitle.visibility = View.GONE
-                binding.btnMenu.visibility      = View.GONE
-                binding.btnAskAi.visibility     = View.GONE
-                binding.searchPill.visibility   = View.VISIBLE
-            } else {
-                binding.searchPill.visibility   = View.GONE
-                binding.toolbarTitle.visibility = View.VISIBLE
-                binding.btnMenu.visibility      = View.VISIBLE
-                binding.btnAskAi.visibility     = View.VISIBLE
-            }
-        }
-
-        fun selectTab(tabId: Int) {
-            if (currentTab == tabId) return
-            currentTab = tabId
-            setIcons(tabId)
-            updateAppBar(tabId)
-            showBottomNav()
-            when (tabId) {
-                R.id.tabHome   -> showFragment(homeFragment)
-                R.id.tabSearch -> showFragment(searchFragment)
-            }
-        }
-
-        binding.tabHome.setOnClickListener   { selectTab(R.id.tabHome) }
-        binding.tabSearch.setOnClickListener { selectTab(R.id.tabSearch) }
-        binding.tabTabs.setOnClickListener   { openTabsWithTransform() }
-
+    // ── Bottom tabs ───────────────────────────────────────────────────────────
+    private fun setupBottomTabs() {
         supportFragmentManager.beginTransaction()
             .add(R.id.container, homeFragment, "home")
             .add(R.id.container, searchFragment, "search")
             .hide(searchFragment)
             .commit()
 
-        setIcons(R.id.tabHome)
+        refreshTabIcons()
         updateAppBar(R.id.tabHome)
 
-        handleIncomingIntent(intent)
+        binding.tabHome.setOnClickListener   { selectTab(R.id.tabHome) }
+        binding.tabSearch.setOnClickListener { selectTab(R.id.tabSearch) }
+        binding.tabTabs.setOnClickListener   { openTabsWithTransform() }
     }
 
+    private fun selectTab(tabId: Int) {
+        if (currentTab == tabId) return
+        currentTab = tabId
+        refreshTabIcons()
+        updateAppBar(tabId)
+        showBottomNav()
+        when (tabId) {
+            R.id.tabHome   -> showFragment(homeFragment)
+            R.id.tabSearch -> showFragment(searchFragment)
+        }
+    }
+
+    // ── refreshTabIcons: lê o tema NO MOMENTO da chamada ─────────────────────
+    private fun refreshTabIcons() {
+        val active   = activeIconColor
+        val inactive = inactiveIconColor
+
+        binding.tabHomeIcon.setImageDrawable(
+            if (currentTab == R.id.tabHome)
+                svgDrawable("icons/svg/home_filled.svg", 24, active)
+            else
+                svgDrawable("icons/svg/home_outline.svg", 24, inactive)
+        )
+        binding.tabSearchIcon.setImageDrawable(
+            if (currentTab == R.id.tabSearch)
+                svgDrawable("icons/svg/magnifying_glass_filled.svg", 24, active)
+            else
+                svgDrawable("icons/svg/magnifying_glass_outline.svg", 24, inactive)
+        )
+    }
+
+    private fun updateAppBar(tabId: Int) {
+        if (tabId == R.id.tabSearch) {
+            binding.toolbarTitle.visibility = View.GONE
+            binding.btnMenu.visibility      = View.GONE
+            binding.btnAskAi.visibility     = View.GONE
+            binding.searchPill.visibility   = View.VISIBLE
+        } else {
+            binding.searchPill.visibility   = View.GONE
+            binding.toolbarTitle.visibility = View.VISIBLE
+            binding.btnMenu.visibility      = View.VISIBLE
+            binding.btnAskAi.visibility     = View.VISIBLE
+        }
+    }
+
+    // ── onResume: SEMPRE re-aplica tudo ao voltar de qualquer Activity ────────
+    override fun onResume() {
+        super.onResume()
+        applyStatusBarTheme()
+        refreshTabIcons()
+        updateTabsBadge()
+        showBottomNav()
+    }
+
+    // ── onWindowFocusChanged: garante status bar correcta quando a janela volta ─
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            applyStatusBarTheme()
+            refreshTabIcons()
+        }
+    }
+
+    // ── Status bar ────────────────────────────────────────────────────────────
+    private fun applyStatusBarTheme() {
+        // Lê o modo de noite directamente do uiMode, nunca do isNightModeActive
+        // porque esse pode ficar stale em certas versões do Android
+        val nightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        val isLight   = nightMode != Configuration.UI_MODE_NIGHT_YES
+
+        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
+        insetsController.isAppearanceLightStatusBars = isLight
+    }
+
+    // ── Tabs badge ────────────────────────────────────────────────────────────
+    private fun updateTabsBadge() {
+        val count = TabManager.count()
+        binding.tabTabsCount.text = if (count > 99) "99" else count.toString()
+    }
+
+    // ── Abrir TabsActivity com transform ─────────────────────────────────────
+    private fun openTabsWithTransform() {
+        val root = binding.root
+        val screenshot = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
+        root.draw(Canvas(screenshot))
+        TabScreenshots.saveCurrent(this, TabManager.getCurrentId(), screenshot)
+
+        val intent = Intent(this, TabsActivity::class.java).apply {
+            putExtra("anim_src_width",  root.width)
+            putExtra("anim_src_height", root.height)
+            putExtra("anim_src_x",      0f)
+            putExtra("anim_src_y",      0f)
+        }
+        startActivity(intent)
+        overridePendingTransition(0, 0)
+    }
+
+    // ── Back ──────────────────────────────────────────────────────────────────
+    override fun onBackPressed() {
+        if (binding.drawerLayout.isDrawerOpen(GravityCompat.END)) {
+            binding.drawerLayout.closeDrawer(GravityCompat.END)
+            return
+        }
+        super.onBackPressed()
+    }
+
+    // ── Intent ────────────────────────────────────────────────────────────────
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -205,6 +278,7 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         }
     }
 
+    // ── Scroll callbacks ──────────────────────────────────────────────────────
     override fun onHomeScrollDown(dy: Int) {}
     override fun onHomeScrollUp(dy: Int)   {}
 
@@ -215,74 +289,28 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         behavior.slideUp(binding.bottomNavWrapper)
     }
 
-    override fun onResume() {
-        super.onResume()
-        // Garante que ao voltar do browser/settings a statusBar fica correcta
-        binding.root.post { applyStatusBarTheme() }
-        updateTabsBadge()
-        showBottomNav()
-    }
-
-    // Chamado sempre que a janela recupera o foco (ex.: após voltar de outra Activity)
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) applyStatusBarTheme()
-    }
-
-    private fun openTabsWithTransform() {
-        val root = binding.root
-        val screenshot = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
-        root.draw(Canvas(screenshot))
-        TabScreenshots.saveCurrent(this, TabManager.getCurrentId(), screenshot)
-
-        val intent = Intent(this, TabsActivity::class.java).apply {
-            putExtra("anim_src_width",  root.width)
-            putExtra("anim_src_height", root.height)
-            putExtra("anim_src_x",      0f)
-            putExtra("anim_src_y",      0f)
-        }
-        startActivity(intent)
-        overridePendingTransition(0, 0)
-    }
-
-    private fun updateTabsBadge() {
-        val count = TabManager.count()
-        binding.tabTabsCount.text = if (count > 99) "99" else count.toString()
-    }
-
-    override fun onBackPressed() {
-        if (binding.drawerLayout.isDrawerOpen(GravityCompat.END)) {
-            binding.drawerLayout.closeDrawer(GravityCompat.END)
-            return
-        }
-        super.onBackPressed()
-    }
-
-    // ── StatusBar: sempre consistente com o tema actual ───────────────────────
-    private fun applyStatusBarTheme() {
-        val isLight = !resources.configuration.isNightModeActive
-        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
-        insetsController.isAppearanceLightStatusBars = isLight
-    }
-
-    fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
-        val px  = (sizeDp * resources.displayMetrics.density).toInt()
-        val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
-        SVG.getFromAsset(assets, path).apply {
-            documentWidth  = px.toFloat()
-            documentHeight = px.toFloat()
-            renderToCanvas(Canvas(bmp))
-        }
-        return BitmapDrawable(resources, bmp).also {
-            it.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
-        }
-    }
-
+    // ── Fragment switch ───────────────────────────────────────────────────────
     private fun showFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
             .hide(homeFragment)
             .hide(searchFragment)
             .show(fragment)
             .commit()
+    }
+
+    // ── SVG helper ───────────────────────────────────────────────────────────
+    fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
+        val px  = (sizeDp * resources.displayMetrics.density).toInt().coerceAtLeast(1)
+        val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
+        runCatching {
+            SVG.getFromAsset(assets, path).apply {
+                documentWidth  = px.toFloat()
+                documentHeight = px.toFloat()
+                renderToCanvas(Canvas(bmp))
+            }
+        }
+        return BitmapDrawable(resources, bmp).also {
+            it.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
+        }
     }
 }

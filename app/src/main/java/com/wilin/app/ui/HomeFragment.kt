@@ -1,3 +1,4 @@
+// HomeFragment.kt
 package com.wilin.app.ui
 
 import android.content.Intent
@@ -134,18 +135,26 @@ class HomeFragment : Fragment() {
     private lateinit var dotsContainer: LinearLayout
     private var currentPage = 0
 
-    // Views de estado injectadas programaticamente
     private var loadingView: View? = null
-    private var errorView: View? = null
+    private var errorView: View?   = null
     private var currentFetchCategory: String = ""
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // Garante que o fundo do fragment é sempre a cor correcta do tema
+        binding.root.setBackgroundColor(
+            ContextCompat.getColor(requireContext(), R.color.background)
+        )
+
         buildSitesCarousel()
         buildCategoryToggles()
         setupStickyScroll()
@@ -163,8 +172,16 @@ class HomeFragment : Fragment() {
         fetchNews(newsCategoryKeys[0])
     }
 
-    // ── Loading / Error state ─────────────────────────────────────────────────
+    // ── onResume: actualiza cores ao voltar ao fragment ───────────────────────
+    override fun onResume() {
+        super.onResume()
+        // Força fundo correcto ao voltar de qualquer Activity
+        _binding?.root?.setBackgroundColor(
+            ContextCompat.getColor(requireContext(), R.color.background)
+        )
+    }
 
+    // ── Loading state ─────────────────────────────────────────────────────────
     private fun showLoading() {
         val ctx = requireContext()
         val dp  = ctx.resources.displayMetrics.density
@@ -178,14 +195,16 @@ class HomeFragment : Fragment() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            setPadding((16 * dp).toInt(), (24 * dp).toInt(), (16 * dp).toInt(), (24 * dp).toInt())
+            gravity     = Gravity.CENTER_HORIZONTAL
+            setPadding(
+                (16 * dp).toInt(), (24 * dp).toInt(),
+                (16 * dp).toInt(), (24 * dp).toInt()
+            )
+            // Fundo explícito — nunca herda cor errada do tema
+            setBackgroundColor(ContextCompat.getColor(ctx, R.color.background))
         }
 
-        // 3 skeleton cards
-        repeat(3) {
-            container.addView(makeSkeletonCard(dp))
-        }
+        repeat(3) { container.addView(makeSkeletonCard(dp)) }
 
         loadingView = container
         insertStateView(container)
@@ -193,22 +212,23 @@ class HomeFragment : Fragment() {
 
     private fun makeSkeletonCard(dp: Float): View {
         val ctx = requireContext()
+
         val card = LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).also { it.bottomMargin = (10 * dp).toInt() }
-            orientation = LinearLayout.VERTICAL
-            background = android.graphics.drawable.GradientDrawable().apply {
-                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            orientation   = LinearLayout.VERTICAL
+            background    = android.graphics.drawable.GradientDrawable().apply {
+                shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
                 cornerRadius = 14 * dp
                 setColor(ContextCompat.getColor(ctx, R.color.surface))
             }
-            elevation = 2 * dp
+            elevation     = 2 * dp
             clipToOutline = true
         }
 
-        // imagem placeholder
+        // Imagem placeholder
         card.addView(View(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, (180 * dp).toInt()
@@ -222,38 +242,41 @@ class HomeFragment : Fragment() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
             orientation = LinearLayout.VERTICAL
-            setPadding((14 * dp).toInt(), (10 * dp).toInt(), (14 * dp).toInt(), (12 * dp).toInt())
+            setPadding(
+                (14 * dp).toInt(), (10 * dp).toInt(),
+                (14 * dp).toInt(), (12 * dp).toInt()
+            )
         }
 
-        // linha título
+        // Linha título 1
         textWrap.addView(View(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 (220 * dp).toInt(), (14 * dp).toInt()
             ).also { it.bottomMargin = (6 * dp).toInt() }
             background = android.graphics.drawable.GradientDrawable().apply {
-                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
                 cornerRadius = 4 * dp
                 setColor(ContextCompat.getColor(ctx, R.color.divider))
             }
         })
-        // linha título 2ª
+        // Linha título 2
         textWrap.addView(View(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 (160 * dp).toInt(), (14 * dp).toInt()
             ).also { it.bottomMargin = (10 * dp).toInt() }
             background = android.graphics.drawable.GradientDrawable().apply {
-                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
                 cornerRadius = 4 * dp
                 setColor(ContextCompat.getColor(ctx, R.color.divider))
             }
         })
-        // linha source
+        // Linha source
         textWrap.addView(View(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 (80 * dp).toInt(), (10 * dp).toInt()
             )
             background = android.graphics.drawable.GradientDrawable().apply {
-                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
                 cornerRadius = 4 * dp
                 setColor(ContextCompat.getColor(ctx, R.color.divider))
             }
@@ -263,6 +286,7 @@ class HomeFragment : Fragment() {
         return card
     }
 
+    // ── Error state ───────────────────────────────────────────────────────────
     private fun showError(category: String) {
         val ctx = requireContext()
         val dp  = ctx.resources.displayMetrics.density
@@ -276,55 +300,70 @@ class HomeFragment : Fragment() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            setPadding((16 * dp).toInt(), (48 * dp).toInt(), (16 * dp).toInt(), (48 * dp).toInt())
+            gravity     = Gravity.CENTER_HORIZONTAL
+            setPadding(
+                (16 * dp).toInt(), (48 * dp).toInt(),
+                (16 * dp).toInt(), (48 * dp).toInt()
+            )
+            // Fundo explícito — nunca herda cor errada do tema
+            setBackgroundColor(ContextCompat.getColor(ctx, R.color.background))
         }
 
-        val icon = TextView(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.gravity = Gravity.CENTER_HORIZONTAL; it.bottomMargin = (12 * dp).toInt() }
-            text = "📡"
-            textSize = 40f
-            gravity = Gravity.CENTER_HORIZONTAL
+        // Imagem no_connection.png em vez de emoji
+        val iconSz = (72 * dp).toInt()
+        val iconIv = ImageView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(iconSz, iconSz).also {
+                it.gravity      = Gravity.CENTER_HORIZONTAL
+                it.bottomMargin = (20 * dp).toInt()
+            }
+            scaleType = ImageView.ScaleType.FIT_CENTER
+        }
+        runCatching {
+            val bmp = BitmapFactory.decodeStream(ctx.assets.open("icons/png/no_connection.png"))
+            iconIv.setImageBitmap(bmp)
+        }.onFailure {
+            // Fallback: círculo cinzento simples
+            val bmp = Bitmap.createBitmap(iconSz, iconSz, Bitmap.Config.ARGB_8888)
+            Paint(Paint.ANTI_ALIAS_FLAG).also { p ->
+                p.color = ContextCompat.getColor(ctx, R.color.divider)
+                Canvas(bmp).drawCircle(iconSz / 2f, iconSz / 2f, iconSz / 2f, p)
+            }
+            iconIv.setImageBitmap(bmp)
         }
 
         val msg = TextView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.bottomMargin = (20 * dp).toInt() }
-            text = "Não foi possível carregar as notícias.\nVerifica a tua ligação à internet."
+            ).also { it.bottomMargin = (28 * dp).toInt() }
+            text     = "Não foi possível carregar as notícias.\nVerifica a tua ligação à internet."
             textSize = 14f
-            gravity = Gravity.CENTER_HORIZONTAL
+            gravity  = Gravity.CENTER_HORIZONTAL
             setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
         }
 
         val retryBtn = TextView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-                (40 * dp).toInt()
+                (44 * dp).toInt()
             ).also { it.gravity = Gravity.CENTER_HORIZONTAL }
-            text = "Tentar novamente"
-            textSize = 14f
-            gravity = Gravity.CENTER
-            setPadding((24 * dp).toInt(), 0, (24 * dp).toInt(), 0)
+            text      = getString(R.string.retry)
+            textSize  = 14f
+            gravity   = Gravity.CENTER
+            setPadding((28 * dp).toInt(), 0, (28 * dp).toInt(), 0)
             setTypeface(typeface, android.graphics.Typeface.BOLD)
             setTextColor(Color.WHITE)
             background = android.graphics.drawable.GradientDrawable().apply {
-                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-                cornerRadius = 20 * dp
+                shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
+                cornerRadius = 22 * dp
                 setColor(ContextCompat.getColor(ctx, R.color.colorPrimary))
             }
             isClickable = true
             isFocusable = true
-            setOnClickListener {
-                fetchNews(category)
-            }
+            setOnClickListener { fetchNews(category) }
         }
 
-        container.addView(icon)
+        container.addView(iconIv)
         container.addView(msg)
         container.addView(retryBtn)
 
@@ -333,7 +372,6 @@ class HomeFragment : Fragment() {
     }
 
     private fun insertStateView(v: View) {
-        // Insere antes do newsRecycler no parent LinearLayout
         val recycler = binding.newsRecycler
         val parent   = recycler.parent as? LinearLayout ?: return
         val idx      = parent.indexOfChild(recycler)
@@ -350,7 +388,6 @@ class HomeFragment : Fragment() {
     }
 
     // ── Fetch com retry ───────────────────────────────────────────────────────
-
     private fun fetchNews(category: String) {
         currentFetchCategory = category
 
@@ -367,7 +404,7 @@ class HomeFragment : Fragment() {
                             .build()
                         val resp = httpClient.newCall(req).execute()
                         if (resp.isSuccessful) {
-                            val arr = JSONArray(resp.body?.string() ?: "[]")
+                            val arr  = JSONArray(resp.body?.string() ?: "[]")
                             val list = mutableListOf<NewsItem>()
                             for (i in 0 until arr.length()) {
                                 val o = arr.getJSONObject(i)
@@ -383,20 +420,16 @@ class HomeFragment : Fragment() {
                                     )
                                 )
                             }
-                            if (list.isNotEmpty()) {
-                                result = list
-                                break
-                            }
+                            if (list.isNotEmpty()) { result = list; break }
                         }
                     } catch (e: Exception) {
-                        Log.e("HomeFragment", "fetchNews attempt $attempt failed: ${e.message}")
+                        Log.e("HomeFragment", "fetchNews attempt $attempt: ${e.message}")
                     }
                     if (attempt < maxRetries) delay(2000L)
                 }
                 result
             }
 
-            // ignora resposta se o utilizador já mudou de categoria
             if (currentFetchCategory != category) return@launch
 
             removeStateViews()
@@ -413,35 +446,36 @@ class HomeFragment : Fragment() {
         }
     }
 
-    // ── Resto do código intacto ───────────────────────────────────────────────
-
+    // ── Sticky scroll ─────────────────────────────────────────────────────────
     private fun setupStickyScroll() {
-        binding.homeScrollView.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
-            val dy = scrollY - oldScrollY
-            when {
-                dy > 3  -> (activity as? HomeScrollCallback)?.onHomeScrollDown(dy)
-                dy < -3 -> (activity as? HomeScrollCallback)?.onHomeScrollUp(-dy)
-            }
-
-            val stickySection  = binding.stickyToggleSection
-            val overlayLayout  = binding.stickyToggleOverlay
-            val location       = IntArray(2)
-            val parentLocation = IntArray(2)
-            stickySection.getLocationInWindow(location)
-            binding.homeScrollView.getLocationInWindow(parentLocation)
-            val stickyTop = location[1] - parentLocation[1]
-
-            if (stickyTop <= 0) {
-                if (overlayLayout.visibility != View.VISIBLE) {
-                    overlayLayout.visibility = View.VISIBLE
-                    syncStickyChips()
+        binding.homeScrollView.setOnScrollChangeListener(
+            NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
+                val dy = scrollY - oldScrollY
+                when {
+                    dy > 3  -> (activity as? HomeScrollCallback)?.onHomeScrollDown(dy)
+                    dy < -3 -> (activity as? HomeScrollCallback)?.onHomeScrollUp(-dy)
                 }
-            } else {
-                if (overlayLayout.visibility != View.GONE) {
-                    overlayLayout.visibility = View.GONE
+
+                val stickySection  = binding.stickyToggleSection
+                val overlayLayout  = binding.stickyToggleOverlay
+                val location       = IntArray(2)
+                val parentLocation = IntArray(2)
+                stickySection.getLocationInWindow(location)
+                binding.homeScrollView.getLocationInWindow(parentLocation)
+                val stickyTop = location[1] - parentLocation[1]
+
+                if (stickyTop <= 0) {
+                    if (overlayLayout.visibility != View.VISIBLE) {
+                        overlayLayout.visibility = View.VISIBLE
+                        syncStickyChips()
+                    }
+                } else {
+                    if (overlayLayout.visibility != View.GONE) {
+                        overlayLayout.visibility = View.GONE
+                    }
                 }
             }
-        })
+        )
     }
 
     private fun syncStickyChips() {
@@ -456,12 +490,13 @@ class HomeFragment : Fragment() {
         }
     }
 
+    // ── Sites carousel ────────────────────────────────────────────────────────
     private fun buildSitesCarousel() {
-        val ctx = requireContext()
-        val dp  = ctx.resources.displayMetrics.density
-        binding.sitesCarouselContainer.removeAllViews()
-
+        val ctx     = requireContext()
+        val dp      = ctx.resources.displayMetrics.density
         val screenW = resources.displayMetrics.widthPixels
+
+        binding.sitesCarouselContainer.removeAllViews()
 
         sitesHScroll = HorizontalScrollView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -469,18 +504,16 @@ class HomeFragment : Fragment() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
             isHorizontalScrollBarEnabled = false
-            isSmoothScrollingEnabled = true
-            overScrollMode = View.OVER_SCROLL_NEVER
+            isSmoothScrollingEnabled     = true
+            overScrollMode               = View.OVER_SCROLL_NEVER
 
             setOnTouchListener { v, event ->
                 when (event.actionMasked) {
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                         v.performClick()
-                        val pageCount = getPages().size.coerceAtLeast(1)
+                        val pageCount  = getPages().size.coerceAtLeast(1)
                         val targetPage = ((sitesHScroll.scrollX + (screenW / 2f)) / screenW)
-                            .toInt()
-                            .coerceIn(0, pageCount - 1)
-
+                            .toInt().coerceIn(0, pageCount - 1)
                         currentPage = targetPage
                         smoothScrollTo(targetPage * screenW, 0)
                         updateDots()
@@ -508,7 +541,7 @@ class HomeFragment : Fragment() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).also { it.topMargin = (6 * dp).toInt() }
             orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_HORIZONTAL
+            gravity     = Gravity.CENTER_HORIZONTAL
         }
         binding.sitesCarouselContainer.addView(dotsContainer)
 
@@ -527,8 +560,8 @@ class HomeFragment : Fragment() {
     }
 
     private fun renderPages() {
-        val ctx = requireContext()
-        val dp = ctx.resources.displayMetrics.density
+        val ctx     = requireContext()
+        val dp      = ctx.resources.displayMetrics.density
         val screenW = resources.displayMetrics.widthPixels
 
         sitesRowContainer.removeAllViews()
@@ -551,21 +584,18 @@ class HomeFragment : Fragment() {
 
         updateDots()
 
-        sitesHScroll.post {
-            sitesHScroll.scrollTo(currentPage * screenW, 0)
-        }
+        sitesHScroll.post { sitesHScroll.scrollTo(currentPage * screenW, 0) }
     }
 
     private fun buildPage(items: List<SiteItem>, screenW: Int, dp: Float): LinearLayout {
-        val ctx = requireContext()
+        val ctx   = requireContext()
         val cellW = screenW / 5
 
         return LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(screenW, LinearLayout.LayoutParams.WRAP_CONTENT)
-            orientation = LinearLayout.VERTICAL
+            orientation  = LinearLayout.VERTICAL
 
             val rows = items.take(10).chunked(5)
-
             rows.forEach { row ->
                 addView(LinearLayout(ctx).apply {
                     layoutParams = LinearLayout.LayoutParams(
@@ -573,11 +603,7 @@ class HomeFragment : Fragment() {
                         LinearLayout.LayoutParams.WRAP_CONTENT
                     )
                     orientation = LinearLayout.HORIZONTAL
-
-                    row.forEach { item ->
-                        addView(buildCell(item, dp, cellW))
-                    }
-
+                    row.forEach { item -> addView(buildCell(item, dp, cellW)) }
                     repeat(5 - row.size) {
                         addView(View(ctx).apply {
                             layoutParams = LinearLayout.LayoutParams(cellW, (80 * dp).toInt())
@@ -585,12 +611,10 @@ class HomeFragment : Fragment() {
                     }
                 })
             }
-
             if (rows.size < 2) {
                 addView(LinearLayout(ctx).apply {
                     layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        (80 * dp).toInt()
+                        LinearLayout.LayoutParams.MATCH_PARENT, (80 * dp).toInt()
                     )
                 })
             }
@@ -601,17 +625,17 @@ class HomeFragment : Fragment() {
         val ctx = requireContext()
         return LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(width, LinearLayout.LayoutParams.WRAP_CONTENT)
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
+            orientation  = LinearLayout.VERTICAL
+            gravity      = Gravity.CENTER_HORIZONTAL
             setPadding(0, (10 * dp).toInt(), 0, (10 * dp).toInt())
-            isClickable = true
-            isFocusable = true
-            background = ContextCompat.getDrawable(ctx, R.drawable.ripple_item)
+            isClickable  = true
+            isFocusable  = true
+            background   = ContextCompat.getDrawable(ctx, R.drawable.ripple_item)
 
-            val iconSz = (40 * dp).toInt()
+            val iconSz    = (40 * dp).toInt()
             val container = FrameLayout(ctx).apply {
                 layoutParams = LinearLayout.LayoutParams((48 * dp).toInt(), (48 * dp).toInt())
-                background = android.graphics.drawable.GradientDrawable().apply {
+                background   = android.graphics.drawable.GradientDrawable().apply {
                     shape = android.graphics.drawable.GradientDrawable.OVAL
                     setColor(Color.WHITE)
                 }
@@ -619,18 +643,18 @@ class HomeFragment : Fragment() {
             }
             val icon = ImageView(ctx).apply {
                 layoutParams = FrameLayout.LayoutParams(iconSz, iconSz, Gravity.CENTER)
-                scaleType = ImageView.ScaleType.FIT_CENTER
+                scaleType    = ImageView.ScaleType.FIT_CENTER
             }
             when {
                 item.isMore -> icon.setImageBitmap(makeMoreBmp(iconSz))
                 item.iconAsset.isNotEmpty() -> {
                     icon.setImageBitmap(makePlaceholderBmp(iconSz))
-                    try {
-                        val s = ctx.assets.open(item.iconAsset)
+                    runCatching {
+                        val s   = ctx.assets.open(item.iconAsset)
                         val bmp = BitmapFactory.decodeStream(s)
                         s.close()
                         icon.setImageBitmap(Bitmap.createScaledBitmap(bmp, iconSz, iconSz, true))
-                    } catch (_: Exception) {}
+                    }
                 }
                 else -> icon.setImageBitmap(makePlaceholderBmp(iconSz))
             }
@@ -641,10 +665,10 @@ class HomeFragment : Fragment() {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).also { it.topMargin = (5 * dp).toInt() }
-                text = item.label
-                textSize = 10f
-                maxLines = 1
-                gravity = Gravity.CENTER_HORIZONTAL
+                text      = item.label
+                textSize  = 10f
+                maxLines  = 1
+                gravity   = Gravity.CENTER_HORIZONTAL
                 ellipsize = android.text.TextUtils.TruncateAt.END
                 setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
             }
@@ -653,16 +677,17 @@ class HomeFragment : Fragment() {
 
             setOnClickListener {
                 if (item.isMore) showMoreModal()
-                else startActivity(Intent(ctx, BrowserResponseActivity::class.java).apply {
-                    putExtra(BrowserResponseActivity.EXTRA_QUERY, item.url)
-                }).also { requireActivity().overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left) }
-            }
-
-            if (!item.isMore) {
-                setOnLongClickListener {
-                    showRemoveConfirm(item)
-                    true
+                else {
+                    startActivity(Intent(ctx, BrowserResponseActivity::class.java).apply {
+                        putExtra(BrowserResponseActivity.EXTRA_QUERY, item.url)
+                    })
+                    requireActivity().overridePendingTransition(
+                        R.anim.slide_in_right, R.anim.slide_out_left
+                    )
                 }
+            }
+            if (!item.isMore) {
+                setOnLongClickListener { showRemoveConfirm(item); true }
             }
         }
     }
@@ -682,20 +707,21 @@ class HomeFragment : Fragment() {
             .show()
     }
 
+    // ── Dots ──────────────────────────────────────────────────────────────────
     private fun makeDot(active: Boolean, dp: Float): View {
-        val ctx = requireContext()
-        val size = (6 * dp).toInt()
+        val ctx    = requireContext()
+        val size   = (6 * dp).toInt()
         val margin = (4 * dp).toInt()
         return View(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(size, size).also {
                 it.marginStart = margin
-                it.marginEnd = margin
+                it.marginEnd   = margin
             }
             background = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.OVAL
                 setColor(
                     if (active) ContextCompat.getColor(ctx, R.color.colorPrimary)
-                    else ContextCompat.getColor(ctx, R.color.divider)
+                    else        ContextCompat.getColor(ctx, R.color.divider)
                 )
             }
         }
@@ -704,19 +730,21 @@ class HomeFragment : Fragment() {
     private fun updateDots() {
         val ctx = requireContext()
         for (i in 0 until dotsContainer.childCount) {
-            (dotsContainer.getChildAt(i).background as? android.graphics.drawable.GradientDrawable)
+            (dotsContainer.getChildAt(i).background
+                    as? android.graphics.drawable.GradientDrawable)
                 ?.setColor(
                     if (i == currentPage) ContextCompat.getColor(ctx, R.color.colorPrimary)
-                    else ContextCompat.getColor(ctx, R.color.divider)
+                    else                  ContextCompat.getColor(ctx, R.color.divider)
                 )
         }
     }
 
+    // ── More modal ────────────────────────────────────────────────────────────
     private fun showMoreModal() {
-        val ctx = requireContext()
-        val dp = ctx.resources.displayMetrics.density
+        val ctx     = requireContext()
+        val dp      = ctx.resources.displayMetrics.density
         val rootView = requireActivity().window.decorView as FrameLayout
-        val sheetH = (resources.displayMetrics.heightPixels * 0.72f).toInt()
+        val sheetH  = (resources.displayMetrics.heightPixels * 0.72f).toInt()
         val cornerR = 28 * dp
 
         val overlay = FrameLayout(ctx).apply {
@@ -734,8 +762,8 @@ class HomeFragment : Fragment() {
                 FrameLayout.LayoutParams.MATCH_PARENT, sheetH, Gravity.BOTTOM
             )
             orientation = LinearLayout.VERTICAL
-            background = android.graphics.drawable.GradientDrawable().apply {
-                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            background  = android.graphics.drawable.GradientDrawable().apply {
+                shape       = android.graphics.drawable.GradientDrawable.RECTANGLE
                 cornerRadii = floatArrayOf(cornerR, cornerR, cornerR, cornerR, 0f, 0f, 0f, 0f)
                 setColor(ContextCompat.getColor(ctx, R.color.surface))
             }
@@ -748,9 +776,11 @@ class HomeFragment : Fragment() {
             )
         }
         handleWrap.addView(View(ctx).apply {
-            layoutParams = FrameLayout.LayoutParams((40 * dp).toInt(), (4 * dp).toInt(), Gravity.CENTER)
+            layoutParams = FrameLayout.LayoutParams(
+                (40 * dp).toInt(), (4 * dp).toInt(), Gravity.CENTER
+            )
             background = android.graphics.drawable.GradientDrawable().apply {
-                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
                 cornerRadius = 2 * dp
                 setColor(ContextCompat.getColor(ctx, R.color.divider))
             }
@@ -761,7 +791,7 @@ class HomeFragment : Fragment() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).also { it.marginStart = (20 * dp).toInt(); it.bottomMargin = (16 * dp).toInt() }
-            text = "Adicionar App"
+            text     = "Adicionar App"
             textSize = 20f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
             setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
@@ -778,7 +808,10 @@ class HomeFragment : Fragment() {
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
             orientation = LinearLayout.VERTICAL
-            setPadding((16 * dp).toInt(), 0, (16 * dp).toInt(), (32 * dp).toInt())
+            setPadding(
+                (16 * dp).toInt(), 0,
+                (16 * dp).toInt(), (32 * dp).toInt()
+            )
         }
 
         val appW = (resources.displayMetrics.widthPixels - (32 * dp).toInt()) / 4
@@ -789,7 +822,7 @@ class HomeFragment : Fragment() {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).also { it.topMargin = (16 * dp).toInt(); it.bottomMargin = (10 * dp).toInt() }
-                text = cat
+                text     = cat
                 textSize = 13f
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
                 setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
@@ -809,7 +842,9 @@ class HomeFragment : Fragment() {
                         })
                     }
                     repeat(4 - row.size) {
-                        addView(View(ctx).apply { layoutParams = LinearLayout.LayoutParams(appW.toInt(), 1) })
+                        addView(View(ctx).apply {
+                            layoutParams = LinearLayout.LayoutParams(appW.toInt(), 1)
+                        })
                     }
                 })
             }
@@ -832,40 +867,37 @@ class HomeFragment : Fragment() {
     }
 
     private fun addApp(app: AppItem) {
-        val alreadyAdded = allApps.any { it.url == app.url }
-        if (alreadyAdded) {
+        if (allApps.any { it.url == app.url }) {
             Toast.makeText(requireContext(), "${app.label} já adicionado", Toast.LENGTH_SHORT).show()
             return
         }
-
         allApps.add(SiteItem(app.label, app.url, app.iconAsset))
-
         currentPage = (allApps.size - 1) / ITEMS_PER_PAGE
         renderPages()
-
         val screenW = resources.displayMetrics.widthPixels
         sitesHScroll.post { sitesHScroll.smoothScrollTo(currentPage * screenW, 0) }
-
         Toast.makeText(requireContext(), "${app.label} adicionado", Toast.LENGTH_SHORT).show()
     }
 
-    private fun buildModalCell(app: AppItem, width: Int, dp: Float, onAdd: () -> Unit): LinearLayout {
-        val ctx = requireContext()
+    private fun buildModalCell(
+        app: AppItem, width: Int, dp: Float, onAdd: () -> Unit
+    ): LinearLayout {
+        val ctx   = requireContext()
         val added = allApps.any { it.url == app.url }
         return LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(width, LinearLayout.LayoutParams.WRAP_CONTENT)
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
+            orientation  = LinearLayout.VERTICAL
+            gravity      = Gravity.CENTER_HORIZONTAL
             setPadding(0, (8 * dp).toInt(), 0, (8 * dp).toInt())
-            isClickable = !added
-            isFocusable = !added
-            alpha = if (added) 0.45f else 1f
+            isClickable  = !added
+            isFocusable  = !added
+            alpha        = if (added) 0.45f else 1f
             if (!added) background = ContextCompat.getDrawable(ctx, R.drawable.ripple_item)
 
-            val iconSz = (36 * dp).toInt()
+            val iconSz    = (36 * dp).toInt()
             val container = FrameLayout(ctx).apply {
                 layoutParams = LinearLayout.LayoutParams((46 * dp).toInt(), (46 * dp).toInt())
-                background = android.graphics.drawable.GradientDrawable().apply {
+                background   = android.graphics.drawable.GradientDrawable().apply {
                     shape = android.graphics.drawable.GradientDrawable.OVAL
                     setColor(Color.WHITE)
                 }
@@ -873,38 +905,37 @@ class HomeFragment : Fragment() {
             }
             val icon = ImageView(ctx).apply {
                 layoutParams = FrameLayout.LayoutParams(iconSz, iconSz, Gravity.CENTER)
-                scaleType = ImageView.ScaleType.FIT_CENTER
+                scaleType    = ImageView.ScaleType.FIT_CENTER
             }
-            try {
+            runCatching {
                 val s = ctx.assets.open(app.iconAsset)
-                icon.setImageBitmap(Bitmap.createScaledBitmap(BitmapFactory.decodeStream(s), iconSz, iconSz, true))
+                icon.setImageBitmap(
+                    Bitmap.createScaledBitmap(BitmapFactory.decodeStream(s), iconSz, iconSz, true)
+                )
                 s.close()
-            } catch (_: Exception) {
-                icon.setImageBitmap(makePlaceholderBmp(iconSz))
-            }
+            }.onFailure { icon.setImageBitmap(makePlaceholderBmp(iconSz)) }
 
             if (added) {
                 container.addView(View(ctx).apply {
                     val bsz = (14 * dp).toInt()
                     layoutParams = FrameLayout.LayoutParams(bsz, bsz, Gravity.BOTTOM or Gravity.END)
-                    background = android.graphics.drawable.GradientDrawable().apply {
+                    background   = android.graphics.drawable.GradientDrawable().apply {
                         shape = android.graphics.drawable.GradientDrawable.OVAL
                         setColor(Color.parseColor("#34C759"))
                     }
                 })
             }
             container.addView(icon)
-
             addView(container)
             addView(TextView(ctx).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).also { it.topMargin = (4 * dp).toInt() }
-                text = app.label
-                textSize = 10f
-                maxLines = 1
-                gravity = Gravity.CENTER_HORIZONTAL
+                text      = app.label
+                textSize  = 10f
+                maxLines  = 1
+                gravity   = Gravity.CENTER_HORIZONTAL
                 ellipsize = android.text.TextUtils.TruncateAt.END
                 setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
             })
@@ -912,7 +943,10 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun dismissModal(overlay: FrameLayout, sheet: LinearLayout, sheetH: Int, root: FrameLayout) {
+    private fun dismissModal(
+        overlay: FrameLayout, sheet: LinearLayout,
+        sheetH: Int, root: FrameLayout
+    ) {
         sheet.animate()
             .translationY(sheetH.toFloat())
             .setDuration(240)
@@ -921,6 +955,7 @@ class HomeFragment : Fragment() {
             .start()
     }
 
+    // ── Bitmaps auxiliares ────────────────────────────────────────────────────
     private fun makePlaceholderBmp(size: Int): Bitmap {
         val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         Paint(Paint.ANTI_ALIAS_FLAG).also {
@@ -932,21 +967,26 @@ class HomeFragment : Fragment() {
 
     private fun makeMoreBmp(size: Int): Bitmap {
         val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val c = Canvas(bmp)
-        val p = Paint(Paint.ANTI_ALIAS_FLAG)
+        val c   = Canvas(bmp)
+        val p   = Paint(Paint.ANTI_ALIAS_FLAG)
         p.color = Color.parseColor("#E5E5EA")
         c.drawCircle(size / 2f, size / 2f, size / 2f, p)
         p.color = Color.parseColor("#888888")
         val dotR = size * 0.08f
-        val off = size * 0.25f
+        val off  = size * 0.25f
         for (row in 0..1) for (col in 0..1)
-            c.drawCircle(size / 2f - off + col * off * 2, size / 2f - off + row * off * 2, dotR, p)
+            c.drawCircle(
+                size / 2f - off + col * off * 2,
+                size / 2f - off + row * off * 2,
+                dotR, p
+            )
         return bmp
     }
 
+    // ── Category toggles ──────────────────────────────────────────────────────
     private fun buildCategoryToggles() {
         val ctx = requireContext()
-        val dp = ctx.resources.displayMetrics.density
+        val dp  = ctx.resources.displayMetrics.density
         mainToggleChips.clear()
         binding.categoryToggleContainer.removeAllViews()
         newsCategories.forEachIndexed { i, label ->
@@ -963,9 +1003,9 @@ class HomeFragment : Fragment() {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, (32 * dp).toInt()
             ).also { it.marginEnd = (8 * dp).toInt() }
-            text = label
-            textSize = 13f
-            gravity = Gravity.CENTER
+            text      = label
+            textSize  = 13f
+            gravity   = Gravity.CENTER
             setPadding((14 * dp).toInt(), 0, (14 * dp).toInt(), 0)
             isClickable = true
             isFocusable = true
@@ -976,7 +1016,7 @@ class HomeFragment : Fragment() {
     private fun applyChipStyle(chip: TextView, selected: Boolean, dp: Float) {
         val ctx = requireContext()
         chip.background = android.graphics.drawable.GradientDrawable().apply {
-            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
             cornerRadius = 16 * dp
             if (selected) setColor(ContextCompat.getColor(ctx, R.color.colorPrimary))
             else {
@@ -984,8 +1024,14 @@ class HomeFragment : Fragment() {
                 setStroke(1, ContextCompat.getColor(ctx, R.color.divider))
             }
         }
-        chip.setTextColor(if (selected) Color.WHITE else ContextCompat.getColor(ctx, R.color.text_secondary))
-        chip.setTypeface(chip.typeface, if (selected) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+        chip.setTextColor(
+            if (selected) Color.WHITE
+            else ContextCompat.getColor(ctx, R.color.text_secondary)
+        )
+        chip.setTypeface(
+            chip.typeface,
+            if (selected) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL
+        )
     }
 
     private fun selectCategory(index: Int) {
@@ -993,8 +1039,10 @@ class HomeFragment : Fragment() {
         val dp = requireContext().resources.displayMetrics.density
         applyChipStyle(mainToggleChips[selectedCategoryIndex], false, dp)
         applyChipStyle(mainToggleChips[index], true, dp)
-        if (stickyToggleChips.size > selectedCategoryIndex) applyChipStyle(stickyToggleChips[selectedCategoryIndex], false, dp)
-        if (stickyToggleChips.size > index) applyChipStyle(stickyToggleChips[index], true, dp)
+        if (stickyToggleChips.size > selectedCategoryIndex)
+            applyChipStyle(stickyToggleChips[selectedCategoryIndex], false, dp)
+        if (stickyToggleChips.size > index)
+            applyChipStyle(stickyToggleChips[index], true, dp)
         selectedCategoryIndex = index
         newsItems.clear()
         newsAdapter.notifyDataSetChanged()
