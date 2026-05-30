@@ -11,13 +11,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
-import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.caverock.androidsvg.SVG
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.wilin.app.MainActivity
 import com.wilin.app.R
 import com.wilin.app.databinding.ActivitySettingsBinding
+import java.util.Locale
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -155,7 +155,12 @@ class SettingsActivity : AppCompatActivity() {
         getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
             .edit().putString("language", langCode).apply()
 
-        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(langCode))
+        val locale = Locale(langCode)
+        Locale.setDefault(locale)
+        val config = resources.configuration
+        config.setLocale(locale)
+        @Suppress("DEPRECATION")
+        resources.updateConfiguration(config, resources.displayMetrics)
         recreate()
     }
 
