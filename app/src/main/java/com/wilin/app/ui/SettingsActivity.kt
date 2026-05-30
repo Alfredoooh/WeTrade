@@ -70,8 +70,9 @@ class SettingsActivity : AppCompatActivity() {
         "اردو" to "ur"
     )
 
-    private val themeOptions = arrayOf("Sistema", "Claro", "Escuro")
-    private val themeValues  = arrayOf("system", "light", "dark")
+    // "Sistema" removido — utilizador controla explicitamente
+    private val themeOptions = arrayOf("Claro", "Escuro")
+    private val themeValues  = arrayOf("light", "dark")
 
     override fun attachBaseContext(newBase: Context) {
         val prefs  = newBase.getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
@@ -93,10 +94,8 @@ class SettingsActivity : AppCompatActivity() {
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
         val insetsController = WindowInsetsControllerCompat(window, window.decorView)
-        binding.root.post {
-            val isLight = !resources.configuration.isNightModeActive
-            insetsController.isAppearanceLightStatusBars = isLight
-        }
+        val isLight = AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES
+        insetsController.isAppearanceLightStatusBars = isLight
 
         val iconTint    = ContextCompat.getColor(this, R.color.icon_tint)
         val chevronTint = ContextCompat.getColor(this, R.color.icon_tint_secondary)
@@ -133,7 +132,7 @@ class SettingsActivity : AppCompatActivity() {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
             val insetsController = WindowInsetsControllerCompat(window, window.decorView)
-            val isLight = !resources.configuration.isNightModeActive
+            val isLight = AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES
             insetsController.isAppearanceLightStatusBars = isLight
         }
     }
@@ -148,7 +147,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun showThemeDialog() {
         val prefs        = getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
-        val current      = prefs.getString("theme", "system")
+        val current      = prefs.getString("theme", "light")
         val currentIndex = themeValues.indexOf(current).coerceAtLeast(0)
 
         MaterialAlertDialogBuilder(this)
@@ -157,12 +156,11 @@ class SettingsActivity : AppCompatActivity() {
                 val selected = themeValues[which]
                 prefs.edit().putString("theme", selected).apply()
                 when (selected) {
-                    "light" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                    "dark"  -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                    else    -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                    "dark" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                    else   -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
                 }
                 dialog.dismiss()
-                // Reinicia a MainActivity para aplicar novo tema em toda a app
+                // Reinicia a stack completa para aplicar o tema em todas as Activities
                 val intent = Intent(this, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 }
@@ -175,7 +173,6 @@ class SettingsActivity : AppCompatActivity() {
         getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
             .edit().putString("language", langCode).apply()
 
-        // Reinicia a stack completa para aplicar o locale em todas as Activities
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }

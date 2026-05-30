@@ -44,10 +44,9 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     private val searchFragment = SearchFragment()
     private var currentTab     = R.id.tabHome
 
-    // ── Cor activa dos ícones: lida do sistema no momento do uso ──────────────
+    // ── Cor activa dos ícones: lida do AppCompatDelegate, não do sistema ──────
     private val isNightMode: Boolean
-        get() = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                Configuration.UI_MODE_NIGHT_YES
+        get() = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
 
     private val activeIconColor: Int
         get() = if (isNightMode) Color.WHITE else Color.BLACK
@@ -71,22 +70,20 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
 
+        // Aplica tema antes de super.onCreate — default é sempre "light"
         val prefs = getSharedPreferences("wilin_prefs", MODE_PRIVATE)
-        when (prefs.getString("theme", "system")) {
-            "light" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-            "dark"  -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            else    -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        when (prefs.getString("theme", "light")) {
+            "dark" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            else   -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         }
 
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // NÃO usar edge-to-edge — mantém o sistema a gerir insets normalmente
         WindowCompat.setDecorFitsSystemWindows(window, true)
         insetsController = WindowInsetsControllerCompat(window, window.decorView)
 
-        // Aplica tema da status bar imediatamente, sem post{}
         applyStatusBarTheme()
 
         TabManager.init(this)
@@ -128,7 +125,7 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         }
     }
 
-    // ── Search pill (tab Search) ──────────────────────────────────────────────
+    // ── Search pill ───────────────────────────────────────────────────────────
     private fun setupSearchPill() {
         val iconSec = ContextCompat.getColor(this, R.color.icon_tint_secondary)
         binding.searchPillIcon.setImageDrawable(
@@ -166,7 +163,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         }
     }
 
-    // ── refreshTabIcons: lê o tema NO MOMENTO da chamada ─────────────────────
     private fun refreshTabIcons() {
         val active   = activeIconColor
         val inactive = inactiveIconColor
@@ -199,7 +195,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         }
     }
 
-    // ── onResume: SEMPRE re-aplica tudo ao voltar de qualquer Activity ────────
     override fun onResume() {
         super.onResume()
         applyStatusBarTheme()
@@ -208,7 +203,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         showBottomNav()
     }
 
-    // ── onWindowFocusChanged: garante status bar correcta quando a janela volta ─
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
@@ -219,11 +213,7 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
 
     // ── Status bar ────────────────────────────────────────────────────────────
     private fun applyStatusBarTheme() {
-        // Lê o modo de noite directamente do uiMode, nunca do isNightModeActive
-        // porque esse pode ficar stale em certas versões do Android
-        val nightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        val isLight   = nightMode != Configuration.UI_MODE_NIGHT_YES
-
+        val isLight = AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES
         window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
         insetsController.isAppearanceLightStatusBars = isLight
     }
@@ -234,7 +224,7 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         binding.tabTabsCount.text = if (count > 99) "99" else count.toString()
     }
 
-    // ── Abrir TabsActivity com transform ─────────────────────────────────────
+    // ── Abrir TabsActivity ────────────────────────────────────────────────────
     private fun openTabsWithTransform() {
         val root = binding.root
         val screenshot = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
@@ -251,7 +241,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         overridePendingTransition(0, 0)
     }
 
-    // ── Back ──────────────────────────────────────────────────────────────────
     override fun onBackPressed() {
         if (binding.drawerLayout.isDrawerOpen(GravityCompat.END)) {
             binding.drawerLayout.closeDrawer(GravityCompat.END)
@@ -260,7 +249,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         super.onBackPressed()
     }
 
-    // ── Intent ────────────────────────────────────────────────────────────────
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -278,7 +266,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         }
     }
 
-    // ── Scroll callbacks ──────────────────────────────────────────────────────
     override fun onHomeScrollDown(dy: Int) {}
     override fun onHomeScrollUp(dy: Int)   {}
 
@@ -289,7 +276,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         behavior.slideUp(binding.bottomNavWrapper)
     }
 
-    // ── Fragment switch ───────────────────────────────────────────────────────
     private fun showFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
             .hide(homeFragment)
@@ -298,7 +284,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
             .commit()
     }
 
-    // ── SVG helper ───────────────────────────────────────────────────────────
     fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
         val px  = (sizeDp * resources.displayMetrics.density).toInt().coerceAtLeast(1)
         val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
