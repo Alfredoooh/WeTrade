@@ -1,4 +1,3 @@
-// MainActivity.kt
 package com.wilin.app
 
 import android.animation.ValueAnimator
@@ -114,17 +113,21 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         updateTabsBadge()
 
         fun setIcons(activeTab: Int) {
+            val isNight  = resources.configuration.isNightModeActive
+            val active   = if (isNight) Color.WHITE else Color.BLACK
+            val inactive = Color.parseColor("#888888")
+
             binding.tabHomeIcon.setImageDrawable(
                 if (activeTab == R.id.tabHome)
-                    svgDrawableGradient("icons/svg/home_filled.svg", 24)
+                    svgDrawable("icons/svg/home_filled.svg", 24, active)
                 else
-                    svgDrawable("icons/svg/home_outline.svg", 24, iconSec)
+                    svgDrawable("icons/svg/home_outline.svg", 24, inactive)
             )
             binding.tabSearchIcon.setImageDrawable(
                 if (activeTab == R.id.tabSearch)
-                    svgDrawableGradient("icons/svg/magnifying_glass_filled.svg", 24)
+                    svgDrawable("icons/svg/magnifying_glass_filled.svg", 24, active)
                 else
-                    svgDrawable("icons/svg/magnifying_glass_outline.svg", 24, iconSec)
+                    svgDrawable("icons/svg/magnifying_glass_outline.svg", 24, inactive)
             )
         }
 
@@ -198,18 +201,15 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     }
 
     override fun onResume() {
-    super.onResume()
-    // Força a cor correcta da status bar sempre que voltamos
-    window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
-    val isLight = !resources.configuration.isNightModeActive
-    insetsController.isAppearanceLightStatusBars = isLight
-    updateTabsBadge()
-    showBottomNav()
-}
+        super.onResume()
+        applyStatusBarTheme()
+        updateTabsBadge()
+        showBottomNav()
+    }
+
     private fun openTabsWithTransform() {
         val root = binding.root
 
-        // Captura screenshot da janela actual para o card
         val screenshot = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
         root.draw(Canvas(screenshot))
         TabScreenshots.saveCurrent(this, TabManager.getCurrentId(), screenshot)
@@ -238,35 +238,9 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     }
 
     private fun applyStatusBarTheme() {
-    val isLight = !resources.configuration.isNightModeActive
-    // Usa a mesma cor que a MainActivity para não haver flash ao voltar
-    window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
-    insetsController.isAppearanceLightStatusBars = isLight
-}
-
-    fun svgDrawableGradient(path: String, sizeDp: Int): BitmapDrawable {
-        val px  = (sizeDp * resources.displayMetrics.density).toInt()
-        val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
-        SVG.getFromAsset(assets, path).apply {
-            documentWidth  = px.toFloat()
-            documentHeight = px.toFloat()
-            renderToCanvas(Canvas(bmp))
-        }
-        val gb = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
-        val gc = Canvas(gb)
-        val gp = Paint().apply {
-            shader = LinearGradient(
-                0f, 0f, 0f, px.toFloat(),
-                Color.parseColor("#007AFF"),
-                Color.parseColor("#00C6FF"),
-                Shader.TileMode.CLAMP
-            )
-        }
-        gc.drawRect(0f, 0f, px.toFloat(), px.toFloat(), gp)
-        gc.drawBitmap(bmp, 0f, 0f, Paint().apply {
-            xfermode = android.graphics.PorterDuffXfermode(PorterDuff.Mode.DST_IN)
-        })
-        return BitmapDrawable(resources, gb)
+        val isLight = !resources.configuration.isNightModeActive
+        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
+        insetsController.isAppearanceLightStatusBars = isLight
     }
 
     fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
