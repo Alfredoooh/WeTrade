@@ -50,6 +50,7 @@ import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -97,6 +98,10 @@ class BrowserResponseActivity : AppCompatActivity() {
         private const val KEY_HISTORY   = "history"
         private const val DESKTOP_UA    = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
     }
+
+    // ── Lê sempre via AppCompatDelegate, nunca via sistema ───────────────────
+    private val isAppDarkMode: Boolean
+        get() = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
 
     @SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -177,18 +182,14 @@ class BrowserResponseActivity : AppCompatActivity() {
         updateTabsCount()
     }
 
-    // ── Status bar: escuro em incógnito, igual a SettingsActivity nos outros ──
-
+    // ── Status bar: usa AppCompatDelegate, nunca isNightModeActive ───────────
     private fun applyStatusBarTheme() {
         if (isIncognito) {
             window.statusBarColor = Color.parseColor("#1A1A2E")
             insetsController.isAppearanceLightStatusBars = false
         } else {
-            window.decorView.post {
-                val isLight = !resources.configuration.isNightModeActive
-                window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
-                insetsController.isAppearanceLightStatusBars = isLight
-            }
+            window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
+            insetsController.isAppearanceLightStatusBars = !isAppDarkMode
         }
     }
 
@@ -371,7 +372,6 @@ class BrowserResponseActivity : AppCompatActivity() {
             settings.allowFileAccess              = true
             settings.mediaPlaybackRequiresUserGesture = false
             settings.mixedContentMode             = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-            // Páginas anteriores sempre activas — não reiniciam
             settings.cacheMode = if (isIncognito) WebSettings.LOAD_NO_CACHE else WebSettings.LOAD_DEFAULT
 
             setDownloadListener(DownloadListener { url, userAgent, _, mimeType, _ ->
@@ -445,7 +445,7 @@ class BrowserResponseActivity : AppCompatActivity() {
         }
     }
 
-    // ── Bottom bar: WebView expande/contrai, sobe com Overshoot ──────────────
+    // ── Bottom bar ────────────────────────────────────────────────────────────
 
     private fun hideBottomBar() {
         if (!bottomBarVisible) return
@@ -509,7 +509,7 @@ class BrowserResponseActivity : AppCompatActivity() {
         showBottomBar()
     }
 
-    // ── Favicon com cache em memória ──────────────────────────────────────────
+    // ── Favicon ───────────────────────────────────────────────────────────────
 
     private fun loadFaviconCached(pageUrl: String) {
         runCatching {
@@ -591,7 +591,8 @@ class BrowserResponseActivity : AppCompatActivity() {
 
     private fun navigateTo(input: String) { addToHistory(input); binding.webView.loadUrl(buildUrl(input)) }
 
-    private fun ddgThemeParam() = if (resources.configuration.isNightModeActive) "d" else "l"
+    // ── DuckDuckGo: tema via AppCompatDelegate, nunca via sistema ────────────
+    private fun ddgThemeParam() = if (isAppDarkMode) "d" else "l"
 
     private fun buildDuckDuckGoHome(): String {
         val prefs = getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
