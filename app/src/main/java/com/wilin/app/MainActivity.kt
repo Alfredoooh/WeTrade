@@ -1,3 +1,4 @@
+// MainActivity.kt
 package com.wilin.app
 
 import android.animation.ValueAnimator
@@ -5,11 +6,9 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.LinearGradient
 import android.graphics.Outline
 import android.graphics.Paint
 import android.graphics.PorterDuff
-import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
@@ -97,10 +96,8 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
 
         binding.drawerIconSettings.setImageDrawable(svgDrawable("icons/svg/settings.svg", 16, iconTint))
         binding.drawerIconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 16, iconTint))
-        binding.drawerChevronSettings.setImageDrawable(
-            svgDrawable("icons/svg/chevron_right.svg", 14, iconSec))
-        binding.drawerChevronAbout.setImageDrawable(
-            svgDrawable("icons/svg/chevron_right.svg", 14, iconSec))
+        binding.drawerChevronSettings.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 14, iconSec))
+        binding.drawerChevronAbout.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 14, iconSec))
 
         binding.drawerItemSettings.setOnClickListener {
             binding.drawerLayout.closeDrawer(GravityCompat.END)
@@ -209,7 +206,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
 
     private fun openTabsWithTransform() {
         val root = binding.root
-
         val screenshot = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
         root.draw(Canvas(screenshot))
         TabScreenshots.saveCurrent(this, TabManager.getCurrentId(), screenshot)
