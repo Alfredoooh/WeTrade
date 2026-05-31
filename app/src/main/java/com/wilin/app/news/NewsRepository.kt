@@ -385,7 +385,7 @@ object NewsRepository {
             "https://www.infomoney.com.br/feed/",
             "https://www.fool.com/feeds/index.aspx",
             "https://www.valuewalk.com/feed/",
-            "https://www.cryptonews.com/news/feed/",",
+            "https://www.cryptonews.com/news/feed/",
             "https://cryptopotato.com/feed/",
             "https://ambcrypto.com/feed/",
             "https://www.newsbtc.com/feed/",
