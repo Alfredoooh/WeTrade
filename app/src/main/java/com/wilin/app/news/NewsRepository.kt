@@ -11,6 +11,8 @@ import org.jsoup.Jsoup
 import org.jsoup.parser.Parser
 import java.net.URLEncoder
 import java.security.MessageDigest
+import java.text.SimpleDateFormat
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 object NewsRepository {
@@ -20,14 +22,6 @@ object NewsRepository {
         .readTimeout(12, TimeUnit.SECONDS)
         .followRedirects(true)
         .build()
-
-    private val HEADERS = mapOf(
-        "User-Agent" to "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124.0 Safari/537.36",
-        "Accept" to "application/rss+xml, application/xml, text/xml, */*",
-        "Accept-Language" to "en-US,en;q=0.9,pt;q=0.8",
-    )
-
-    // ── Fontes por categoria ─────────────────────────────────────────────────
 
     private val SOURCES = mapOf(
         "world" to listOf(
@@ -475,9 +469,7 @@ object NewsRepository {
                 }
             }.awaitAll().flatten()
 
-            val deduped = dedup(results)
-                .sortedByDescending { parsePubTs(it.publishedAt) }
-
+            val deduped = dedup(results).sortedByDescending { parsePubTs(it.publishedAt) }
             val enriched = enrichImages(deduped)
             memCache[category] = Pair(System.currentTimeMillis(), enriched)
             enriched.take(limit)
@@ -488,7 +480,8 @@ object NewsRepository {
         withContext(Dispatchers.IO) {
             try {
                 val req = Request.Builder().url(url).headers(buildHeaders()).build()
-                val html = client.newCall(req).execute().body?.string() ?: return@withContext NewsDetailItem()
+                val html = client.newCall(req).execute().body?.string()
+                    ?: return@withContext NewsDetailItem()
                 val doc = Jsoup.parse(html)
 
                 val title = doc.selectFirst("meta[property=og:title]")?.attr("content")
@@ -509,7 +502,8 @@ object NewsRepository {
                 val author = doc.selectFirst("meta[name=author]")?.attr("content")
                     ?: doc.selectFirst("meta[property=article:author]")?.attr("content") ?: ""
 
-                val published = doc.selectFirst("meta[property=article:published_time]")?.attr("content")
+                val published = doc.selectFirst("meta[property=article:published_time]")
+                    ?.attr("content")
                     ?: doc.selectFirst("time")?.attr("datetime") ?: ""
 
                 val body = scrapeBody(doc)
@@ -521,7 +515,8 @@ object NewsRepository {
                     imageUrl    = image,
                     author      = cleanText(author, 100),
                     publishedAt = published,
-                    sourceName  = getDomain(url).split(".").firstOrNull()?.replaceFirstChar { it.uppercase() } ?: "",
+                    sourceName  = getDomain(url).split(".").firstOrNull()
+                        ?.replaceFirstChar { it.uppercase() } ?: "",
                     sourceUrl   = url,
                 )
             } catch (e: Exception) {
@@ -534,8 +529,7 @@ object NewsRepository {
         val req = Request.Builder().url(feedUrl).headers(buildHeaders()).build()
         val body = client.newCall(req).execute().body?.string() ?: return emptyList()
         val doc = Jsoup.parse(body, "", Parser.xmlParser())
-        val items = doc.select("item, entry")
-        return items.take(25).mapNotNull { item ->
+        return doc.select("item, entry").take(25).mapNotNull { item ->
             val title = item.selectFirst("title")?.text()?.trim() ?: return@mapNotNull null
             if (title.length < 5) return@mapNotNull null
 
@@ -544,16 +538,20 @@ object NewsRepository {
             } ?: item.selectFirst("guid")?.text()?.takeIf { it.startsWith("http") }
             ?: return@mapNotNull null
 
-            val desc = item.selectFirst("description, summary, content\\:encoded, content")
+            val desc = item.selectFirst("description, summary, content|encoded, content")
                 ?.text()?.let { cleanText(it, 500) } ?: ""
 
             val img = extractImage(item, desc)
 
-            val pubDate = listOf("pubDate", "dc\\:date", "published", "updated")
-                .firstNotNullOfOrNull { item.selectFirst(it)?.text()?.trim()?.takeIf { t -> t.isNotEmpty() } } ?: ""
+            val pubDate = listOf("pubDate", "dc|date", "published", "updated")
+                .firstNotNullOfOrNull {
+                    item.selectFirst(it)?.text()?.trim()?.takeIf { t -> t.isNotEmpty() }
+                } ?: ""
 
-            val author = listOf("dc\\:creator", "author", "dc\\:author")
-                .firstNotNullOfOrNull { item.selectFirst(it)?.text()?.trim()?.takeIf { t -> t.isNotEmpty() } } ?: ""
+            val author = listOf("dc|creator", "author", "dc|author")
+                .firstNotNullOfOrNull {
+                    item.selectFirst(it)?.text()?.trim()?.takeIf { t -> t.isNotEmpty() }
+                } ?: ""
 
             val domain = getDomain(url)
 
@@ -562,7 +560,8 @@ object NewsRepository {
                 description = desc,
                 imageUrl    = img,
                 sourceUrl   = url,
-                sourceName  = domain.split(".").firstOrNull()?.replaceFirstChar { it.uppercase() } ?: "",
+                sourceName  = domain.split(".").firstOrNull()
+                    ?.replaceFirstChar { it.uppercase() } ?: "",
                 faviconUrl  = "https://www.google.com/s2/favicons?domain=$domain&sz=128",
                 category    = category,
                 body        = desc,
@@ -574,23 +573,22 @@ object NewsRepository {
 
     // ── Extrai imagem do item RSS ─────────────────────────────────────────────
     private fun extractImage(item: org.jsoup.nodes.Element, desc: String): String {
-        // media:content / media:thumbnail
         for (tag in listOf("media:content", "media:thumbnail")) {
             val best = item.select(tag)
-                .filter { it.attr("type").let { t -> t.isEmpty() || t.startsWith("image") } }
-                .maxByOrNull { it.attr("width").toIntOrNull() ?: 1 }
+                .filter { el ->
+                    val t = el.attr("type")
+                    t.isEmpty() || t.startsWith("image")
+                }
+                .maxByOrNull { el -> el.attr("width").toIntOrNull() ?: 1 }
             val url = best?.attr("url") ?: best?.attr("src") ?: ""
             if (isValidImage(url)) return url
         }
-        // enclosure
-        item.selectFirst("enclosure")?.let {
-            val eu = it.attr("url"); val et = it.attr("type")
+        item.selectFirst("enclosure")?.let { enc ->
+            val eu = enc.attr("url"); val et = enc.attr("type")
             if (isValidImage(eu) && (et.isEmpty() || et.startsWith("image"))) return eu
         }
-        // img dentro da descrição
         val m = Regex("""<img[^>]+src=["']([^"']+)["']""").find(desc)
         if (m != null && isValidImage(m.groupValues[1])) return m.groupValues[1]
-
         return ""
     }
 
@@ -602,7 +600,8 @@ object NewsRepository {
                 async {
                     try {
                         val req = Request.Builder().url(art.sourceUrl).headers(buildHeaders()).build()
-                        val html = client.newCall(req).execute().body?.string() ?: return@async art
+                        val html = client.newCall(req).execute().body?.string()
+                            ?: return@async art
                         val doc = Jsoup.parse(html)
                         val img = listOf(
                             "meta[property=og:image]",
@@ -622,54 +621,43 @@ object NewsRepository {
 
     // ── Scrape body ──────────────────────────────────────────────────────────
     private fun scrapeBody(doc: org.jsoup.nodes.Document): String {
-        for (bad in listOf("script", "style", "nav", "aside", "figure",
-            "figcaption", "iframe", "button", "form", "header", "footer", "noscript")) {
-            doc.select(bad).remove()
-        }
+        doc.select("script, style, nav, aside, figure, figcaption, iframe, button, form, header, footer, noscript").remove()
+
         val container = doc.selectFirst(
             "article, [class*=article-body], [class*=post-content], [class*=entry-content], " +
             "[class*=story-body], [class*=article__body], [class*=content-body], " +
             "[class*=main-content], [id*=article], [id*=content], main"
         )
-        val paragraphs = (container ?: doc).select("p")
+
+        return (container ?: doc).select("p")
             .filter { it.text().trim().length > 40 }
             .joinToString(" ") { cleanText(it.text(), 1000) }
-        return paragraphs.take(5000)
+            .take(5000)
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
     private fun isValidImage(url: String): Boolean {
         if (url.isEmpty() || !url.startsWith("http")) return false
         val u = url.lowercase().split("?")[0]
-        val badWords = listOf("pixel","tracker","tracking","beacon","1x1","spacer",
-            "logo","favicon","icon","avatar","placeholder","blank","transparent",
-            "badge","button","spinner","loading","bbc")
+        val badWords = listOf("pixel", "tracker", "tracking", "beacon", "1x1", "spacer",
+            "logo", "favicon", "icon", "avatar", "placeholder", "blank", "transparent",
+            "badge", "button", "spinner", "loading", "bbc")
         if (badWords.any { u.contains(it) }) return false
-        val badExt = listOf(".gif",".ico",".svg",".bmp",".tiff",".txt",".js",".css")
+        val badExt = listOf(".gif", ".ico", ".svg", ".bmp", ".tiff", ".txt", ".js", ".css")
         if (badExt.any { u.endsWith(it) }) return false
         return true
     }
 
-    private fun cleanText(text: String, max: Int): String {
-        return text
-            .replace(Regex("<[^>]+>"), " ")
+    private fun cleanText(text: String, max: Int): String =
+        text.replace(Regex("<[^>]+>"), " ")
             .replace(Regex("&(?:[a-zA-Z]+|#\\d+);"), " ")
             .replace(Regex("\\s+"), " ")
             .trim()
             .take(max)
-    }
 
     private fun getDomain(url: String): String = try {
         java.net.URI(url).host?.removePrefix("www.") ?: ""
     } catch (e: Exception) { "" }
-
-    private fun makeId(title: String, url: String): String {
-        val input = title.trim().lowercase() + url.trim()
-        return MessageDigest.getInstance("MD5")
-            .digest(input.toByteArray())
-            .joinToString("") { "%02x".format(it) }
-            .take(16)
-    }
 
     private fun dedup(articles: List<NewsItem>): List<NewsItem> {
         val seen = mutableSetOf<String>()
@@ -682,12 +670,10 @@ object NewsRepository {
     private fun parsePubTs(pub: String): Long {
         if (pub.isEmpty()) return 0L
         return try {
-            java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", java.util.Locale.ENGLISH)
-                .parse(pub)?.time ?: 0L
+            SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.ENGLISH).parse(pub)?.time ?: 0L
         } catch (e: Exception) {
             try {
-                java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", java.util.Locale.ENGLISH)
-                    .parse(pub)?.time ?: 0L
+                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.ENGLISH).parse(pub)?.time ?: 0L
             } catch (e2: Exception) { 0L }
         }
     }
