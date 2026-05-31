@@ -621,19 +621,26 @@ object NewsRepository {
 
     // ── Scrape body ──────────────────────────────────────────────────────────
     private fun scrapeBody(doc: org.jsoup.nodes.Document): String {
-        doc.select("script, style, nav, aside, figure, figcaption, iframe, button, form, header, footer, noscript").remove()
+    doc.select("script, style, nav, aside, figure, figcaption, iframe, button, form, header, footer, noscript").remove()
 
-        val container = doc.selectFirst(
-            "article, [class*=article-body], [class*=post-content], [class*=entry-content], " +
-            "[class*=story-body], [class*=article__body], [class*=content-body], " +
-            "[class*=main-content], [id*=article], [id*=content], main"
-        )
+    val container = doc.selectFirst(
+        "article, [class*=article-body], [class*=post-content], [class*=entry-content], " +
+        "[class*=story-body], [class*=article__body], [class*=content-body], " +
+        "[class*=main-content], [id*=article], [id*=content], main"
+    )
 
-        return (container ?: doc).select("p")
-            .filter { it.text().trim().length > 40 }
-            .joinToString(" ") { cleanText(it.text(), 1000) }
-            .take(5000)
+    val paragraphs = (container ?: doc).select("p")
+    val result = StringBuilder()
+    for (p in paragraphs) {
+        val text = p.text().trim()
+        if (text.length > 40) {
+            result.append(cleanText(text, 1000))
+            result.append(" ")
+        }
+        if (result.length > 5000) break
     }
+    return result.toString().trim().take(5000)
+}
 
     // ── Helpers ──────────────────────────────────────────────────────────────
     private fun isValidImage(url: String): Boolean {
