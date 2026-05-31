@@ -6,48 +6,58 @@
   <color name="blue_apple">#007AFF</color>
   <color name="red_badge">#FF453A</color>
   
+  <!-- Corpo principal: #2b2b2b pedido -->
   <color name="background">#2b2b2b</color>
   <color name="background_dark">#2b2b2b</color>
-  <color name="splash_background_light">#FFFFFF</color>
+  <color name="splash_background_light">#2b2b2b</color>
   <color name="splash_background_dark">#2b2b2b</color>
   
+  <!-- AppBar: mesmo tom do corpo -->
   <color name="appbar_background">#2b2b2b</color>
+  
+  <!-- Bottom nav, cards, dialogs: #3b3b3b pedido -->
   <color name="bottom_nav_background">#3b3b3b</color>
   <color name="bottom_nav_text_color">#007AFF</color>
   
-  <color name="text_primary">#FFFFFF</color>
-  <color name="text_secondary">#ABABAB</color>
-  <color name="text_hint">#666666</color>
+  <!-- Texto: branco com 5% de redução = #F2F2F2 -->
+  <color name="text_primary">#F2F2F2</color>
+  <color name="text_secondary">#939393</color>
+  <color name="text_hint">#6E6E6E</color>
   <color name="text_link">#007AFF</color>
   
+  <!-- Drawer -->
   <color name="drawer_background">#3b3b3b</color>
-  <color name="drawer_text">#FFFFFF</color>
+  <color name="drawer_text">#F2F2F2</color>
   
+  <!-- Superfícies e cards: #3b3b3b -->
   <color name="surface">#3b3b3b</color>
   <color name="card_background">#3b3b3b</color>
   
   <color name="apps_section_background">#2b2b2b</color>
   
+  <!-- Popups e dialogs: #3b3b3b -->
   <color name="popup_background">#3b3b3b</color>
-  <color name="popup_shadow">#28FFFFFF</color>
-  
+  <color name="popup_shadow">#28000000</color>
   <color name="dialog_background">#3b3b3b</color>
   
-  <color name="divider">#484848</color>
+  <!-- Divisor: ligeiramente visível sobre #2b2b2b -->
+  <color name="divider">#444444</color>
   
-  <color name="settings_section_label">#ABABAB</color>
+  <color name="settings_section_label">#939393</color>
   
-  <color name="icon_tint">#FFFFFF</color>
-  <color name="icon_tint_secondary">#ABABAB</color>
+  <!-- Ícones -->
+  <color name="icon_tint">#F2F2F2</color>
+  <color name="icon_tint_secondary">#939393</color>
   
+  <!-- Inputs: um tom acima do body -->
   <color name="input_background">#3b3b3b</color>
-  <color name="input_text">#FFFFFF</color>
-  <color name="input_hint">#666666</color>
+  <color name="input_text">#F2F2F2</color>
+  <color name="input_hint">#6E6E6E</color>
   <color name="cursor_color">#007AFF</color>
   
-  <color name="search_input_fill">#484848</color>
+  <color name="search_input_fill">#3b3b3b</color>
   
-  <color name="ripple_color">#1AFFFFFF</color>
+  <color name="ripple_color">#1AF2F2F2</color>
   
   <color name="incognito_bg">#0D0D1A</color>
   <color name="incognito_surface">#1A1A2E</color>
