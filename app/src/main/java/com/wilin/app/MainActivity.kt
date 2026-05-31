@@ -1,4 +1,3 @@
-// MainActivity.kt
 package com.wilin.app
 
 import android.content.Context
@@ -11,19 +10,17 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.view.View
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.GravityCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import com.caverock.androidsvg.SVG
 import com.google.android.material.behavior.HideBottomViewOnScrollBehavior
 import com.wilin.app.databinding.ActivityMainBinding
 import com.wilin.app.ui.AiSearchActivity
+import com.wilin.app.ui.BaseActivity
 import com.wilin.app.ui.BrowserResponseActivity
 import com.wilin.app.ui.HomeFragment
 import com.wilin.app.ui.HomeScrollCallback
@@ -35,26 +32,22 @@ import com.wilin.app.ui.TabScreenshots
 import com.wilin.app.ui.TabsActivity
 import java.util.Locale
 
-class MainActivity : AppCompatActivity(), HomeScrollCallback {
+class MainActivity : BaseActivity(), HomeScrollCallback {
 
     lateinit var binding: ActivityMainBinding
-    private lateinit var insetsController: WindowInsetsControllerCompat
 
     private val homeFragment   = HomeFragment()
     private val searchFragment = SearchFragment()
     private var currentTab     = R.id.tabHome
 
-    // ── Cor activa dos ícones: lida do AppCompatDelegate, não do sistema ──────
-    private val isNightMode: Boolean
-        get() = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
-
     private val activeIconColor: Int
-        get() = if (isNightMode) Color.WHITE else Color.BLACK
+        get() = if (isAppDarkMode) Color.WHITE else Color.BLACK
 
     private val inactiveIconColor: Int
         get() = Color.parseColor("#888888")
 
     override fun attachBaseContext(newBase: Context) {
+        // BaseActivity já aplica o tema; aqui só tratamos do locale
         val prefs = newBase.getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
         val lang  = prefs.getString("language", "") ?: ""
         val base  = if (lang.isNotEmpty()) {
@@ -64,27 +57,20 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
             config.setLocale(locale)
             newBase.createConfigurationContext(config)
         } else newBase
+        // Aplica tema antes de super
+        val themePrefs = newBase.getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
+        when (themePrefs.getString("theme", "light")) {
+            "dark" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            else   -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        }
         super.attachBaseContext(base)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
-
-        // Aplica tema antes de super.onCreate — default é sempre "light"
-        val prefs = getSharedPreferences("wilin_prefs", MODE_PRIVATE)
-        when (prefs.getString("theme", "light")) {
-            "dark" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            else   -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-        }
-
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        WindowCompat.setDecorFitsSystemWindows(window, true)
-        insetsController = WindowInsetsControllerCompat(window, window.decorView)
-
-        applyStatusBarTheme()
 
         TabManager.init(this)
         TabScreenshots.init(this)
@@ -96,7 +82,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         handleIncomingIntent(intent)
     }
 
-    // ── Drawer ────────────────────────────────────────────────────────────────
     private fun setupDrawer() {
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
@@ -125,7 +110,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         }
     }
 
-    // ── Search pill ───────────────────────────────────────────────────────────
     private fun setupSearchPill() {
         val iconSec = ContextCompat.getColor(this, R.color.icon_tint_secondary)
         binding.searchPillIcon.setImageDrawable(
@@ -135,7 +119,6 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
         }
     }
 
-    // ── Bottom tabs ───────────────────────────────────────────────────────────
     private fun setupBottomTabs() {
         supportFragmentManager.beginTransaction()
             .add(R.id.container, homeFragment, "home")
@@ -196,35 +179,22 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
     }
 
     override fun onResume() {
-        super.onResume()
-        applyStatusBarTheme()
+        super.onResume() // BaseActivity aplica statusBar aqui
         refreshTabIcons()
         updateTabsBadge()
         showBottomNav()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) {
-            applyStatusBarTheme()
-            refreshTabIcons()
-        }
+        super.onWindowFocusChanged(hasFocus) // BaseActivity aplica statusBar aqui
+        if (hasFocus) refreshTabIcons()
     }
 
-    // ── Status bar ────────────────────────────────────────────────────────────
-    private fun applyStatusBarTheme() {
-        val isLight = AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES
-        window.statusBarColor = ContextCompat.getColor(this, R.color.appbar_background)
-        insetsController.isAppearanceLightStatusBars = isLight
-    }
-
-    // ── Tabs badge ────────────────────────────────────────────────────────────
     private fun updateTabsBadge() {
         val count = TabManager.count()
         binding.tabTabsCount.text = if (count > 99) "99" else count.toString()
     }
 
-    // ── Abrir TabsActivity ────────────────────────────────────────────────────
     private fun openTabsWithTransform() {
         val root = binding.root
         val screenshot = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
@@ -298,4 +268,3 @@ class MainActivity : AppCompatActivity(), HomeScrollCallback {
             it.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
         }
     }
-}

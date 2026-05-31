@@ -1,4 +1,3 @@
-// SettingsActivity.kt
 package com.wilin.app.ui
 
 import android.content.Context
@@ -9,11 +8,8 @@ import android.graphics.Canvas
 import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import com.caverock.androidsvg.SVG
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.wilin.app.MainActivity
@@ -21,63 +17,40 @@ import com.wilin.app.R
 import com.wilin.app.databinding.ActivitySettingsBinding
 import java.util.Locale
 
-class SettingsActivity : AppCompatActivity() {
+class SettingsActivity : BaseActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
 
     private val languages = arrayOf(
-        "Português" to "pt",
-        "English" to "en",
-        "Español" to "es",
-        "Français" to "fr",
-        "Deutsch" to "de",
-        "Italiano" to "it",
-        "日本語" to "ja",
-        "中文" to "zh",
-        "한국어" to "ko",
-        "Русский" to "ru",
-        "العربية" to "ar",
-        "हिन्दी" to "hi",
-        "Türkçe" to "tr",
-        "Afrikaans" to "af",
-        "Nederlands" to "nl",
-        "Polski" to "pl",
-        "Svenska" to "sv",
-        "Dansk" to "da",
-        "Suomi" to "fi",
-        "Norsk" to "no",
-        "Čeština" to "cs",
-        "Slovenčina" to "sk",
-        "Magyar" to "hu",
-        "Română" to "ro",
-        "Українська" to "uk",
-        "Ελληνικά" to "el",
-        "עברית" to "he",
-        "Bahasa Indonesia" to "id",
-        "Bahasa Melayu" to "ms",
-        "ภาษาไทย" to "th",
-        "Tiếng Việt" to "vi",
-        "Български" to "bg",
-        "বাংলা" to "bn",
-        "Hrvatski" to "hr",
-        "Eesti" to "et",
-        "فارسی" to "fa",
-        "Galego" to "gl",
-        "Latviešu" to "lv",
-        "Lietuvių" to "lt",
-        "Српски" to "sr",
-        "Slovenščina" to "sl",
+        "Português" to "pt", "English" to "en", "Español" to "es",
+        "Français" to "fr", "Deutsch" to "de", "Italiano" to "it",
+        "日本語" to "ja", "中文" to "zh", "한국어" to "ko", "Русский" to "ru",
+        "العربية" to "ar", "हिन्दी" to "hi", "Türkçe" to "tr",
+        "Afrikaans" to "af", "Nederlands" to "nl", "Polski" to "pl",
+        "Svenska" to "sv", "Dansk" to "da", "Suomi" to "fi", "Norsk" to "no",
+        "Čeština" to "cs", "Slovenčina" to "sk", "Magyar" to "hu",
+        "Română" to "ro", "Українська" to "uk", "Ελληνικά" to "el",
+        "עברית" to "he", "Bahasa Indonesia" to "id", "Bahasa Melayu" to "ms",
+        "ภาษาไทย" to "th", "Tiếng Việt" to "vi", "Български" to "bg",
+        "বাংলা" to "bn", "Hrvatski" to "hr", "Eesti" to "et",
+        "فارسی" to "fa", "Galego" to "gl", "Latviešu" to "lv",
+        "Lietuvių" to "lt", "Српски" to "sr", "Slovenščina" to "sl",
         "اردو" to "ur"
     )
 
-    // "Sistema" removido — utilizador controla explicitamente
     private val themeOptions = arrayOf("Claro", "Escuro")
     private val themeValues  = arrayOf("light", "dark")
 
     override fun attachBaseContext(newBase: Context) {
-        val prefs  = newBase.getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
-        val lang   = prefs.getString("language", "") ?: ""
-        val base   = if (lang.isNotEmpty()) {
+        val prefs = newBase.getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
+        // Tema
+        when (prefs.getString("theme", "light")) {
+            "dark" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            else   -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        }
+        // Locale
+        val lang = prefs.getString("language", "") ?: ""
+        val base = if (lang.isNotEmpty()) {
             val locale = Locale(lang)
             Locale.setDefault(locale)
             val config = Configuration(newBase.resources.configuration)
@@ -91,11 +64,6 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        WindowCompat.setDecorFitsSystemWindows(window, true)
-        val insetsController = WindowInsetsControllerCompat(window, window.decorView)
-        val isLight = AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES
-        insetsController.isAppearanceLightStatusBars = isLight
 
         val iconTint    = ContextCompat.getColor(this, R.color.icon_tint)
         val chevronTint = ContextCompat.getColor(this, R.color.icon_tint_secondary)
@@ -115,8 +83,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.iconChevronPrivacy.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 14, chevronTint))
         binding.iconChevronAbout.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 14, chevronTint))
 
-        val pInfo = packageManager.getPackageInfo(packageName, 0)
-        binding.tvVersion.text = pInfo.versionName
+        binding.tvVersion.text = packageManager.getPackageInfo(packageName, 0).versionName
 
         binding.itemLanguage.setOnClickListener { showLanguageDialog() }
         binding.itemAppearance.setOnClickListener { showThemeDialog() }
@@ -125,15 +92,6 @@ class SettingsActivity : AppCompatActivity() {
         }
         binding.itemPrivacy.setOnClickListener {
             startActivity(Intent(this, PrivacyActivity::class.java))
-        }
-    }
-
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) {
-            val insetsController = WindowInsetsControllerCompat(window, window.decorView)
-            val isLight = AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES
-            insetsController.isAppearanceLightStatusBars = isLight
         }
     }
 
@@ -160,11 +118,9 @@ class SettingsActivity : AppCompatActivity() {
                     else   -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
                 }
                 dialog.dismiss()
-                // Reinicia a stack completa para aplicar o tema em todas as Activities
-                val intent = Intent(this, MainActivity::class.java).apply {
+                startActivity(Intent(this, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                }
-                startActivity(intent)
+                })
             }
             .show()
     }
@@ -172,22 +128,21 @@ class SettingsActivity : AppCompatActivity() {
     private fun setLocale(langCode: String) {
         getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
             .edit().putString("language", langCode).apply()
-
-        val intent = Intent(this, MainActivity::class.java).apply {
+        startActivity(Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        startActivity(intent)
+        })
     }
 
     private fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
         val px  = (sizeDp * resources.displayMetrics.density).toInt()
         val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
-        val svg = SVG.getFromAsset(assets, path)
-        svg.documentWidth  = px.toFloat()
-        svg.documentHeight = px.toFloat()
-        svg.renderToCanvas(Canvas(bmp))
-        val drawable = BitmapDrawable(resources, bmp)
-        drawable.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
-        return drawable
+        SVG.getFromAsset(assets, path).apply {
+            documentWidth  = px.toFloat()
+            documentHeight = px.toFloat()
+            renderToCanvas(Canvas(bmp))
+        }
+        return BitmapDrawable(resources, bmp).also {
+            it.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
+        }
     }
 }

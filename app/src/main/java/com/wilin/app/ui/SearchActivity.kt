@@ -1,4 +1,3 @@
-// SearchActivity.kt
 package com.wilin.app.ui
 
 import android.content.Context
@@ -14,24 +13,20 @@ import android.text.TextWatcher
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
-import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.caverock.androidsvg.SVG
 import com.wilin.app.R
 import com.wilin.app.databinding.ActivitySearchBinding
 import java.util.Locale
 
-class SearchActivity : AppCompatActivity() {
+class SearchActivity : BaseActivity() {
 
     private lateinit var binding: ActivitySearchBinding
-    private lateinit var insetsController: WindowInsetsControllerCompat
     private val searchHistory = mutableListOf<String>()
     private var historyAdapter: SearchSuggestAdapter? = null
 
-    // Sugestões de pesquisa geradas localmente (rápidas, sem rede)
     private val localSuggestions = listOf(
         "google.com", "youtube.com", "facebook.com", "wikipedia.org",
         "amazon.com", "twitter.com", "instagram.com", "reddit.com",
@@ -47,9 +42,13 @@ class SearchActivity : AppCompatActivity() {
     }
 
     override fun attachBaseContext(newBase: Context) {
-        val prefs  = newBase.getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
-        val lang   = prefs.getString("language", "") ?: ""
-        val base   = if (lang.isNotEmpty()) {
+        val prefs = newBase.getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
+        when (prefs.getString("theme", "light")) {
+            "dark" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            else   -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        }
+        val lang = prefs.getString("language", "") ?: ""
+        val base = if (lang.isNotEmpty()) {
             val locale = Locale(lang)
             Locale.setDefault(locale)
             val config = Configuration(newBase.resources.configuration)
@@ -63,10 +62,6 @@ class SearchActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySearchBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        WindowCompat.setDecorFitsSystemWindows(window, true)
-        insetsController = WindowInsetsControllerCompat(window, window.decorView)
-        binding.root.post { applyStatusBarTheme() }
 
         val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
         val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
@@ -85,14 +80,12 @@ class SearchActivity : AppCompatActivity() {
 
         loadHistory()
 
-        // Começa a mostrar histórico; quando o utilizador digita muda para sugestões
         historyAdapter = SearchSuggestAdapter(searchHistory.take(10)) { query -> navigate(query) }
         binding.suggestionsList.apply {
             layoutManager = LinearLayoutManager(this@SearchActivity)
             adapter = historyAdapter
         }
 
-        // Se vier da SearchFragment com texto pré-preenchido
         val prefill = intent.getStringExtra(EXTRA_PREFILL) ?: ""
         if (prefill.isNotEmpty()) {
             binding.searchInput.setText(prefill)
@@ -100,7 +93,6 @@ class SearchActivity : AppCompatActivity() {
             binding.btnClear.visibility = View.VISIBLE
             showSuggestionsFor(prefill)
         } else {
-            // Sem texto: mostra histórico (label visível)
             binding.recentLabel.text = getString(R.string.recent)
             binding.recentLabel.visibility = if (searchHistory.isNotEmpty()) View.VISIBLE else View.GONE
             historyAdapter?.updateList(searchHistory.take(10))
@@ -112,12 +104,10 @@ class SearchActivity : AppCompatActivity() {
                 val text = s?.toString() ?: ""
                 binding.btnClear.visibility = if (text.isEmpty()) View.GONE else View.VISIBLE
                 if (text.isEmpty()) {
-                    // Volta a mostrar histórico
                     binding.recentLabel.text = getString(R.string.recent)
                     binding.recentLabel.visibility = if (searchHistory.isNotEmpty()) View.VISIBLE else View.GONE
                     historyAdapter?.updateList(searchHistory.take(10))
                 } else {
-                    // Mostra sugestões
                     showSuggestionsFor(text)
                 }
             }
@@ -136,70 +126,38 @@ class SearchActivity : AppCompatActivity() {
 
         binding.searchInput.requestFocus()
         binding.searchInput.post {
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.showSoftInput(binding.searchInput, InputMethodManager.SHOW_IMPLICIT)
+            (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                .showSoftInput(binding.searchInput, InputMethodManager.SHOW_IMPLICIT)
         }
     }
 
-    // Sugestões: combina histórico filtrado + sugestões locais
     private fun showSuggestionsFor(query: String) {
         binding.recentLabel.text = getString(R.string.nav_search)
         binding.recentLabel.visibility = View.VISIBLE
 
         val histMatch = searchHistory.filter { it.contains(query, ignoreCase = true) }.take(4)
-        val localMatch = localSuggestions
-            .filter { it.contains(query, ignoreCase = true) && histMatch.none { h -> h.equals(it, ignoreCase = true) } }
-            .take(6 - histMatch.size)
-            // Gera sugestões dinâmicas com o prefixo do utilizador
-            .let { base ->
-                val dynamic = listOf(
-                    query,
-                    "$query site",
-                    "$query tutorial",
-                    "$query como fazer",
-                    "$query o que é"
-                ).filter { it != query || histMatch.isEmpty() }
-                (base + dynamic).distinct().take(8)
-            }
-
-        val combined = (histMatch + localMatch).take(10)
+        val dynamic = listOf(query, "$query site", "$query tutorial", "$query como fazer", "$query o que é")
+        val combined = (histMatch + dynamic).distinct().take(10)
         historyAdapter?.updateList(combined)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        binding.root.post { applyStatusBarTheme() }
-    }
-
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) applyStatusBarTheme()
-    }
-
-    private fun applyStatusBarTheme() {
-        val isLight = !resources.configuration.isNightModeActive
-        insetsController.isAppearanceLightStatusBars = isLight
     }
 
     private fun navigate(input: String) {
         addToHistory(input)
-        val intent = Intent(this, BrowserResponseActivity::class.java).apply {
+        startActivity(Intent(this, BrowserResponseActivity::class.java).apply {
             putExtra(BrowserResponseActivity.EXTRA_QUERY, input)
-        }
-        startActivity(intent)
+        })
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }
 
     private fun finishWithAnim() {
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.hideSoftInputFromWindow(binding.searchInput.windowToken, 0)
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+            .hideSoftInputFromWindow(binding.searchInput.windowToken, 0)
         finish()
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }
 
     private fun addToHistory(query: String) {
-        searchHistory.remove(query)
-        searchHistory.add(0, query)
+        searchHistory.remove(query); searchHistory.add(0, query)
         if (searchHistory.size > 50) searchHistory.removeLast()
         getSharedPreferences(PREFS_HISTORY, Context.MODE_PRIVATE)
             .edit().putString(KEY_HISTORY, searchHistory.joinToString("|||")).apply()
@@ -217,12 +175,13 @@ class SearchActivity : AppCompatActivity() {
     private fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
         val px  = (sizeDp * resources.displayMetrics.density).toInt()
         val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
-        val svg = SVG.getFromAsset(assets, path)
-        svg.documentWidth  = px.toFloat()
-        svg.documentHeight = px.toFloat()
-        svg.renderToCanvas(Canvas(bmp))
-        val drawable = BitmapDrawable(resources, bmp)
-        drawable.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
-        return drawable
+        SVG.getFromAsset(assets, path).apply {
+            documentWidth  = px.toFloat()
+            documentHeight = px.toFloat()
+            renderToCanvas(Canvas(bmp))
+        }
+        return BitmapDrawable(resources, bmp).also {
+            it.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
+        }
     }
 }
