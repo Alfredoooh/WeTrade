@@ -1,6 +1,7 @@
 // HomeFragment.kt
 package com.wilin.app.ui
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -28,15 +29,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.wilin.app.R
 import com.wilin.app.databinding.FragmentHomeBinding
+import com.wilin.app.news.NewsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import org.json.JSONArray
-import java.util.concurrent.TimeUnit
+import org.json.JSONObject
+import java.io.File
 
 data class SiteItem(
     val label: String,
@@ -121,13 +121,6 @@ class HomeFragment : Fragment() {
     private val newsItems = mutableListOf<NewsItem>()
     private lateinit var newsAdapter: NewsAdapter
 
-    private val NEWS_API_BASE = "https://globeapiservice001.onrender.com"
-
-    private val httpClient = OkHttpClient.Builder()
-        .connectTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .build()
-
     private val mainToggleChips   = mutableListOf<TextView>()
     private val stickyToggleChips = mutableListOf<TextView>()
     private lateinit var sitesHScroll: HorizontalScrollView
@@ -150,7 +143,6 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Garante que o fundo do fragment é sempre a cor correcta do tema
         binding.root.setBackgroundColor(
             ContextCompat.getColor(requireContext(), R.color.background)
         )
@@ -172,22 +164,110 @@ class HomeFragment : Fragment() {
         fetchNews(newsCategoryKeys[0])
     }
 
-    // ── onResume: actualiza cores ao voltar ao fragment ───────────────────────
     override fun onResume() {
         super.onResume()
-        // Força fundo correcto ao voltar de qualquer Activity
         _binding?.root?.setBackgroundColor(
             ContextCompat.getColor(requireContext(), R.color.background)
         )
+    }
+
+    // ── Cache em disco ────────────────────────────────────────────────────────
+    private fun cacheFile(category: String): File =
+        File(requireContext().cacheDir, "news_$category.json")
+
+    private fun saveToCache(category: String, items: List<NewsItem>) {
+        try {
+            val arr = JSONArray()
+            items.forEach { item ->
+                arr.put(JSONObject().apply {
+                    put("title",       item.title)
+                    put("description", item.description)
+                    put("image_url",   item.imageUrl)
+                    put("url",         item.sourceUrl)
+                    put("source_name", item.sourceName)
+                    put("favicon_url", item.faviconUrl)
+                    put("category",    item.category)
+                    put("body",        item.body)
+                    put("author",      item.author)
+                    put("published_at",item.publishedAt)
+                })
+            }
+            cacheFile(category).writeText(arr.toString())
+        } catch (e: Exception) {
+            Log.e("HomeFragment", "saveToCache: ${e.message}")
+        }
+    }
+
+    private fun loadFromCache(category: String): List<NewsItem> {
+        return try {
+            val file = cacheFile(category)
+            if (!file.exists()) return emptyList()
+            val arr  = JSONArray(file.readText())
+            List(arr.length()) { i ->
+                val o = arr.getJSONObject(i)
+                NewsItem(
+                    title       = o.optString("title"),
+                    description = o.optString("description"),
+                    imageUrl    = o.optString("image_url"),
+                    sourceUrl   = o.optString("url"),
+                    sourceName  = o.optString("source_name"),
+                    faviconUrl  = o.optString("favicon_url"),
+                    category    = o.optString("category"),
+                    body        = o.optString("body"),
+                    author      = o.optString("author"),
+                    publishedAt = o.optString("published_at"),
+                )
+            }
+        } catch (e: Exception) { emptyList() }
+    }
+
+    // ── Fetch ─────────────────────────────────────────────────────────────────
+    private fun fetchNews(category: String) {
+        currentFetchCategory = category
+
+        CoroutineScope(Dispatchers.Main).launch {
+            // 1. Mostra cache imediatamente se existir
+            val cached = withContext(Dispatchers.IO) { loadFromCache(category) }
+            if (cached.isNotEmpty()) {
+                newsItems.clear()
+                newsItems.addAll(cached)
+                newsAdapter.notifyDataSetChanged()
+                removeStateViews()
+            } else {
+                showLoading()
+            }
+
+            // 2. Actualiza em background via RSS
+            val fetched = withContext(Dispatchers.IO) {
+                try {
+                    NewsRepository.fetchList(category, limit = 40)
+                } catch (e: Exception) {
+                    Log.e("HomeFragment", "fetchNews: ${e.message}")
+                    emptyList()
+                }
+            }
+
+            if (currentFetchCategory != category) return@launch
+
+            removeStateViews()
+
+            if (fetched.isNotEmpty()) {
+                newsItems.clear()
+                newsItems.addAll(fetched)
+                newsAdapter.notifyDataSetChanged()
+                withContext(Dispatchers.IO) { saveToCache(category, fetched) }
+            } else if (cached.isEmpty()) {
+                showError(category)
+            }
+            // Se fetched vazio mas tinha cache, mantém o cache visível
+        }
     }
 
     // ── Loading state ─────────────────────────────────────────────────────────
     private fun showLoading() {
         val ctx = requireContext()
         val dp  = ctx.resources.displayMetrics.density
-
         removeStateViews()
-
         val container = LinearLayout(ctx).apply {
             tag = "stateView"
             layoutParams = LinearLayout.LayoutParams(
@@ -196,23 +276,16 @@ class HomeFragment : Fragment() {
             )
             orientation = LinearLayout.VERTICAL
             gravity     = Gravity.CENTER_HORIZONTAL
-            setPadding(
-                (16 * dp).toInt(), (24 * dp).toInt(),
-                (16 * dp).toInt(), (24 * dp).toInt()
-            )
-            // Fundo explícito — nunca herda cor errada do tema
+            setPadding((16 * dp).toInt(), (24 * dp).toInt(), (16 * dp).toInt(), (24 * dp).toInt())
             setBackgroundColor(ContextCompat.getColor(ctx, R.color.background))
         }
-
         repeat(3) { container.addView(makeSkeletonCard(dp)) }
-
         loadingView = container
         insertStateView(container)
     }
 
     private fun makeSkeletonCard(dp: Float): View {
         val ctx = requireContext()
-
         val card = LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -227,61 +300,45 @@ class HomeFragment : Fragment() {
             elevation     = 2 * dp
             clipToOutline = true
         }
-
-        // Imagem placeholder
         card.addView(View(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, (180 * dp).toInt()
             )
             setBackgroundColor(ContextCompat.getColor(ctx, R.color.divider))
         })
-
         val textWrap = LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
             )
             orientation = LinearLayout.VERTICAL
-            setPadding(
-                (14 * dp).toInt(), (10 * dp).toInt(),
-                (14 * dp).toInt(), (12 * dp).toInt()
-            )
+            setPadding((14 * dp).toInt(), (10 * dp).toInt(), (14 * dp).toInt(), (12 * dp).toInt())
         }
-
-        // Linha título 1
         textWrap.addView(View(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                (220 * dp).toInt(), (14 * dp).toInt()
-            ).also { it.bottomMargin = (6 * dp).toInt() }
+            layoutParams = LinearLayout.LayoutParams((220 * dp).toInt(), (14 * dp).toInt())
+                .also { it.bottomMargin = (6 * dp).toInt() }
             background = android.graphics.drawable.GradientDrawable().apply {
-                shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
+                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
                 cornerRadius = 4 * dp
                 setColor(ContextCompat.getColor(ctx, R.color.divider))
             }
         })
-        // Linha título 2
         textWrap.addView(View(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                (160 * dp).toInt(), (14 * dp).toInt()
-            ).also { it.bottomMargin = (10 * dp).toInt() }
+            layoutParams = LinearLayout.LayoutParams((160 * dp).toInt(), (14 * dp).toInt())
+                .also { it.bottomMargin = (10 * dp).toInt() }
             background = android.graphics.drawable.GradientDrawable().apply {
-                shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
+                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
                 cornerRadius = 4 * dp
                 setColor(ContextCompat.getColor(ctx, R.color.divider))
             }
         })
-        // Linha source
         textWrap.addView(View(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                (80 * dp).toInt(), (10 * dp).toInt()
-            )
+            layoutParams = LinearLayout.LayoutParams((80 * dp).toInt(), (10 * dp).toInt())
             background = android.graphics.drawable.GradientDrawable().apply {
-                shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
+                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
                 cornerRadius = 4 * dp
                 setColor(ContextCompat.getColor(ctx, R.color.divider))
             }
         })
-
         card.addView(textWrap)
         return card
     }
@@ -290,27 +347,18 @@ class HomeFragment : Fragment() {
     private fun showError(category: String) {
         val ctx = requireContext()
         val dp  = ctx.resources.displayMetrics.density
-
         removeStateViews()
-
         val container = LinearLayout(ctx).apply {
             tag = "stateView"
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
             )
             orientation = LinearLayout.VERTICAL
             gravity     = Gravity.CENTER_HORIZONTAL
-            setPadding(
-                (16 * dp).toInt(), (48 * dp).toInt(),
-                (16 * dp).toInt(), (48 * dp).toInt()
-            )
-            // Fundo explícito — nunca herda cor errada do tema
+            setPadding((16 * dp).toInt(), (48 * dp).toInt(), (16 * dp).toInt(), (48 * dp).toInt())
             setBackgroundColor(ContextCompat.getColor(ctx, R.color.background))
         }
-
-        // Imagem no_connection.png em vez de emoji
-        val iconSz = (72 * dp).toInt()
+        val iconSz = (96 * dp).toInt()
         val iconIv = ImageView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(iconSz, iconSz).also {
                 it.gravity      = Gravity.CENTER_HORIZONTAL
@@ -322,7 +370,6 @@ class HomeFragment : Fragment() {
             val bmp = BitmapFactory.decodeStream(ctx.assets.open("icons/png/no_connection.png"))
             iconIv.setImageBitmap(bmp)
         }.onFailure {
-            // Fallback: círculo cinzento simples
             val bmp = Bitmap.createBitmap(iconSz, iconSz, Bitmap.Config.ARGB_8888)
             Paint(Paint.ANTI_ALIAS_FLAG).also { p ->
                 p.color = ContextCompat.getColor(ctx, R.color.divider)
@@ -330,22 +377,18 @@ class HomeFragment : Fragment() {
             }
             iconIv.setImageBitmap(bmp)
         }
-
         val msg = TextView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
             ).also { it.bottomMargin = (28 * dp).toInt() }
             text     = "Não foi possível carregar as notícias.\nVerifica a tua ligação à internet."
             textSize = 14f
             gravity  = Gravity.CENTER_HORIZONTAL
             setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
         }
-
         val retryBtn = TextView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                (44 * dp).toInt()
+                LinearLayout.LayoutParams.WRAP_CONTENT, (44 * dp).toInt()
             ).also { it.gravity = Gravity.CENTER_HORIZONTAL }
             text      = getString(R.string.retry)
             textSize  = 14f
@@ -362,11 +405,9 @@ class HomeFragment : Fragment() {
             isFocusable = true
             setOnClickListener { fetchNews(category) }
         }
-
         container.addView(iconIv)
         container.addView(msg)
         container.addView(retryBtn)
-
         errorView = container
         insertStateView(container)
     }
@@ -387,65 +428,6 @@ class HomeFragment : Fragment() {
         errorView   = null
     }
 
-    // ── Fetch com retry ───────────────────────────────────────────────────────
-    private fun fetchNews(category: String) {
-        currentFetchCategory = category
-
-        CoroutineScope(Dispatchers.Main).launch {
-            showLoading()
-
-            val fetched = withContext(Dispatchers.IO) {
-                var result: List<NewsItem> = emptyList()
-                val maxRetries = 3
-                for (attempt in 1..maxRetries) {
-                    try {
-                        val req  = Request.Builder()
-                            .url("$NEWS_API_BASE/news?category=$category&limit=20")
-                            .build()
-                        val resp = httpClient.newCall(req).execute()
-                        if (resp.isSuccessful) {
-                            val arr  = JSONArray(resp.body?.string() ?: "[]")
-                            val list = mutableListOf<NewsItem>()
-                            for (i in 0 until arr.length()) {
-                                val o = arr.getJSONObject(i)
-                                list.add(
-                                    NewsItem(
-                                        title       = o.optString("title"),
-                                        description = o.optString("description"),
-                                        imageUrl    = o.optString("image_url"),
-                                        sourceUrl   = o.optString("url"),
-                                        sourceName  = o.optString("source_name"),
-                                        faviconUrl  = o.optString("favicon_url"),
-                                        category    = o.optString("category")
-                                    )
-                                )
-                            }
-                            if (list.isNotEmpty()) { result = list; break }
-                        }
-                    } catch (e: Exception) {
-                        Log.e("HomeFragment", "fetchNews attempt $attempt: ${e.message}")
-                    }
-                    if (attempt < maxRetries) delay(2000L)
-                }
-                result
-            }
-
-            if (currentFetchCategory != category) return@launch
-
-            removeStateViews()
-
-            if (fetched.isEmpty()) {
-                newsItems.clear()
-                newsAdapter.notifyDataSetChanged()
-                showError(category)
-            } else {
-                newsItems.clear()
-                newsItems.addAll(fetched)
-                newsAdapter.notifyDataSetChanged()
-            }
-        }
-    }
-
     // ── Sticky scroll ─────────────────────────────────────────────────────────
     private fun setupStickyScroll() {
         binding.homeScrollView.setOnScrollChangeListener(
@@ -455,7 +437,6 @@ class HomeFragment : Fragment() {
                     dy > 3  -> (activity as? HomeScrollCallback)?.onHomeScrollDown(dy)
                     dy < -3 -> (activity as? HomeScrollCallback)?.onHomeScrollUp(-dy)
                 }
-
                 val stickySection  = binding.stickyToggleSection
                 val overlayLayout  = binding.stickyToggleOverlay
                 val location       = IntArray(2)
@@ -463,16 +444,14 @@ class HomeFragment : Fragment() {
                 stickySection.getLocationInWindow(location)
                 binding.homeScrollView.getLocationInWindow(parentLocation)
                 val stickyTop = location[1] - parentLocation[1]
-
                 if (stickyTop <= 0) {
                     if (overlayLayout.visibility != View.VISIBLE) {
                         overlayLayout.visibility = View.VISIBLE
                         syncStickyChips()
                     }
                 } else {
-                    if (overlayLayout.visibility != View.GONE) {
+                    if (overlayLayout.visibility != View.GONE)
                         overlayLayout.visibility = View.GONE
-                    }
                 }
             }
         )
@@ -500,13 +479,11 @@ class HomeFragment : Fragment() {
 
         sitesHScroll = HorizontalScrollView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
             )
             isHorizontalScrollBarEnabled = false
             isSmoothScrollingEnabled     = true
             overScrollMode               = View.OVER_SCROLL_NEVER
-
             setOnTouchListener { v, event ->
                 when (event.actionMasked) {
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
@@ -526,8 +503,7 @@ class HomeFragment : Fragment() {
 
         sitesRowContainer = LinearLayout(ctx).apply {
             layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
             )
             orientation = LinearLayout.HORIZONTAL
         }
@@ -537,8 +513,7 @@ class HomeFragment : Fragment() {
 
         dotsContainer = LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
             ).also { it.topMargin = (6 * dp).toInt() }
             orientation = LinearLayout.HORIZONTAL
             gravity     = Gravity.CENTER_HORIZONTAL
@@ -572,35 +547,26 @@ class HomeFragment : Fragment() {
 
         pages.forEachIndexed { pageIdx, pageApps ->
             val items = pageApps.toMutableList()
-            if (pageIdx == pages.size - 1) {
-                items.add(SiteItem("Mais", "", "", isMore = true))
-            }
+            if (pageIdx == pages.size - 1) items.add(SiteItem("Mais", "", "", isMore = true))
             sitesRowContainer.addView(buildPage(items, screenW, dp))
         }
 
-        repeat(pages.size) { i ->
-            dotsContainer.addView(makeDot(i == currentPage, dp))
-        }
-
+        repeat(pages.size) { i -> dotsContainer.addView(makeDot(i == currentPage, dp)) }
         updateDots()
-
         sitesHScroll.post { sitesHScroll.scrollTo(currentPage * screenW, 0) }
     }
 
     private fun buildPage(items: List<SiteItem>, screenW: Int, dp: Float): LinearLayout {
         val ctx   = requireContext()
         val cellW = screenW / 5
-
         return LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(screenW, LinearLayout.LayoutParams.WRAP_CONTENT)
             orientation  = LinearLayout.VERTICAL
-
             val rows = items.take(10).chunked(5)
             rows.forEach { row ->
                 addView(LinearLayout(ctx).apply {
                     layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
+                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
                     )
                     orientation = LinearLayout.HORIZONTAL
                     row.forEach { item -> addView(buildCell(item, dp, cellW)) }
@@ -662,8 +628,7 @@ class HomeFragment : Fragment() {
 
             val label = TextView(ctx).apply {
                 layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
                 ).also { it.topMargin = (5 * dp).toInt() }
                 text      = item.label
                 textSize  = 10f
@@ -681,20 +646,15 @@ class HomeFragment : Fragment() {
                     startActivity(Intent(ctx, BrowserResponseActivity::class.java).apply {
                         putExtra(BrowserResponseActivity.EXTRA_QUERY, item.url)
                     })
-                    requireActivity().overridePendingTransition(
-                        R.anim.slide_in_right, R.anim.slide_out_left
-                    )
+                    requireActivity().overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
                 }
             }
-            if (!item.isMore) {
-                setOnLongClickListener { showRemoveConfirm(item); true }
-            }
+            if (!item.isMore) setOnLongClickListener { showRemoveConfirm(item); true }
         }
     }
 
     private fun showRemoveConfirm(item: SiteItem) {
-        val ctx = requireContext()
-        android.app.AlertDialog.Builder(ctx)
+        android.app.AlertDialog.Builder(requireContext())
             .setTitle("Remover app")
             .setMessage("Remover \"${item.label}\"?")
             .setPositiveButton("Remover") { _, _ ->
@@ -707,15 +667,13 @@ class HomeFragment : Fragment() {
             .show()
     }
 
-    // ── Dots ──────────────────────────────────────────────────────────────────
     private fun makeDot(active: Boolean, dp: Float): View {
         val ctx    = requireContext()
         val size   = (6 * dp).toInt()
         val margin = (4 * dp).toInt()
         return View(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(size, size).also {
-                it.marginStart = margin
-                it.marginEnd   = margin
+                it.marginStart = margin; it.marginEnd = margin
             }
             background = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.OVAL
@@ -730,8 +688,7 @@ class HomeFragment : Fragment() {
     private fun updateDots() {
         val ctx = requireContext()
         for (i in 0 until dotsContainer.childCount) {
-            (dotsContainer.getChildAt(i).background
-                    as? android.graphics.drawable.GradientDrawable)
+            (dotsContainer.getChildAt(i).background as? android.graphics.drawable.GradientDrawable)
                 ?.setColor(
                     if (i == currentPage) ContextCompat.getColor(ctx, R.color.colorPrimary)
                     else                  ContextCompat.getColor(ctx, R.color.divider)
@@ -749,12 +706,10 @@ class HomeFragment : Fragment() {
 
         val overlay = FrameLayout(ctx).apply {
             layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT
             )
             setBackgroundColor(Color.argb(140, 0, 0, 0))
-            isClickable = true
-            isFocusable = true
+            isClickable = true; isFocusable = true
         }
 
         val sheet = LinearLayout(ctx).apply {
@@ -776,11 +731,9 @@ class HomeFragment : Fragment() {
             )
         }
         handleWrap.addView(View(ctx).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                (40 * dp).toInt(), (4 * dp).toInt(), Gravity.CENTER
-            )
+            layoutParams = FrameLayout.LayoutParams((40 * dp).toInt(), (4 * dp).toInt(), Gravity.CENTER)
             background = android.graphics.drawable.GradientDrawable().apply {
-                shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
+                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
                 cornerRadius = 2 * dp
                 setColor(ContextCompat.getColor(ctx, R.color.divider))
             }
@@ -788,8 +741,7 @@ class HomeFragment : Fragment() {
 
         val title = TextView(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
             ).also { it.marginStart = (20 * dp).toInt(); it.bottomMargin = (16 * dp).toInt() }
             text     = "Adicionar App"
             textSize = 20f
@@ -804,14 +756,10 @@ class HomeFragment : Fragment() {
         }
         val content = LinearLayout(ctx).apply {
             layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
             )
             orientation = LinearLayout.VERTICAL
-            setPadding(
-                (16 * dp).toInt(), 0,
-                (16 * dp).toInt(), (32 * dp).toInt()
-            )
+            setPadding((16 * dp).toInt(), 0, (16 * dp).toInt(), (32 * dp).toInt())
         }
 
         val appW = (resources.displayMetrics.widthPixels - (32 * dp).toInt()) / 4
@@ -819,8 +767,7 @@ class HomeFragment : Fragment() {
         availableApps.groupBy { it.category }.forEach { (cat, apps) ->
             content.addView(TextView(ctx).apply {
                 layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
                 ).also { it.topMargin = (16 * dp).toInt(); it.bottomMargin = (10 * dp).toInt() }
                 text     = cat
                 textSize = 13f
@@ -830,8 +777,7 @@ class HomeFragment : Fragment() {
             apps.chunked(4).forEach { row ->
                 content.addView(LinearLayout(ctx).apply {
                     layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
+                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
                     )
                     orientation = LinearLayout.HORIZONTAL
                     row.forEach { app ->
@@ -929,8 +875,7 @@ class HomeFragment : Fragment() {
             addView(container)
             addView(TextView(ctx).apply {
                 layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
                 ).also { it.topMargin = (4 * dp).toInt() }
                 text      = app.label
                 textSize  = 10f
@@ -944,8 +889,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun dismissModal(
-        overlay: FrameLayout, sheet: LinearLayout,
-        sheetH: Int, root: FrameLayout
+        overlay: FrameLayout, sheet: LinearLayout, sheetH: Int, root: FrameLayout
     ) {
         sheet.animate()
             .translationY(sheetH.toFloat())
@@ -955,7 +899,6 @@ class HomeFragment : Fragment() {
             .start()
     }
 
-    // ── Bitmaps auxiliares ────────────────────────────────────────────────────
     private fun makePlaceholderBmp(size: Int): Bitmap {
         val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         Paint(Paint.ANTI_ALIAS_FLAG).also {
@@ -983,7 +926,6 @@ class HomeFragment : Fragment() {
         return bmp
     }
 
-    // ── Category toggles ──────────────────────────────────────────────────────
     private fun buildCategoryToggles() {
         val ctx = requireContext()
         val dp  = ctx.resources.displayMetrics.density
