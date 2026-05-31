@@ -47,22 +47,19 @@ class MainActivity : BaseActivity(), HomeScrollCallback {
         get() = Color.parseColor("#888888")
 
     override fun attachBaseContext(newBase: Context) {
-        // BaseActivity já aplica o tema; aqui só tratamos do locale
         val prefs = newBase.getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
-        val lang  = prefs.getString("language", "") ?: ""
-        val base  = if (lang.isNotEmpty()) {
+        when (prefs.getString("theme", "light")) {
+            "dark" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            else   -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        }
+        val lang = prefs.getString("language", "") ?: ""
+        val base = if (lang.isNotEmpty()) {
             val locale = Locale(lang)
             Locale.setDefault(locale)
             val config = Configuration(newBase.resources.configuration)
             config.setLocale(locale)
             newBase.createConfigurationContext(config)
         } else newBase
-        // Aplica tema antes de super
-        val themePrefs = newBase.getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
-        when (themePrefs.getString("theme", "light")) {
-            "dark" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            else   -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-        }
         super.attachBaseContext(base)
     }
 
@@ -149,7 +146,6 @@ class MainActivity : BaseActivity(), HomeScrollCallback {
     private fun refreshTabIcons() {
         val active   = activeIconColor
         val inactive = inactiveIconColor
-
         binding.tabHomeIcon.setImageDrawable(
             if (currentTab == R.id.tabHome)
                 svgDrawable("icons/svg/home_filled.svg", 24, active)
@@ -179,14 +175,14 @@ class MainActivity : BaseActivity(), HomeScrollCallback {
     }
 
     override fun onResume() {
-        super.onResume() // BaseActivity aplica statusBar aqui
+        super.onResume()
         refreshTabIcons()
         updateTabsBadge()
         showBottomNav()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus) // BaseActivity aplica statusBar aqui
+        super.onWindowFocusChanged(hasFocus)
         if (hasFocus) refreshTabIcons()
     }
 
@@ -200,14 +196,12 @@ class MainActivity : BaseActivity(), HomeScrollCallback {
         val screenshot = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
         root.draw(Canvas(screenshot))
         TabScreenshots.saveCurrent(this, TabManager.getCurrentId(), screenshot)
-
-        val intent = Intent(this, TabsActivity::class.java).apply {
+        startActivity(Intent(this, TabsActivity::class.java).apply {
             putExtra("anim_src_width",  root.width)
             putExtra("anim_src_height", root.height)
             putExtra("anim_src_x",      0f)
             putExtra("anim_src_y",      0f)
-        }
-        startActivity(intent)
+        })
         overridePendingTransition(0, 0)
     }
 
@@ -268,3 +262,4 @@ class MainActivity : BaseActivity(), HomeScrollCallback {
             it.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
         }
     }
+}
