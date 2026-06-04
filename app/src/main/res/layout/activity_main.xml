@@ -1,228 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.drawerlayout.widget.DrawerLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/drawerLayout"
+    android:id="@+id/rootFrame"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="false">
+    android:background="@color/drawer_background">
 
-    <androidx.coordinatorlayout.widget.CoordinatorLayout
-        android:id="@+id/coordinatorLayout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <com.google.android.material.appbar.AppBarLayout
-            android:id="@+id/appBarLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/appbar_background"
-            android:fitsSystemWindows="true"
-            app:elevation="0dp"
-            app:liftOnScroll="false">
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:background="@color/appbar_background"
-                android:paddingStart="16dp"
-                android:paddingEnd="0dp"
-                app:layout_scrollFlags="scroll|enterAlways|snap">
-
-                <TextView
-                    android:id="@+id/toolbarTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_centerVertical="true"
-                    android:layout_alignParentStart="true"
-                    android:text="Home"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_primary" />
-
-                <ImageView
-                    android:id="@+id/btnMenu"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:padding="14dp"
-                    android:layout_centerVertical="true"
-                    android:layout_alignParentEnd="true"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <LinearLayout
-                    android:id="@+id/btnAskAi"
-                    android:layout_width="wrap_content"
-                    android:layout_height="30dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:background="@drawable/ask_ai_pill_bg"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp"
-                    android:layout_centerVertical="true"
-                    android:layout_toStartOf="@id/btnMenu"
-                    android:layout_marginEnd="4dp"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Ask AI"
-                        android:textSize="12sp"
-                        android:textColor="@color/text_secondary"
-                        android:textStyle="bold"
-                        android:layout_marginEnd="4dp" />
-
-                    <ImageView
-                        android:id="@+id/btnAskAiIcon"
-                        android:layout_width="13dp"
-                        android:layout_height="13dp"
-                        android:clickable="false"
-                        android:focusable="false" />
-
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/searchPill"
-                    android:layout_width="match_parent"
-                    android:layout_height="36dp"
-                    android:layout_centerVertical="true"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/search_input_bg"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:visibility="gone"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <ImageView
-                        android:id="@+id/searchPillIcon"
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:layout_marginEnd="8dp"
-                        android:clickable="false"
-                        android:focusable="false" />
-
-                    <TextView
-                        android:id="@+id/searchPillHint"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/search_hint"
-                        android:textSize="14sp"
-                        android:textColor="@color/text_hint"
-                        android:maxLines="1"
-                        android:ellipsize="end"
-                        android:clickable="false"
-                        android:focusable="false" />
-
-                </LinearLayout>
-
-            </RelativeLayout>
-
-        </com.google.android.material.appbar.AppBarLayout>
-
-        <FrameLayout
-            android:id="@+id/container"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
-
-        <LinearLayout
-            android:id="@+id/bottomNavWrapper"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:orientation="vertical"
-            app:layout_behavior="com.google.android.material.behavior.HideBottomViewOnScrollBehavior">
-
-            <View
-                android:id="@+id/navDivider"
-                android:layout_width="match_parent"
-                android:layout_height="0.5dp"
-                android:background="@color/divider" />
-
-            <LinearLayout
-                android:id="@+id/bottomNav"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:background="@color/bottom_nav_background"
-                android:orientation="horizontal">
-
-                <FrameLayout
-                    android:id="@+id/tabHome"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:focusable="true">
-                    <ImageView
-                        android:id="@+id/tabHomeIcon"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center" />
-                </FrameLayout>
-
-                <FrameLayout
-                    android:id="@+id/tabSearch"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:focusable="true">
-                    <ImageView
-                        android:id="@+id/tabSearchIcon"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center" />
-                </FrameLayout>
-
-                <FrameLayout
-                    android:id="@+id/tabTabs"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:focusable="true">
-                    <FrameLayout
-                        android:id="@+id/tabTabsBadgeFrame"
-                        android:layout_width="26dp"
-                        android:layout_height="26dp"
-                        android:layout_gravity="center"
-                        android:background="@drawable/tabs_badge_bg">
-                        <TextView
-                            android:id="@+id/tabTabsCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:text="1"
-                            android:textSize="10sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/icon_tint" />
-                    </FrameLayout>
-                </FrameLayout>
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-    </androidx.coordinatorlayout.widget.CoordinatorLayout>
-
+    <!-- DRAWER -->
     <LinearLayout
         android:id="@+id/drawerContainer"
-        android:layout_width="280dp"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="end"
+        android:layout_gravity="start"
         android:orientation="vertical"
-        android:background="@color/background"
+        android:background="@color/drawer_background"
         android:fitsSystemWindows="true">
 
         <LinearLayout
@@ -231,16 +23,98 @@
             android:orientation="vertical"
             android:paddingStart="24dp"
             android:paddingEnd="24dp"
-            android:paddingTop="40dp"
-            android:paddingBottom="16dp">
+            android:paddingTop="32dp"
+            android:paddingBottom="12dp">
+
             <TextView
+                android:id="@+id/drawerAppName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="globe.com"
+                android:text="IPC"
                 android:textSize="26sp"
                 android:textStyle="bold"
                 android:textColor="@color/drawer_text" />
+
         </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp"
+            android:layout_marginBottom="4dp"
+            android:background="@color/divider" />
+
+        <!-- Label Conversas -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/drawer_conversations"
+            android:textSize="11sp"
+            android:textAllCaps="true"
+            android:textColor="@color/settings_section_label"
+            android:paddingStart="24dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="6dp" />
+
+        <!-- Lista conversas -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:overScrollMode="never">
+
+            <LinearLayout
+                android:id="@+id/drawerConversationsList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingBottom="8dp">
+
+                <LinearLayout
+                    android:id="@+id/drawerNewChat"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <FrameLayout
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="@drawable/drawer_icon_bg"
+                        android:layout_marginEnd="16dp">
+
+                        <ImageView
+                            android:id="@+id/drawerNewChatIcon"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:layout_gravity="center" />
+
+                    </FrameLayout>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Nova conversa"
+                        android:textSize="15sp"
+                        android:textColor="@color/drawer_text" />
+
+                    <ImageView
+                        android:id="@+id/drawerNewChatChevron"
+                        android:layout_width="13dp"
+                        android:layout_height="13dp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </ScrollView>
 
         <View
             android:layout_width="match_parent"
@@ -249,6 +123,7 @@
             android:layout_marginEnd="24dp"
             android:background="@color/divider" />
 
+        <!-- Definições (sem logout aqui) -->
         <LinearLayout
             android:id="@+id/drawerItemSettings"
             android:layout_width="match_parent"
@@ -258,17 +133,21 @@
             android:paddingStart="24dp"
             android:paddingEnd="24dp"
             android:background="?attr/selectableItemBackground">
+
             <FrameLayout
                 android:layout_width="32dp"
                 android:layout_height="32dp"
                 android:background="@drawable/drawer_icon_bg"
                 android:layout_marginEnd="16dp">
+
                 <ImageView
                     android:id="@+id/drawerIconSettings"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
                     android:layout_gravity="center" />
+
             </FrameLayout>
+
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -276,45 +155,503 @@
                 android:text="@string/drawer_settings"
                 android:textSize="15sp"
                 android:textColor="@color/drawer_text" />
+
             <ImageView
                 android:id="@+id/drawerChevronSettings"
-                android:layout_width="14dp"
-                android:layout_height="14dp" />
+                android:layout_width="13dp"
+                android:layout_height="13dp" />
+
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/drawerItemAbout"
+        <View
+            android:id="@+id/drawerNavSpacer"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
-            android:background="?attr/selectableItemBackground">
-            <FrameLayout
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="@drawable/drawer_icon_bg"
-                android:layout_marginEnd="16dp">
-                <ImageView
-                    android:id="@+id/drawerIconAbout"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_gravity="center" />
-            </FrameLayout>
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/drawer_about"
-                android:textSize="15sp"
-                android:textColor="@color/drawer_text" />
-            <ImageView
-                android:id="@+id/drawerChevronAbout"
-                android:layout_width="14dp"
-                android:layout_height="14dp" />
-        </LinearLayout>
+            android:layout_height="16dp" />
 
     </LinearLayout>
 
-</androidx.drawerlayout.widget.DrawerLayout>
+    <!-- CONTEÚDO PRINCIPAL -->
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/coordinatorLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_gradient_blue"
+        android:elevation="8dp"
+        android:outlineProvider="bounds">
+
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/appBarLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:fitsSystemWindows="false"
+            app:elevation="0dp"
+            app:liftOnScroll="false">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp">
+
+                <!-- Menu esquerda -->
+                <FrameLayout
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentStart="true"
+                    android:background="@drawable/appbar_btn_bg"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <ImageView
+                        android:id="@+id/btnMenu"
+                        android:layout_width="17dp"
+                        android:layout_height="17dp"
+                        android:layout_gravity="center"
+                        android:background="?attr/selectableItemBackgroundBorderless" />
+
+                </FrameLayout>
+
+                <!-- Direita: avatar + more -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentEnd="true">
+
+                    <!-- Avatar circular botão utilizador -->
+                    <FrameLayout
+                        android:id="@+id/btnUserAvatar"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_marginEnd="6dp"
+                        android:background="@drawable/avatar_circle_bg"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:elevation="2dp">
+
+                        <TextView
+                            android:id="@+id/btnUserAvatarInitial"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:text="U"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF" />
+
+                    </FrameLayout>
+
+                    <!-- More -->
+                    <FrameLayout
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/appbar_btn_bg"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <ImageView
+                            android:id="@+id/btnMore"
+                            android:layout_width="17dp"
+                            android:layout_height="17dp"
+                            android:layout_gravity="center"
+                            android:background="?attr/selectableItemBackgroundBorderless" />
+
+                    </FrameLayout>
+
+                </LinearLayout>
+
+            </RelativeLayout>
+
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <!-- Chat RecyclerView (visível quando há mensagens) -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/chatRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="160dp"
+            android:clipToPadding="false"
+            android:overScrollMode="never"
+            android:visibility="gone"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+        <!-- Preview tab -->
+        <LinearLayout
+            android:id="@+id/previewState"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:paddingTop="100dp"
+            android:paddingBottom="140dp"
+            android:paddingStart="32dp"
+            android:paddingEnd="32dp"
+            android:visibility="gone"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+            <ImageView
+                android:id="@+id/previewImage"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                android:scaleType="fitCenter"
+                android:adjustViewBounds="true" />
+
+            <TextView
+                android:id="@+id/previewTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Resultado da Análise"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/previewSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="O output da sua consulta será apresentado aqui."
+                android:textSize="17sp"
+                android:textColor="@color/text_hint"
+                android:gravity="center"
+                android:lineSpacingMultiplier="1.4" />
+
+        </LinearLayout>
+
+        <!-- Empty state Chat -->
+        <LinearLayout
+            android:id="@+id/emptyState"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:paddingTop="100dp"
+            android:paddingBottom="160dp"
+            android:paddingStart="32dp"
+            android:paddingEnd="32dp"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+            <ImageView
+                android:id="@+id/emptyLogo"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                android:scaleType="fitCenter"
+                android:adjustViewBounds="true" />
+
+            <TextView
+                android:id="@+id/emptyGreeting"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:textSize="48sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/emptySubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Em que estás a pensar?"
+                android:textSize="16.5sp"
+                android:textColor="@color/text_secondary"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <!-- Scrim -->
+        <View
+            android:id="@+id/drawerScrim"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <!-- iOS popup menu -->
+        <FrameLayout
+            android:id="@+id/popupOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="#44000000">
+
+            <LinearLayout
+                android:id="@+id/popupMenu"
+                android:layout_width="220dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="56dp"
+                android:layout_marginEnd="8dp"
+                android:orientation="vertical"
+                android:background="@drawable/popup_menu_bg"
+                android:elevation="16dp">
+
+                <LinearLayout
+                    android:id="@+id/popupItemImport"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Importar Ficheiro"
+                        android:textSize="15sp"
+                        android:textColor="@color/text_primary" />
+
+                    <ImageView
+                        android:id="@+id/popupImportIcon"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp" />
+
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="0.5dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@color/divider" />
+
+                <LinearLayout
+                    android:id="@+id/popupItemCamera"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Câmara"
+                        android:textSize="15sp"
+                        android:textColor="@color/text_primary" />
+
+                    <ImageView
+                        android:id="@+id/popupCameraIcon"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp" />
+
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="0.5dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@color/divider" />
+
+                <LinearLayout
+                    android:id="@+id/popupItemUrl"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="URL / Link"
+                        android:textSize="15sp"
+                        android:textColor="@color/text_primary" />
+
+                    <ImageView
+                        android:id="@+id/popupUrlIcon"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+        <View
+            android:id="@+id/bottomBlurBg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Bottom card -->
+        <LinearLayout
+            android:id="@+id/bottomNavWrapper"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="vertical"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bottom_card_bg"
+            android:elevation="4dp">
+
+            <LinearLayout
+                android:id="@+id/inputRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="bottom"
+                android:paddingStart="18dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:minHeight="56dp">
+
+                <EditText
+                    android:id="@+id/inputMessage"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_gravity="center_vertical"
+                    android:hint="@string/input_hint"
+                    android:textSize="15sp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_hint"
+                    android:background="@null"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:minLines="1"
+                    android:maxLines="5"
+                    android:scrollbars="vertical"
+                    android:gravity="center_vertical" />
+
+                <FrameLayout
+                    android:id="@+id/btnSend"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_gravity="bottom"
+                    android:layout_marginBottom="2dp"
+                    android:background="@drawable/send_btn_bg"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:visibility="gone"
+                    android:alpha="0">
+
+                    <ImageView
+                        android:id="@+id/btnSendIcon"
+                        android:layout_width="15dp"
+                        android:layout_height="15dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_send_arrow" />
+
+                </FrameLayout>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/bottomNav"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:orientation="horizontal">
+
+                <FrameLayout
+                    android:id="@+id/tabChat"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <ImageView
+                            android:id="@+id/tabChatIcon"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp" />
+
+                        <TextView
+                            android:id="@+id/tabChatLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Chat"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary" />
+
+                    </LinearLayout>
+
+                </FrameLayout>
+
+                <FrameLayout
+                    android:id="@+id/tabPreview"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <ImageView
+                            android:id="@+id/tabPreviewIcon"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp" />
+
+                        <TextView
+                            android:id="@+id/tabPreviewLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Preview"
+                            android:textSize="10sp"
+                            android:textColor="@color/text_secondary" />
+
+                    </LinearLayout>
+
+                </FrameLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+</FrameLayout>

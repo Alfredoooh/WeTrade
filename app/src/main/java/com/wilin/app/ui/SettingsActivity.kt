@@ -1,148 +1,245 @@
-package com.wilin.app.ui
+// SettingsActivity.kt
+package com.ipc.app.ui
 
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.PorterDuff
+import android.graphics.Typeface
 import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.view.View
+import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import com.caverock.androidsvg.SVG
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.wilin.app.MainActivity
-import com.wilin.app.R
-import com.wilin.app.databinding.ActivitySettingsBinding
-import java.util.Locale
+import com.google.android.material.materialswitch.MaterialSwitch
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
+import com.ipc.app.R
 
 class SettingsActivity : BaseActivity() {
 
-    private lateinit var binding: ActivitySettingsBinding
-
-    private val languages = arrayOf(
-        "Português" to "pt", "English" to "en", "Español" to "es",
-        "Français" to "fr", "Deutsch" to "de", "Italiano" to "it",
-        "日本語" to "ja", "中文" to "zh", "한국어" to "ko", "Русский" to "ru",
-        "العربية" to "ar", "हिन्दी" to "hi", "Türkçe" to "tr",
-        "Afrikaans" to "af", "Nederlands" to "nl", "Polski" to "pl",
-        "Svenska" to "sv", "Dansk" to "da", "Suomi" to "fi", "Norsk" to "no",
-        "Čeština" to "cs", "Slovenčina" to "sk", "Magyar" to "hu",
-        "Română" to "ro", "Українська" to "uk", "Ελληνικά" to "el",
-        "עברית" to "he", "Bahasa Indonesia" to "id", "Bahasa Melayu" to "ms",
-        "ภาษาไทย" to "th", "Tiếng Việt" to "vi", "Български" to "bg",
-        "বাংলা" to "bn", "Hrvatski" to "hr", "Eesti" to "et",
-        "فارسی" to "fa", "Galego" to "gl", "Latviešu" to "lv",
-        "Lietuvių" to "lt", "Српски" to "sr", "Slovenščina" to "sl",
-        "اردو" to "ur"
-    )
-
-    private val themeOptions = arrayOf("Claro", "Escuro")
-    private val themeValues  = arrayOf("light", "dark")
-
-    override fun attachBaseContext(newBase: Context) {
-        val prefs = newBase.getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
-        // Tema
-        when (prefs.getString("theme", "light")) {
-            "dark" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            else   -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-        }
-        // Locale
-        val lang = prefs.getString("language", "") ?: ""
-        val base = if (lang.isNotEmpty()) {
-            val locale = Locale(lang)
-            Locale.setDefault(locale)
-            val config = Configuration(newBase.resources.configuration)
-            config.setLocale(locale)
-            newBase.createConfigurationContext(config)
-        } else newBase
-        super.attachBaseContext(base)
-    }
+    private val prefs by lazy { getSharedPreferences("ipc_prefs", Context.MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivitySettingsBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_settings)
+        applyTimesNewRomanTitle()
+        setupAvatarAppBar()
+        setupIcons()
+        setupActions()
+    }
 
-        val iconTint    = ContextCompat.getColor(this, R.color.icon_tint)
-        val chevronTint = ContextCompat.getColor(this, R.color.icon_tint_secondary)
-
-        binding.toolbar.navigationIcon = svgDrawable("icons/svg/back_arrow.svg", 24, iconTint)
-        binding.toolbar.setNavigationOnClickListener { finish() }
-
-        binding.iconLanguage.setImageDrawable(svgDrawable("icons/svg/language.svg", 16, iconTint))
-        binding.iconAppearance.setImageDrawable(svgDrawable("icons/svg/appearance.svg", 16, iconTint))
-        binding.iconNotifications.setImageDrawable(svgDrawable("icons/svg/notifications.svg", 16, iconTint))
-        binding.iconPrivacy.setImageDrawable(svgDrawable("icons/svg/privacy.svg", 16, iconTint))
-        binding.iconAbout.setImageDrawable(svgDrawable("icons/svg/about.svg", 16, iconTint))
-
-        binding.iconChevronLanguage.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 14, chevronTint))
-        binding.iconChevronAppearance.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 14, chevronTint))
-        binding.iconChevronNotifications.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 14, chevronTint))
-        binding.iconChevronPrivacy.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 14, chevronTint))
-        binding.iconChevronAbout.setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 14, chevronTint))
-
-        binding.tvVersion.text = packageManager.getPackageInfo(packageName, 0).versionName
-
-        binding.itemLanguage.setOnClickListener { showLanguageDialog() }
-        binding.itemAppearance.setOnClickListener { showThemeDialog() }
-        binding.itemNotifications.setOnClickListener {
-            startActivity(Intent(this, NotificationsActivity::class.java))
+    private fun applyTimesNewRomanTitle() {
+        runCatching {
+            val tf = Typeface.createFromAsset(assets, "fonts/pattern/times_new_roman.ttf")
+            val toolbar = findViewById<ViewGroup>(R.id.settingsToolbar)
+            for (i in 0 until toolbar.childCount) {
+                val child = toolbar.getChildAt(i)
+                if (child is TextView) { child.typeface = Typeface.create(tf, Typeface.BOLD); break }
+            }
         }
-        binding.itemPrivacy.setOnClickListener {
-            startActivity(Intent(this, PrivacyActivity::class.java))
+    }
+
+    private fun setupAvatarAppBar() {
+        val name    = prefs.getString("auth_user_name", "U") ?: "U"
+        val initial = name.firstOrNull()?.uppercase() ?: "U"
+
+        val avatarBtn = findViewById<FrameLayout>(R.id.settingsAvatarBtn)
+        val avatarBg  = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(ContextCompat.getColor(this@SettingsActivity, R.color.colorPrimary))
         }
+        avatarBtn.background = avatarBg
+        findViewById<TextView>(R.id.settingsAvatarInitial).text = initial
+
+        avatarBtn.setOnClickListener {
+            startActivity(Intent(this, UserProfileActivity::class.java))
+        }
+    }
+
+    private fun setupIcons() {
+        val iconTint = ContextCompat.getColor(this, R.color.icon_tint)
+        val iconSec  = ContextCompat.getColor(this, R.color.icon_tint_secondary)
+
+        findViewById<ImageView>(R.id.btnBack)
+            .setImageDrawable(svgDrawable("icons/svg/back_arrow.svg", 16, iconTint))
+        findViewById<ImageView>(R.id.iconTheme)
+            .setImageDrawable(svgDrawable("icons/svg/appearance.svg", 14, iconTint))
+        findViewById<ImageView>(R.id.iconLanguage)
+            .setImageDrawable(svgDrawable("icons/svg/language.svg", 14, iconTint))
+        findViewById<ImageView>(R.id.iconPrivacy)
+            .setImageDrawable(svgDrawable("icons/svg/privacy.svg", 14, iconTint))
+        findViewById<ImageView>(R.id.iconNotifications)
+            .setImageDrawable(svgDrawable("icons/svg/notifications.svg", 14, iconTint))
+        findViewById<ImageView>(R.id.iconLogout)
+            .setImageDrawable(svgDrawable("icons/svg/back_arrow.svg", 16, Color.parseColor("#FF3B30")))
+
+        listOf(R.id.chevronTheme, R.id.chevronLanguage, R.id.chevronPrivacy).forEach {
+            findViewById<ImageView>(it)
+                .setImageDrawable(svgDrawable("icons/svg/chevron_right.svg", 13, iconSec))
+        }
+
+        val currentTheme = prefs.getString("theme", "light")
+        findViewById<TextView>(R.id.labelTheme).text =
+            if (currentTheme == "dark") "Escuro" else "Claro"
+        val currentLang = prefs.getString("language", "pt")
+        findViewById<TextView>(R.id.labelLanguage).text =
+            when (currentLang) { "en" -> "English"; else -> "Português" }
+
+        val switchNotif = findViewById<MaterialSwitch>(R.id.switchNotifications)
+        switchNotif.isChecked = prefs.getBoolean("notifications", true)
+    }
+
+    private fun setupActions() {
+        findViewById<ImageView>(R.id.btnBack).setOnClickListener { onBackPressed() }
+        findViewById<View>(R.id.itemTheme).setOnClickListener { showThemeDialog() }
+        findViewById<View>(R.id.itemLanguage).setOnClickListener { showLanguageDialog() }
+        val switchNotif = findViewById<MaterialSwitch>(R.id.switchNotifications)
+        switchNotif.setOnCheckedChangeListener { _, checked ->
+            prefs.edit().putBoolean("notifications", checked).apply()
+        }
+        findViewById<View>(R.id.itemNotifications).setOnClickListener { switchNotif.toggle() }
+        findViewById<View>(R.id.itemPrivacy).setOnClickListener { showRecoverPasswordDialog() }
+        findViewById<View>(R.id.itemLogout).setOnClickListener { showLogoutDialog() }
+    }
+
+    // ── Recuperar password ────────────────────────────────────────────────
+    private fun showRecoverPasswordDialog() {
+        val email = prefs.getString("auth_user_email", "") ?: ""
+
+        val dialogView = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(dp(24), dp(16), dp(24), dp(8))
+        }
+
+        val infoText = TextView(this).apply {
+            text = "Introduz o teu email para receber as instruções de recuperação."
+            textSize = 14f
+            setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            ).also { it.bottomMargin = dp(16) }
+        }
+        dialogView.addView(infoText)
+
+        val emailInput = TextInputLayout(this, null,
+            com.google.android.material.R.style.Widget_Material3_TextInputLayout_OutlinedBox
+        ).apply {
+            hint = "Email"
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        val emailField = TextInputEditText(emailInput.context).apply {
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                    android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+            setText(email)
+        }
+        emailInput.addView(emailField)
+        dialogView.addView(emailInput)
+
+        MaterialAlertDialogBuilder(this, R.style.IpcAlertDialog)
+            .setTitle("Recuperar password")
+            .setView(dialogView)
+            .setPositiveButton("Enviar") { dialog, _ ->
+                val inputEmail = emailField.text.toString().trim()
+                if (inputEmail.isEmpty()) {
+                    emailInput.error = "Introduz o teu email"
+                    return@setPositiveButton
+                }
+                if (!android.util.Patterns.EMAIL_ADDRESS.matcher(inputEmail).matches()) {
+                    emailInput.error = "Email inválido"
+                    return@setPositiveButton
+                }
+                dialog.dismiss()
+                doSendPasswordReset(inputEmail)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun doSendPasswordReset(email: String) {
+        // Mock local — quando a API real estiver pronta, enviar POST /auth/forgot-password
+        // Por agora mostra confirmação
+        MaterialAlertDialogBuilder(this, R.style.IpcAlertDialog)
+            .setTitle("Email enviado")
+            .setMessage("Se a conta '$email' existir, receberás um email com as instruções para redefinir a tua password.")
+            .setPositiveButton("OK", null)
+            .show()
+    }
+
+    // ── Logout ────────────────────────────────────────────────────────────
+    private fun showLogoutDialog() {
+        MaterialAlertDialogBuilder(this, R.style.IpcAlertDialog)
+            .setTitle("Terminar sessão")
+            .setMessage("Tens a certeza que queres sair?")
+            .setPositiveButton("Sair") { _, _ -> doLogout() }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun doLogout() {
+        prefs.edit()
+            .remove("auth_token")
+            .remove("auth_user_id")
+            .remove("auth_user_name")
+            .remove("auth_user_email")
+            .apply()
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+    }
+
+    // ── Dialogs ───────────────────────────────────────────────────────────
+    private fun showThemeDialog() {
+        val currentTheme = prefs.getString("theme", "light")
+        MaterialAlertDialogBuilder(this, R.style.IpcAlertDialog)
+            .setTitle("Tema")
+            .setSingleChoiceItems(arrayOf("Claro", "Escuro"), if (currentTheme == "dark") 1 else 0) { dialog, which ->
+                prefs.edit().putString("theme", if (which == 1) "dark" else "light").apply()
+                AppCompatDelegate.setDefaultNightMode(
+                    if (which == 1) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
+                )
+                dialog.dismiss(); recreate()
+            }.show()
     }
 
     private fun showLanguageDialog() {
-        val names = languages.map { it.first }.toTypedArray()
-        MaterialAlertDialogBuilder(this)
-            .setTitle(getString(R.string.select_language))
-            .setItems(names) { _, which -> setLocale(languages[which].second) }
-            .show()
+        val currentLang = prefs.getString("language", "pt")
+        MaterialAlertDialogBuilder(this, R.style.IpcAlertDialog)
+            .setTitle("Idioma")
+            .setSingleChoiceItems(arrayOf("Português", "English"), if (currentLang == "en") 1 else 0) { dialog, which ->
+                prefs.edit().putString("language", if (which == 1) "en" else "pt").apply()
+                dialog.dismiss(); recreate()
+            }.show()
     }
 
-    private fun showThemeDialog() {
-        val prefs        = getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
-        val current      = prefs.getString("theme", "light")
-        val currentIndex = themeValues.indexOf(current).coerceAtLeast(0)
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() { super.onBackPressed() }
 
-        MaterialAlertDialogBuilder(this)
-            .setTitle(getString(R.string.appearance))
-            .setSingleChoiceItems(themeOptions, currentIndex) { dialog, which ->
-                val selected = themeValues[which]
-                prefs.edit().putString("theme", selected).apply()
-                when (selected) {
-                    "dark" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                    else   -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                }
-                dialog.dismiss()
-                startActivity(Intent(this, MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                })
-            }
-            .show()
-    }
+    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
-    private fun setLocale(langCode: String) {
-        getSharedPreferences("wilin_prefs", Context.MODE_PRIVATE)
-            .edit().putString("language", langCode).apply()
-        startActivity(Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        })
-    }
-
-    private fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
-        val px  = (sizeDp * resources.displayMetrics.density).toInt()
+    fun svgDrawable(path: String, sizeDp: Int, tint: Int): BitmapDrawable {
+        val px  = (sizeDp * resources.displayMetrics.density).toInt().coerceAtLeast(1)
         val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
-        SVG.getFromAsset(assets, path).apply {
-            documentWidth  = px.toFloat()
-            documentHeight = px.toFloat()
-            renderToCanvas(Canvas(bmp))
+        runCatching {
+            SVG.getFromAsset(assets, path).apply {
+                documentWidth = px.toFloat(); documentHeight = px.toFloat()
+                renderToCanvas(Canvas(bmp))
+            }
         }
-        return BitmapDrawable(resources, bmp).also {
-            it.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
-        }
+        return BitmapDrawable(resources, bmp).also { it.setColorFilter(tint, PorterDuff.Mode.SRC_IN) }
     }
 }

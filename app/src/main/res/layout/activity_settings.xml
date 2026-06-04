@@ -1,61 +1,143 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background">
+    android:background="@color/background"
+    android:fitsSystemWindows="true">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <!-- Toolbar com avatar no topo direito -->
+    <RelativeLayout
+        android:id="@+id/settingsToolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/background"
-        app:elevation="0dp">
+        android:layout_height="?attr/actionBarSize"
+        android:paddingStart="4dp"
+        android:paddingEnd="8dp"
+        android:background="@color/appbar_background">
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/background"
-            app:titleTextColor="@color/text_primary"
-            app:navigationIconTint="@color/text_primary">
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="11dp"
+            android:layout_centerVertical="true"
+            android:layout_alignParentStart="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true" />
 
-            <!-- Title custom: mesmo tamanho do Home, weight 600 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="@string/drawer_settings"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary" />
+
+        <!-- Avatar circular no appBar -->
+        <FrameLayout
+            android:id="@+id/settingsAvatarBtn"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_centerVertical="true"
+            android:layout_alignParentEnd="true"
+            android:background="@drawable/avatar_circle_bg"
+            android:clickable="true"
+            android:focusable="true"
+            android:elevation="2dp">
+
             <TextView
+                android:id="@+id/settingsAvatarInitial"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/settings"
-                android:textSize="20sp"
-                android:textFontWeight="600"
-                android:textColor="@color/text_primary"
-                android:layout_gravity="center_vertical" />
+                android:layout_gravity="center"
+                android:text="U"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF" />
 
-        </com.google.android.material.appbar.MaterialToolbar>
+        </FrameLayout>
 
-    </com.google.android.material.appbar.AppBarLayout>
+    </RelativeLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:background="@color/divider" />
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:overScrollMode="never">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingTop="8dp"
+            android:paddingTop="24dp"
             android:paddingBottom="24dp">
 
+            <!-- Aparência -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/general"
+                android:text="Aparência"
                 android:textSize="12sp"
-                android:textColor="@color/settings_section_label"
                 android:textAllCaps="true"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:paddingTop="16dp"
-                android:paddingBottom="4dp" />
+                android:textColor="@color/settings_section_label"
+                android:paddingStart="24dp"
+                android:paddingBottom="8dp" />
+
+            <LinearLayout
+                android:id="@+id/itemTheme"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <FrameLayout
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/drawer_icon_bg"
+                    android:layout_marginEnd="16dp">
+                    <ImageView
+                        android:id="@+id/iconTheme"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:layout_gravity="center" />
+                </FrameLayout>
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Tema"
+                    android:textSize="15sp"
+                    android:textColor="@color/text_primary" />
+
+                <TextView
+                    android:id="@+id/labelTheme"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <ImageView
+                    android:id="@+id/chevronTheme"
+                    android:layout_width="13dp"
+                    android:layout_height="13dp" />
+
+            </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/itemLanguage"
@@ -63,110 +145,66 @@
                 android:layout_height="56dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:background="?attr/selectableItemBackground">
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
 
-                <ImageView
-                    android:id="@+id/iconLanguage"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="16dp"
-                    android:text="@string/language"
-                    android:textSize="16sp"
-                    android:textColor="@color/text_primary" />
-
-                <ImageView
-                    android:id="@+id/iconChevronLanguage"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp" />
-
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/divider"
-                android:layout_marginStart="48dp" />
-
-            <LinearLayout
-                android:id="@+id/itemAppearance"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:background="?attr/selectableItemBackground">
-
-                <ImageView
-                    android:id="@+id/iconAppearance"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp" />
+                <FrameLayout
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/drawer_icon_bg"
+                    android:layout_marginEnd="16dp">
+                    <ImageView
+                        android:id="@+id/iconLanguage"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:layout_gravity="center" />
+                </FrameLayout>
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginStart="16dp"
-                    android:text="@string/appearance"
-                    android:textSize="16sp"
+                    android:text="Idioma"
+                    android:textSize="15sp"
                     android:textColor="@color/text_primary" />
-
-                <ImageView
-                    android:id="@+id/iconChevronAppearance"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp" />
-
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/divider"
-                android:layout_marginStart="48dp" />
-
-            <LinearLayout
-                android:id="@+id/itemNotifications"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:background="?attr/selectableItemBackground">
-
-                <ImageView
-                    android:id="@+id/iconNotifications"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp" />
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:id="@+id/labelLanguage"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="16dp"
-                    android:text="@string/notifications"
-                    android:textSize="16sp"
-                    android:textColor="@color/text_primary" />
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
 
                 <ImageView
-                    android:id="@+id/iconChevronNotifications"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp" />
+                    android:id="@+id/chevronLanguage"
+                    android:layout_width="13dp"
+                    android:layout_height="13dp" />
 
             </LinearLayout>
 
             <View
                 android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/divider"
-                android:layout_marginStart="48dp" />
+                android:layout_height="0.5dp"
+                android:layout_marginStart="24dp"
+                android:layout_marginEnd="24dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="20dp"
+                android:background="@color/divider" />
+
+            <!-- Privacidade -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Privacidade"
+                android:textSize="12sp"
+                android:textAllCaps="true"
+                android:textColor="@color/settings_section_label"
+                android:paddingStart="24dp"
+                android:paddingBottom="8dp" />
 
             <LinearLayout
                 android:id="@+id/itemPrivacy"
@@ -174,109 +212,124 @@
                 android:layout_height="56dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:background="?attr/selectableItemBackground">
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
 
-                <ImageView
-                    android:id="@+id/iconPrivacy"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp" />
+                <FrameLayout
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/drawer_icon_bg"
+                    android:layout_marginEnd="16dp">
+                    <ImageView
+                        android:id="@+id/iconPrivacy"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:layout_gravity="center" />
+                </FrameLayout>
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginStart="16dp"
-                    android:text="@string/privacy"
-                    android:textSize="16sp"
+                    android:text="Privacidade"
+                    android:textSize="15sp"
                     android:textColor="@color/text_primary" />
 
                 <ImageView
-                    android:id="@+id/iconChevronPrivacy"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp" />
+                    android:id="@+id/chevronPrivacy"
+                    android:layout_width="13dp"
+                    android:layout_height="13dp" />
 
             </LinearLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/about"
-                android:textSize="12sp"
-                android:textColor="@color/settings_section_label"
-                android:textAllCaps="true"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:paddingTop="24dp"
-                android:paddingBottom="4dp" />
-
             <LinearLayout
-                android:id="@+id/itemAbout"
+                android:id="@+id/itemNotifications"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:background="?attr/selectableItemBackground">
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
 
-                <ImageView
-                    android:id="@+id/iconAbout"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="16dp"
-                    android:text="@string/about"
-                    android:textSize="16sp"
-                    android:textColor="@color/text_primary" />
-
-                <ImageView
-                    android:id="@+id/iconChevronAbout"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp" />
-
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/divider"
-                android:layout_marginStart="48dp" />
-
-            <LinearLayout
-                android:id="@+id/itemVersion"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp">
+                <FrameLayout
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/drawer_icon_bg"
+                    android:layout_marginEnd="16dp">
+                    <ImageView
+                        android:id="@+id/iconNotifications"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:layout_gravity="center" />
+                </FrameLayout>
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/version"
-                    android:textSize="16sp"
+                    android:text="Notificações"
+                    android:textSize="15sp"
                     android:textColor="@color/text_primary" />
 
-                <TextView
-                    android:id="@+id/tvVersion"
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switchNotifications"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="1.0.0"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="14sp" />
+                    android:layout_height="wrap_content" />
 
             </LinearLayout>
 
         </LinearLayout>
 
     </ScrollView>
+
+    <!-- Logout em baixo, container rectangular com bordas totalmente curvas -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="24dp">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/divider" />
+
+        <LinearLayout
+            android:id="@+id/itemLogout"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/logout_btn_bg"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/iconLogout"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_marginEnd="10dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_logout"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#FF3B30" />
+
+        </LinearLayout>
+
+    </LinearLayout>
 
 </LinearLayout>
